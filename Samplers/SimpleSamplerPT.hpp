@@ -11,7 +11,7 @@
 namespace nnqs
 {
 
-template<typename T, class Machine, class RandomEngine>
+template<class Machine, class RandomEngine>
 class SimpleSamplerPT
 {
 public:
@@ -30,7 +30,6 @@ public:
 	SimpleSamplerPT(Machine& qs, int numChain)
 		: n_(qs.getN()), numChain_(numChain), qs_(qs)
 	{
-		static_assert(std::is_same<T, typename Machine::ScalarType>::value, "T must be same to Machine scalar type");
 		for(int idx = 0; idx < numChain_; idx++)
 		{
 			betas_.emplace_back( double(numChain_ - idx)/numChain_);

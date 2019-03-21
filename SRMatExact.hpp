@@ -1,8 +1,9 @@
 #ifndef CY_SRMATEXACT_HPP
 #define CY_SRMATEXACT_HPP
 #include <Eigen/Dense>
+#include <Eigen/Sparse>
 
-#include "ED/NodeMV.hpp"
+#include "ED/ConstructSparseMat.hpp"
 #include "Utilities/Utility.hpp"
 
 namespace nnqs
@@ -21,9 +22,8 @@ private:
 	int n_;
 	Machine& qs_;
 
-	edp::NodeMV mv_;
+	Eigen::SparseMatrix<RealScalar> ham_;
 
-	Vector st_;
 	Matrix deltas_;
 	Matrix deltasPsis_;
 	Vector grad_;
@@ -39,14 +39,15 @@ public:
 
 	void constructExact()
 	{
-		st_ = getPsi(qs_, true);
+		Vector st = getPsi(qs_, true);
 		deltas_.setZero(1<<n_,qs_.getDim());
 
-		Vector k(1<<n_);
-		mv_.perform_op(st_.data(), k.data()); //k = Ham*st_;
-		energy_ = real(st_.adjoint()*k);
+		Vector k = ham_*st;
+
+		std::complex<double> t = st.adjoint()*k;
+		energy_ = std::real(t);
 		
-		Vector eloc = k.cwiseQuotient(st_);
+		Vector eloc = k.cwiseQuotient(st);
 
 
 #pragma omp parallel for schedule(static,8)
@@ -55,9 +56,14 @@ public:
 			auto der = qs_.logDeriv(qs_.makeData(toSigma(n_, k)));
 			deltas_.row(k) = der;
 		}
-		deltasPsis_ = st_.cwiseAbs2().asDiagonal()*deltas_; 
-		grad_ = (deltas_*st_.asDiagonal()).adjoint()*k;
-		grad_ -= energy_*deltasPsis_.colwise().sum();
+		deltasPsis_ = st.cwiseAbs2().asDiagonal()*deltas_; 
+		grad_ = (st.asDiagonal()*deltas_).adjoint()*k;
+		grad_ -= t*deltasPsis_.colwise().sum().conjugate();
+	}
+
+	Vector deltaMean() const
+	{
+		return deltasPsis_.colwise().sum();
 	}
 
 	Matrix corrMat() const
@@ -65,6 +71,7 @@ public:
 		Matrix res = deltas_.adjoint()*deltasPsis_;
 		auto t = deltasPsis_.colwise().sum();
 		res -= t.adjoint()*t;
+		return res;
 	}
 
 	Vector getF() const
@@ -74,7 +81,7 @@ public:
 
 	template<class ColFunc>
 	SRMatExact(Machine& qs, ColFunc&& col)
-	  : n_{qs.getN()}, qs_(qs), mv_(1<<n_, 0, 1<<n_, std::forward<ColFunc>(col))
+	  : n_{qs.getN()}, qs_(qs), ham_(edp::constructSparseMat<RealScalar>(1<<n_, std::forward<ColFunc>(col)))
 	{
 	}
 };
