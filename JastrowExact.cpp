@@ -6,17 +6,19 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <nlohmann/json.hpp>
 
-#include "Machines/RBM.hpp"
-#include "Serializers/SerializeRBM.hpp"
-
-#include "Hamiltonians/XYZNNN.hpp"
-//#include "Hamiltonians/TFIsing.hpp"
-
+#include "Machines/Jastrow.hpp"
+//#include "Machines/RBM.hpp"
+//#include "Serializers/SerializeRBM.hpp"
+//#include "Hamiltonians/XYZNNN.hpp"
+#include "Hamiltonians/XXZ.hpp"
 #include "Optimizers/SGD.hpp"
 
-#include "States/RBMState.hpp"
-#include "Samplers/HamiltonianSamplerPT.hpp"
-#include "Samplers/SimpleSamplerPT.hpp"
+#include "States/JastrowState.hpp"
+//#include "States/RBMState.hpp"
+#include "Samplers/HamiltonianSampler.hpp"
+//#include "Samplers/HamiltonianSamplerPT.hpp"
+//#include "Samplers/SimpleSamplerPT.hpp"
+//#include "Samplers/SimpleSampler.hpp"
 
 #include "SRMatExact.hpp"
 #include "SROptimizerCG.hpp"
@@ -29,12 +31,11 @@ int main(int argc, char** argv)
 {
 	using namespace nnqs;
 
+	const int numChains = 16;
 	std::random_device rd;
 	std::default_random_engine re(rd());
 
 	std::cout << std::setprecision(8);
-
-	const int numChains = 16;
 
 	const int N = 12;
 	const double decaying = 0.9;
@@ -44,25 +45,22 @@ int main(int argc, char** argv)
 
 	using ValT = std::complex<double>;
 
-	if(argc != 4)
+	if(argc != 2)
 	{
-		printf("Usage: %s [alpha] [a] [b]\n", argv[0]);
+		printf("Usage: %s [delta]\n", argv[0]);
 		return 1;
 	}
+	double delta;
+	sscanf(argv[1], "%lf", &delta);
+	std::cout << "#delta: " << delta << std::endl;
 
-	int alpha;
-	sscanf(argv[1], "%d", &alpha);
+	using Machine = Jastrow<ValT>;
+	Machine qs(N);
 
-	double a, b;
-	sscanf(argv[2], "%lf", &a);
-	sscanf(argv[3], "%lf", &b);
-	std::cout << "#a: " << a << ", b:" << b << std::endl;
-
-	using Machine = RBM<ValT, true>;
-	Machine qs(N, alpha*N);
+	//using Machine = RBM<ValT, true>;
+	//Machine qs(N, N);
 	qs.initializeRandom(re);
-	XYZNNN ham(N, a, b);
-	//TFIsing ham(N, -1.0, -delta);
+	XXZ ham(N, 1.0, delta);
 
 	SGD<ValT> opt(sgd_eta);
 
@@ -95,8 +93,8 @@ int main(int argc, char** argv)
 	using Vector = typename Machine::Vector;
 	using Matrix = typename Machine::Matrix;
 
-	//SwapSamplerPT<Machine, std::default_random_engine> ss(qs, numChains);
-	SimpleSamplerPT<Machine, std::default_random_engine> ss(qs, numChains);
+	//SimpleSampler<ValT, Machine, std::default_random_engine> ss(qs);
+	HamiltonianSampler<Machine, std::default_random_engine, 2> ss(qs, ham.flips());
 	ss.initializeRandomEngine();
 
 	SRMatExact<Machine> srex(qs, ham);
@@ -104,13 +102,13 @@ int main(int argc, char** argv)
 
 	const int dim = qs.getDim();
 
-	for(int ll = 0; ll <=  3000; ll++)
+	for(int ll = 0; ll <= 2000; ll++)
 	{
+
 		double lambda = std::max(lmax*pow(decaying,ll), lmin);
 
 		Vector g1;
 		Vector res1;
-		Vector del1;
 		double e1;
 		{
 			srex.constructExact();
@@ -123,12 +121,10 @@ int main(int argc, char** argv)
 
 			g1 = srex.getF();
 			res1 = llt.solve(g1);
-			del1 = srex.deltaMean();
 		}
 
 		Vector g2;
 		Vector res2;
-		Vector del2;
 		double e2;
 		{
 			ss.randomizeSigma();
@@ -143,18 +139,13 @@ int main(int argc, char** argv)
 
 			g2 = srm.getF();
 			res2 = cg.solve(g2);
-			del2 = srm.deltaMean();
 		}
 
 		Vector optV = opt.getUpdate(res1);
 		qs.updateParams(optV);
 
-		ValT t = g1.adjoint()*g2;
-		double x = (t.real() + t.imag())/(g1.norm()*g2.norm());
-
 		std::cout << ll << "\t" << e1 << "\t" << e2 << "\t" <<
-			g1.norm() << "\t" << g2.norm() << "\t" <<  x << std::endl;
-
+			(g1-g2).norm() << "\t" << (res1-res2).norm() << std::endl;
 	}
 
 	return 0;

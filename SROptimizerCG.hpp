@@ -134,7 +134,7 @@ public:
 	{
 		return deltas_;
 	}
-	const Eigen::VectorXcd& getDeltaMean() const
+	const Eigen::VectorXcd& deltaMean() const
 	{
 		return deltaMean_;
 	}
