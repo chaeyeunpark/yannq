@@ -9,7 +9,8 @@
 
 #include "Machines/RBM.hpp"
 #include "States/RBMState.hpp"
-#include "Samplers/HamiltonianSamplerPT.hpp"
+#include "Samplers/SwapSamplerPT.hpp"
+#include "Samplers/HamiltonianSamplerOldPT.hpp"
 #include "Serializers/SerializeRBM.hpp"
 #include "Hamiltonians/XXZ.hpp"
 #include "Optimizers/SGD.hpp"
@@ -21,11 +22,12 @@ using std::ios;
 
 int main(int argc, char** argv)
 {
+
 	using namespace nnqs;
 	using nlohmann::json;
 
-	constexpr int N  = 28;
-	constexpr int numChains = 16;
+	constexpr int N  = 12;
+	constexpr int numChains = 8;
 	
 	std::random_device rd;
 	std::default_random_engine re(rd());
@@ -84,9 +86,15 @@ int main(int argc, char** argv)
 
 	typedef std::chrono::high_resolution_clock Clock;
 
+	std::vector<std::array<int,2> > flips;
+	for(int i = 0; i < N; i++)
+	{
+		flips.emplace_back(std::array<int,2>{i, (i+1)%N});
+	}
 
-	//SwapSamplerPT<ValT, Machine, std::default_random_engine> ss(qs, numChains);
-	HamiltonianSamplerPT<Machine, std::default_random_engine,2> ss(qs, numChains, ham.flips());
+
+	SwapSamplerPT<Machine, std::default_random_engine> ss(qs, numChains);
+	//HamiltonianSamplerPT<Machine, std::default_random_engine, 2> ss(qs, numChains, flips);
 	SRMatFree<Machine> srm(qs);
 	
 	ss.initializeRandomEngine();
@@ -94,8 +102,9 @@ int main(int argc, char** argv)
 	using std::sqrt;
 	using Vector = typename Machine::Vector;
 
-	for(int ll = 0; ll <=  2000; ll++)
+	for(int ll = 0; ll <=  3000; ll++)
 	{
+		/*
 		if(ll % 5 == 0)
 		{
 			char fileName[30];
@@ -106,12 +115,14 @@ int main(int argc, char** argv)
 				oa << qs;
 			}
 		}
-		//ss.randomizeSigma(N/2);
-		ss.randomizeSigma();
+
+		*/
+		ss.randomizeSigma(N/2);
+		//ss.randomizeSigma();
 
 		//Sampling
 		auto smp_start = Clock::now();
-		auto sr = ss.sampling(dim, int(0.2*dim));
+		auto sr = ss.sampling(dim, int(0.4*dim));
 		auto smp_dur = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - smp_start).count();
 
 		auto slv_start = Clock::now();

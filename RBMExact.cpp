@@ -10,6 +10,7 @@
 #include "Serializers/SerializeRBM.hpp"
 
 #include "Hamiltonians/XYZNNN.hpp"
+#include "Hamiltonians/XXZ.hpp"
 //#include "Hamiltonians/TFIsing.hpp"
 
 #include "Optimizers/SGD.hpp"
@@ -17,13 +18,29 @@
 #include "States/RBMState.hpp"
 #include "Samplers/HamiltonianSamplerPT.hpp"
 #include "Samplers/SimpleSamplerPT.hpp"
+#include "Samplers/SwapSamplerPT.hpp"
 
-#include "SRMatExact.hpp"
+#include "SRMatExactBasis.hpp"
 #include "SROptimizerCG.hpp"
 
 
 using namespace nnqs;
 using std::ios;
+
+std::vector<uint32_t> generateBasis(int n, int nup)
+{
+	std::vector<uint32_t> basis;
+	uint32_t v = (1u<<nup)-1;
+	uint32_t w;
+	while(v < (1u<<n))
+	{
+		basis.emplace_back(v);
+		uint32_t t = v | (v-1);
+		w = (t + 1) | (((~t & -~t) - 1) >> (__builtin_ctz(v) + 1));
+		v = w;
+	}
+	return basis;
+}
 
 int main(int argc, char** argv)
 {
@@ -44,25 +61,31 @@ int main(int argc, char** argv)
 
 	using ValT = std::complex<double>;
 
+	/*
+
 	if(argc != 4)
 	{
 		printf("Usage: %s [alpha] [a] [b]\n", argv[0]);
 		return 1;
 	}
+	*/
 
 	int alpha;
 	sscanf(argv[1], "%d", &alpha);
 
+	/*
 	double a, b;
 	sscanf(argv[2], "%lf", &a);
 	sscanf(argv[3], "%lf", &b);
 	std::cout << "#a: " << a << ", b:" << b << std::endl;
+	*/
 
 	using Machine = RBM<ValT, true>;
 	Machine qs(N, alpha*N);
 	qs.initializeRandom(re);
-	XYZNNN ham(N, a, b);
+	//XYZNNN ham(N, a, b);
 	//TFIsing ham(N, -1.0, -delta);
+	XXZ ham(N, 1.0, 1.1);
 
 	SGD<ValT> opt(sgd_eta);
 
@@ -95,12 +118,14 @@ int main(int argc, char** argv)
 	using Vector = typename Machine::Vector;
 	using Matrix = typename Machine::Matrix;
 
-	//SwapSamplerPT<Machine, std::default_random_engine> ss(qs, numChains);
-	SimpleSamplerPT<Machine, std::default_random_engine> ss(qs, numChains);
-	ss.initializeRandomEngine();
+	auto basis = generateBasis(N,N/2);
 
-	SRMatExact<Machine> srex(qs, ham);
-	SRMatFree<Machine> srm(qs);
+	//SwapSamplerPT<Machine, std::default_random_engine> ss(qs, numChains);
+	//SimpleSamplerPT<Machine, std::default_random_engine> ss(qs, numChains);
+	//ss.initializeRandomEngine();
+
+	SRMatExactBasis<Machine> srex(qs, basis, ham);
+	//SRMatFree<Machine> srm(qs);
 
 	const int dim = qs.getDim();
 
@@ -125,13 +150,14 @@ int main(int argc, char** argv)
 			res1 = llt.solve(g1);
 			del1 = srex.deltaMean();
 		}
-
+	
+		/*
 		Vector g2;
 		Vector res2;
 		Vector del2;
 		double e2;
 		{
-			ss.randomizeSigma();
+			ss.randomizeSigma(N/2);
 			auto sr = ss.sampling(2*dim, 0.4*dim);
 			srm.constructFromSampling(sr, ham);
 			
@@ -145,15 +171,21 @@ int main(int argc, char** argv)
 			res2 = cg.solve(g2);
 			del2 = srm.deltaMean();
 		}
+		*/
 
 		Vector optV = opt.getUpdate(res1);
 		qs.updateParams(optV);
-
-		ValT t = g1.adjoint()*g2;
-		double x = (t.real() + t.imag())/(g1.norm()*g2.norm());
+		
+		/*
+		double t = g1.real().transpose()*g2.real();
+		t += g1.imag().transpose()*g2.imag();
+		double x = t/(g1.norm()*g2.norm());
 
 		std::cout << ll << "\t" << e1 << "\t" << e2 << "\t" <<
 			g1.norm() << "\t" << g2.norm() << "\t" <<  x << std::endl;
+			*/
+
+		std::cout << ll << "\t" << e1 << "\t" << g1.norm() << std::endl;
 
 	}
 

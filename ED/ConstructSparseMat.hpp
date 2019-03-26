@@ -14,7 +14,7 @@ namespace edp
 			auto m = colFunc(col);
 			for(const auto& v: m)
 			{
-				tripletList.push_back(TripletT(v.first, col, v.second));
+				tripletList.emplace_back(v.first, col, v.second);
 			}
 		}
 
@@ -22,6 +22,38 @@ namespace edp
 		res.setFromTriplets(tripletList.begin(), tripletList.end());
 		return res;
 	}
+
+	//basis must be sorted
+	template<typename T, typename ColFunc>
+	Eigen::SparseMatrix<T> constructSubspaceMat(ColFunc&& t, const std::vector<uint32_t>& basis)
+	{
+		const int n = basis.size();
+
+		using TripletT = Eigen::Triplet<T>;
+		std::vector<TripletT> tripletList;
+#pragma omp parallel for
+		for(int i = 0; i < n; i++)
+		{
+			std::map<uint32_t, T> m = t(basis[i]);
+			auto iter = basis.begin();
+			for(auto& kv: m)
+			{
+				iter = std::lower_bound(iter, basis.end(), kv.first);
+				if(iter == basis.end())
+					break;
+				auto j = std::distance(basis.begin(), iter);
+#pragma omp critical
+				{
+					tripletList.emplace_back(i, j, kv.second);
+				}
+			}
+		}
+
+		Eigen::SparseMatrix<T> res(n, n);
+		res.setFromTriplets(tripletList.begin(), tripletList.end());
+		return res;
+	}
+
 }
 
 #endif//EDP_CONSTRUCTSPARSEMAT_HPP

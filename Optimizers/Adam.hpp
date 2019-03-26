@@ -10,6 +10,7 @@ template<typename T>
 class Adam
 {
 public:
+	using RealVector = Eigen::Matrix<typename nnqs::remove_complex<T>::type, Eigen::Dynamic, 1>;
 	using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
 
 private:
@@ -18,8 +19,8 @@ private:
 	double beta2_;
 
 	int t;
-	Vector m_;
-	Vector v_;
+	RealVector m_;
+	RealVector v_;
 public:
 
 	Adam(double alpha = 1e-3, double beta1 = 0.9, double beta2 = 0.999)
@@ -27,7 +28,9 @@ public:
 	{
 	}
 
-	Vector getUpdate(const Vector& grad)
+	
+	typename std::enable_if<!nnqs::is_complex_type<T>::value, Vector>::type
+	getUpdate(const Vector& grad)
 	{
 		const double eps = 1e-8;
 
@@ -51,6 +54,37 @@ public:
 		Vector denom = vHat.unaryExpr([eps](T x){ return sqrt(x)+eps; });
 		return -alpha_*mHat.cwiseQuotient(denom);
 	}
+	
+	typename std::enable_if<nnqs::is_complex_type<T>::value, Vector>::type
+	getUpdate(const Vector& grad)
+	{
+		const double eps = 1e-8;
+
+		if(t ==0)
+		{
+			m_ = RealVector::Zero(2*grad.rows());
+			v_ = RealVector::Zero(2*grad.rows());
+		}
+		++t;
+
+		m_ *= beta1_;
+		m_ += (1-beta1_)*grad;
+	
+		RealVector gradR = Eigen::Map<RealVector>(grad.data(), 2*grad.rows());
+
+		RealVector g2= gradR.unaryExpr([](T x){ return x*x;});
+		v_ *= beta2_;
+		v_ += (1-beta2_)*g2;
+
+		RealVector mHat = m_/(1.0-pow(beta1_, t));
+		RealVector vHat = v_/(1.0-pow(beta2_, t));
+
+		RealVector denom = vHat.unaryExpr([eps](T x){ return sqrt(x)+eps; });
+
+		RealVector res = mHat.cwiseQuotient(denom);
+		return -alpha_*Eigen::Map<Vector>(res.data(), grad.rows());
+	}
+
 };
 } //namespace nnqs
 #endif//NNQS_OPTIMIZERS_ADAM_HPP
