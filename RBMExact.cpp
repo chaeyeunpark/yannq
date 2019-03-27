@@ -14,6 +14,7 @@
 //#include "Hamiltonians/TFIsing.hpp"
 
 #include "Optimizers/SGD.hpp"
+#include "Optimizers/Adam.hpp"
 
 #include "States/RBMState.hpp"
 #include "Samplers/HamiltonianSamplerPT.hpp"
@@ -86,8 +87,8 @@ int main(int argc, char** argv)
 	//XYZNNN ham(N, a, b);
 	//TFIsing ham(N, -1.0, -delta);
 	XXZ ham(N, 1.0, 1.1);
+	Adam<ValT> opt{};
 
-	SGD<ValT> opt(sgd_eta);
 
 	{
 		using nlohmann::json;
@@ -120,12 +121,14 @@ int main(int argc, char** argv)
 
 	auto basis = generateBasis(N,N/2);
 
-	//SwapSamplerPT<Machine, std::default_random_engine> ss(qs, numChains);
+	//SGD<ValT> opt(sgd_eta);
+
+	SwapSamplerPT<Machine, std::default_random_engine> ss(qs, numChains);
 	//SimpleSamplerPT<Machine, std::default_random_engine> ss(qs, numChains);
-	//ss.initializeRandomEngine();
+	ss.initializeRandomEngine();
 
 	SRMatExactBasis<Machine> srex(qs, basis, ham);
-	//SRMatFree<Machine> srm(qs);
+	SRMatFree<Machine> srm(qs);
 
 	const int dim = qs.getDim();
 
@@ -151,7 +154,6 @@ int main(int argc, char** argv)
 			del1 = srex.deltaMean();
 		}
 	
-		/*
 		Vector g2;
 		Vector res2;
 		Vector del2;
@@ -171,21 +173,20 @@ int main(int argc, char** argv)
 			res2 = cg.solve(g2);
 			del2 = srm.deltaMean();
 		}
-		*/
 
-		Vector optV = opt.getUpdate(res1);
+		Vector optV = opt.getUpdate(g1);
 		qs.updateParams(optV);
 		
-		/*
 		double t = g1.real().transpose()*g2.real();
 		t += g1.imag().transpose()*g2.imag();
 		double x = t/(g1.norm()*g2.norm());
 
 		std::cout << ll << "\t" << e1 << "\t" << e2 << "\t" <<
 			g1.norm() << "\t" << g2.norm() << "\t" <<  x << std::endl;
-			*/
 
+		/*
 		std::cout << ll << "\t" << e1 << "\t" << g1.norm() << std::endl;
+		*/
 
 	}
 

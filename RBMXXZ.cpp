@@ -122,19 +122,31 @@ int main(int argc, char** argv)
 
 		//Sampling
 		auto smp_start = Clock::now();
-		auto sr = ss.sampling(dim, int(0.4*dim));
+		auto sr = ss.sampling(2*dim, int(0.4*dim));
 		auto smp_dur = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - smp_start).count();
 
 		auto slv_start = Clock::now();
-		Eigen::ConjugateGradient<SRMatFree<Machine>, Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
 		srm.constructFromSampling(sr, ham);
-		double lambda = std::max(lmax*pow(decaying,ll), lmin);
 		double currE = srm.getEloc();
-		srm.setShift(lambda);
-		cg.compute(srm);
-		cg.setTolerance(1e-4);
-		Vector v = cg.solve(srm.getF());
-		Vector optV = opt.getUpdate(v);
+
+		Vector v;
+		Vector optV;
+
+		if(ll > 150)
+		{
+			Eigen::ConjugateGradient<SRMatFree<Machine>, Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
+			double lambda = std::max(lmax*pow(decaying,ll), lmin);
+			srm.setShift(lambda);
+			cg.compute(srm);
+			cg.setTolerance(1e-4);
+			v = cg.solve(srm.getF());
+			optV = opt.getUpdate(v);
+		}
+		else
+		{
+			v = srm.getF();
+			optV = opt.getUpdate(v);
+		}
 		auto slv_dur = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - slv_start).count();
 
 		double cgErr = (srm.apply(v)-srm.getF()).norm();
