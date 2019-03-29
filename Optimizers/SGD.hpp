@@ -1,43 +1,69 @@
-#ifndef CY_SGD_HPP
-#define CY_SGD_HPP
+#ifndef NNQS_OPTIMIZERS_SGD_HPP
+#define NNQS_OPTIMIZERS_SGD_HPP
 #include <Eigen/Dense>
 #include <nlohmann/json.hpp>
+#include "Optimizers/Optimizer.hpp"
+
 namespace nnqs
 {
 template<typename T>
 class SGD
+	: public Optimizer<T>
 {
+public:
+	using typename Optimizer<T>::Vector;
+	using typename Optimizer<T>::RealVector;
+
+	static constexpr double DEFAULT_PARAMS[] = {0.05, 0.5};
+
 private:
 	double alpha_;
 	double p_;
 	int t_;
 
 public:
-	using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
-	SGD(double alpha, double p = 0.5)
+
+	SGD(double alpha = DEFAULT_PARAMS[0], double p = DEFAULT_PARAMS[1])
 		: alpha_(alpha), p_(p)
 	{
 		t_ = 0;
 	}
 
-	nlohmann::json params() const
+	SGD(const nlohmann::json& params)
+		: alpha_(params.value("alpha", DEFAULT_PARAMS[0])), 
+			p_(params.value("p", DEFAULT_PARAMS[1]))
+	{
+	}
+
+	static nlohmann::json defaultParams()
 	{
 		return nlohmann::json
 		{
 			{"name", "SGD"},
-			{"alhpa", alpha_}
+			{"alhpa", DEFAULT_PARAMS[0]},
+			{"p", DEFAULT_PARAMS[1]}
 		};
 	}
 
-	Vector getUpdate(const Vector& v)
+	nlohmann::json params() const override
+	{
+		return nlohmann::json
+		{
+			{"name", "SGD"},
+			{"alhpa", alpha_},
+			{"p", p_}
+		};
+	}
+
+	Vector getUpdate(const Vector& v) override
 	{
 		using std::pow;
 		++t_;
 		double eta = std::max((alpha_/pow(t_, p_)), 1e-4);
 		return -eta*v;
 	}
-
 };
 }//namespace nnqs
-
-#endif//CY_SGD_HPP
+template<typename T>
+constexpr double nnqs::SGD<T>::DEFAULT_PARAMS[];
+#endif//NNQS_OPTIMIZERS_SGD_HPP

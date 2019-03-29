@@ -32,7 +32,7 @@ int main(int argc, char** argv)
 	std::cout << std::setprecision(8);
 
 	using ValT = std::complex<double>;
-	using Machine = RBM<ValT, true>;
+	using Machine = RBM<ValT, false>;
 
 	using namespace boost::filesystem;
 	using nlohmann::json;
@@ -63,7 +63,7 @@ int main(int argc, char** argv)
 	
 	TFIsing ham(n, -1.0, h);
 	Machine qs(n, m);
-	SimpleSamplerPT<ValT, Machine, std::default_random_engine> ss(qs, numChains);
+	SimpleSamplerPT<Machine, std::default_random_engine> ss(qs, numChains);
 
 	processCorrmat(dirPath, qs, ham, ss);
 

@@ -14,6 +14,7 @@
 #include "Serializers/SerializeRBM.hpp"
 #include "Hamiltonians/XXZ.hpp"
 #include "Optimizers/SGD.hpp"
+#include "Optimizers/Adam.hpp"
 
 #include "SROptimizerCG.hpp"
 
@@ -61,7 +62,8 @@ int main(int argc, char** argv)
 
 	const int dim = qs.getDim();
 
-	SGD<ValT> opt(sgd_eta);
+	//SGD<ValT> opt(sgd_eta);
+	Adam<ValT> opt{};
 
 	{
 		json j;
@@ -126,36 +128,39 @@ int main(int argc, char** argv)
 		auto smp_dur = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - smp_start).count();
 
 		auto slv_start = Clock::now();
+
 		srm.constructFromSampling(sr, ham);
 		double currE = srm.getEloc();
-
+		
 		Vector v;
 		Vector optV;
+		/*
 
-		if(ll > 150)
-		{
-			Eigen::ConjugateGradient<SRMatFree<Machine>, Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
-			double lambda = std::max(lmax*pow(decaying,ll), lmin);
-			srm.setShift(lambda);
-			cg.compute(srm);
-			cg.setTolerance(1e-4);
-			v = cg.solve(srm.getF());
-			optV = opt.getUpdate(v);
-		}
-		else
-		{
-			v = srm.getF();
-			optV = opt.getUpdate(v);
-		}
+		Eigen::ConjugateGradient<SRMatFree<Machine>, Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
+		double lambda = std::max(lmax*pow(decaying,ll), lmin);
+		srm.setShift(lambda);
+		cg.compute(srm);
+		cg.setTolerance(1e-4);
+		v = cg.solve(srm.getF());
+		optV = opt.getUpdate(v);
+		*/
+
+		v = srm.getF();
+		optV = opt.getUpdate(v);
+
 		auto slv_dur = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - slv_start).count();
 
-		double cgErr = (srm.apply(v)-srm.getF()).norm();
+		//double cgErr = (srm.apply(v)-srm.getF()).norm();
 		double nv = v.norm();
 
 		qs.updateParams(optV);
-
+		
+		/*
 		std::cout << ll << "\t" << currE << "\t" << nv << "\t" << cgErr
 			<< "\t" << smp_dur << "\t" << slv_dur << std::endl;
+		*/
+		std::cout << ll << "\t" << currE << "\t" << nv << std::endl;
+
 	}
 
 	return 0;

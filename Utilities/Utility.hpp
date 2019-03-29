@@ -2,8 +2,9 @@
 #define CY_NNQS_UTILITY_HPP
 #include <memory>
 #include <random>
-#include "type_traits.hpp"
-#include "tuple_helper.hpp"
+#include "Utilities/type_traits.hpp"
+#include "Utilities/tuple_helper.hpp"
+
 namespace nnqs
 {
 template<typename T, typename... Args>
