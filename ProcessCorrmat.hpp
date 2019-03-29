@@ -10,8 +10,9 @@
 
 #include "SROptimizerCG.hpp"
 
-template<class Machine, class Hamiltonian, class Sampler>
-void processCorrmat(const boost::filesystem::path& dirPath, Machine& qs, Hamiltonian& ham, Sampler& sampler)
+template<class Machine, class Hamiltonian, class Sampler, class Func>
+void processCorrmat(const boost::filesystem::path& dirPath, Machine& qs, Hamiltonian& ham, Sampler& sampler, 
+		Func&& initSampler)
 {
 	using namespace boost::filesystem;
 	using std::ios;
@@ -52,7 +53,8 @@ void processCorrmat(const boost::filesystem::path& dirPath, Machine& qs, Hamilto
 		}
 		std::cout << "hasNaN?: " << qs.hasNaN() << std::endl;
 
-		sampler.randomizeSigma();
+		//sampler.randomizeSigma();
+		initSampler(sampler);
 		auto sr = sampler.sampling(2*dim, int(0.2*2*dim));
 
 		nnqs::SRMatFree<Machine> srm(qs);

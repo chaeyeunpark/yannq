@@ -9,7 +9,8 @@
 
 #include "Machines/RBM.hpp"
 #include "States/RBMState.hpp"
-#include "Samplers/HamiltonianSamplerPT.hpp"
+//#include "Samplers/HamiltonianSamplerPT.hpp"
+#include "Samplers/SwapSamplerPT.hpp"
 #include "Serializers/SerializeRBM.hpp"
 #include "Hamiltonians/XXZ.hpp"
 #include "Optimizers/SGD.hpp"
@@ -85,8 +86,8 @@ int main(int argc, char** argv)
 	typedef std::chrono::high_resolution_clock Clock;
 
 
-	//SwapSamplerPT<ValT, Machine, std::default_random_engine> ss(qs, numChains);
-	HamiltonianSamplerPT<Machine, std::default_random_engine,2> ss(qs, numChains, ham.flips());
+	SwapSamplerPT<Machine, std::default_random_engine> ss(qs, numChains);
+	//HamiltonianSamplerPT<Machine, std::default_random_engine,2> ss(qs, numChains, ham.flips());
 	SRMatFree<Machine> srm(qs);
 	
 	ss.initializeRandomEngine();
@@ -94,7 +95,7 @@ int main(int argc, char** argv)
 	using std::sqrt;
 	using Vector = typename Machine::Vector;
 
-	for(int ll = 0; ll <=  2000; ll++)
+	for(int ll = 0; ll <=  5000; ll++)
 	{
 		if(ll % 5 == 0)
 		{
@@ -106,8 +107,8 @@ int main(int argc, char** argv)
 				oa << qs;
 			}
 		}
-		//ss.randomizeSigma(N/2);
-		ss.randomizeSigma();
+		ss.randomizeSigma(N/2);
+		//ss.randomizeSigma();
 
 		//Sampling
 		auto smp_start = Clock::now();
