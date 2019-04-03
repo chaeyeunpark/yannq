@@ -1,5 +1,6 @@
 #ifndef CY_NNQS_EXACTSTATE_HPP
 #define CY_NNQS_EXACTSTATE_HPP
+#include <Eigen/Dense>
 #include "Utilities/type_traits.hpp"
 
 namespace nnqs

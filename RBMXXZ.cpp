@@ -8,12 +8,15 @@
 #include <nlohmann/json.hpp>
 
 #include "Machines/RBM.hpp"
+
 #include "States/RBMState.hpp"
-//#include "Samplers/HamiltonianSamplerPT.hpp"
+//#include "Samplers/SimpleSamplerPT.hpp"
 #include "Samplers/SwapSamplerPT.hpp"
+
 #include "Serializers/SerializeRBM.hpp"
+
 #include "Hamiltonians/XXZ.hpp"
-#include "Optimizers/SGD.hpp"
+#include "Optimizers/OptimizerFactory.hpp"
 
 #include "SROptimizerCG.hpp"
 
@@ -22,10 +25,10 @@ using std::ios;
 
 int main(int argc, char** argv)
 {
+
 	using namespace nnqs;
 	using nlohmann::json;
 
-	constexpr int N  = 28;
 	constexpr int numChains = 16;
 	
 	std::random_device rd;
@@ -37,45 +40,50 @@ int main(int argc, char** argv)
 	const double lmax = 10.0;
 	const double lmin = 1e-3;
 
-	//const double adam_eta = 0.05;
-	const double sgd_eta = 0.05;
-
 	using ValT = std::complex<double>;
 
-	if(argc != 3)
+	if(argc != 2)
 	{
-		printf("Usage: %s [alpha] [Delta]\n", argv[0]);
+		printf("Usage: %s [param.json]\n", argv[0]);
 		return 1;
 	}
-	int alpha;
-	double Delta;
-	sscanf(argv[1], "%d", &alpha);
-	sscanf(argv[2], "%lf", &Delta);
-	std::cout << "#Delta: " << Delta << std::endl;
+
+	json paramIn;
+	std::ifstream fin(argv[1]);
+	fin >> paramIn;
+	fin.close();
+
+	const int N = paramIn.at("N").get<int>();
+	const int alpha = paramIn.at("alpha").get<int>();
+	const double delta = paramIn.at("delta").get<double>();
+	const bool useSR = paramIn.at("useSR").get<bool>();
+	const bool printSv = paramIn.value("printSv", false);
 
 	using Machine = RBM<ValT, true>;
 	Machine qs(N, alpha*N);
 	qs.initializeRandom(re);
-	XXZ ham(N, 1.0, Delta);
+	XXZ ham(N, 1.0, delta);
 
 	const int dim = qs.getDim();
 
-	SGD<ValT> opt(sgd_eta);
+	auto opt = OptimizerFactory<ValT>::CreateOptimizer(paramIn.at("Optimizer")) ;
 
 	{
 		json j;
-		j["Optimizer"] = opt.params();
+		j["printSv"] = printSv;
+		j["Optimizer"] = opt->params();
 		j["Hamiltonian"] = ham.params();
 		
-		json lambda = 
+		json SR = 
 		{
+			{"useSR", useSR},
 			{"decaying", decaying},
 			{"lmax", lmax},
 			{"lmin", lmin},
 		};
-		j["lambda"] = lambda;
-		j["numThreads"] = Eigen::nbThreads();
-		j["machine"] = qs.params();
+		j["SR"] = SR;
+		j["NumThreads"] = Eigen::nbThreads();
+		j["Machine"] = qs.params();
 
 
 		std::ofstream fout("params.dat");
@@ -85,9 +93,14 @@ int main(int argc, char** argv)
 
 	typedef std::chrono::high_resolution_clock Clock;
 
+	std::vector<std::array<int,2> > flips;
+	for(int i = 0; i < N; i++)
+	{
+		flips.emplace_back(std::array<int,2>{i, (i+1)%N});
+	}
 
+	//SimpleSamplerPT<Machine, std::default_random_engine> ss(qs, numChains);
 	SwapSamplerPT<Machine, std::default_random_engine> ss(qs, numChains);
-	//HamiltonianSamplerPT<Machine, std::default_random_engine,2> ss(qs, numChains, ham.flips());
 	SRMatFree<Machine> srm(qs);
 	
 	ss.initializeRandomEngine();
@@ -95,7 +108,7 @@ int main(int argc, char** argv)
 	using std::sqrt;
 	using Vector = typename Machine::Vector;
 
-	for(int ll = 0; ll <=  5000; ll++)
+	for(int ll = 0; ll <=  3000; ll++)
 	{
 		if(ll % 5 == 0)
 		{
@@ -116,24 +129,54 @@ int main(int argc, char** argv)
 		auto smp_dur = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - smp_start).count();
 
 		auto slv_start = Clock::now();
-		Eigen::ConjugateGradient<SRMatFree<Machine>, Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
+
 		srm.constructFromSampling(sr, ham);
-		double lambda = std::max(lmax*pow(decaying,ll), lmin);
 		double currE = srm.getEloc();
-		srm.setShift(lambda);
-		cg.compute(srm);
-		cg.setTolerance(1e-4);
-		Vector v = cg.solve(srm.getF());
-		Vector optV = opt.getUpdate(v);
+		double cgErr;
+		
+		Vector v;
+		
+		if(useSR)
+		{
+			Eigen::ConjugateGradient<SRMatFree<Machine>, Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
+			double lambda = std::max(lmax*pow(decaying,ll), lmin);
+			srm.setShift(lambda);
+			cg.compute(srm);
+			cg.setTolerance(1e-4);
+			v = cg.solve(srm.getF());
+			cgErr = (srm.apply(v)-srm.getF()).norm();
+		}
+		else
+		{
+			v = srm.getF();
+			cgErr = 0;
+		}
+
 		auto slv_dur = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - slv_start).count();
 
-		double cgErr = (srm.apply(v)-srm.getF()).norm();
+		if(printSv && ll % 5 == 0)
+		{
+			Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> es;
+			auto m = srm.corrMat();
+			es.compute(m, Eigen::EigenvaluesOnly);
+
+			char outputName[50];
+			sprintf(outputName, "EV_W%04d.dat", ll);
+
+			std::fstream out(outputName, ios::out);
+			out << es.eigenvalues().transpose() << std::endl;
+			out.close();
+		}
+
+		Vector optV = opt->getUpdate(v);
+
 		double nv = v.norm();
 
 		qs.updateParams(optV);
-
+		
 		std::cout << ll << "\t" << currE << "\t" << nv << "\t" << cgErr
 			<< "\t" << smp_dur << "\t" << slv_dur << std::endl;
+
 	}
 
 	return 0;

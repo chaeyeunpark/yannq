@@ -306,7 +306,6 @@ public:
 		return std::make_tuple(sigma, calcTheta(sigma));
 	}
 
-	//must be slow
 	T coeff(const std::tuple<Eigen::VectorXi, Vector>& t) const
 	{
 		using std::cosh;
@@ -467,10 +466,12 @@ public:
 	//Must be improved..
 	T A(int i) const
 	{
+		(void)i;
 		return 0.0;
 	}
 	T B(int j) const
 	{
+		(void)j;
 		return 0.0;
 	}
 
@@ -584,6 +585,21 @@ typename RBM<T, useBias>::Vector getPsi(const RBM<T, useBias>& qs, bool normaliz
 	for(uint64_t i = 0; i < (1u<<n); i++)
 	{
 		auto s = toSigma(n, i);
+		psi(i) = qs.coeff(std::make_tuple(s, qs.calcTheta(s)));
+	}
+	if(normalize)
+		return psi.normalized();
+	else
+		return psi;
+}
+template<typename T, bool useBias>
+typename RBM<T, useBias>::Vector getPsi(const RBM<T, useBias>& qs, const std::vector<uint32_t>& basis, bool normalize)
+{
+	const int n = qs.getN();
+	typename RBM<T>::Vector psi(basis.size());
+	for(uint64_t i = 0; i < basis.size(); i++)
+	{
+		auto s = toSigma(n, basis[i]);
 		psi(i) = qs.coeff(std::make_tuple(s, qs.calcTheta(s)));
 	}
 	if(normalize)

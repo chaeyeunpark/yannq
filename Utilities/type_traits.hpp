@@ -22,6 +22,11 @@ template<typename T>
 class MachineStateTypes
 {
 };
+template<typename T>
+class MachineStateTypesMT
+{
+};
+
 
 
 } //namespace nnqs

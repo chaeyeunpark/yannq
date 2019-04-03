@@ -105,11 +105,11 @@ public:
 
 	Matrix corrMat() const
 	{
-		const int dim = qs_.getDim();
+		//const int dim = qs_.getDim();
 		int nsmp = deltas_.rows();
 		Matrix res = deltas_.adjoint()*deltas_/nsmp;
 		res -= deltaMean_.conjugate()*deltaMean_.transpose();
-		return res + shift_*Matrix::Identity(dim,dim);;
+		return res;// + shift_*Matrix::Identity(dim,dim);;
 	}
 
 	double getEloc() const
@@ -134,7 +134,7 @@ public:
 	{
 		return deltas_;
 	}
-	const Eigen::VectorXcd& getDeltaMean() const
+	const Eigen::VectorXcd& deltaMean() const
 	{
 		return deltaMean_;
 	}

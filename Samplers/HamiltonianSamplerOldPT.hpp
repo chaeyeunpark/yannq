@@ -1,18 +1,18 @@
-#ifndef CY_SIMPLE_SAMPLER_PT_HPP
-#define CY_SIMPLE_SAMPLER_PT_HPP
+#ifndef CY_HAMILTONIAN_SAMPLER_PT_HPP
+#define CY_HAMILTONIAN_SAMPLER_PT_HPP
 #include <cmath>
 #include <Eigen/Eigen>
 #include <memory>
 #include <omp.h>
+#include <iostream>
 
 #include "Utilities/Utility.hpp"
-#include "Utilities/type_traits.hpp"
 
 namespace nnqs
 {
 
-template<class Machine, class RandomEngine>
-class SimpleSamplerPT
+template<class Machine, class RandomEngine, int N>
+class HamiltonianSamplerPT
 {
 public:
 	using StateValueT = typename MachineStateTypes<Machine>::StateValue;
@@ -24,11 +24,11 @@ private:
 	std::vector<double> betas_;
 
 	std::vector<RandomEngine> re_;
+	std::vector<std::array<int, N> > flips_;
 
 public:
-
-	SimpleSamplerPT(Machine& qs, int numChain)
-		: n_(qs.getN()), numChain_(numChain), qs_(qs)
+	HamiltonianSamplerPT(Machine& qs, int numChain, const std::vector<std::array<int,N> >& flips)
+		: n_(qs.getN()), numChain_(numChain), qs_(qs), flips_(flips)
 	{
 		for(int idx = 0; idx < numChain_; idx++)
 		{
@@ -59,6 +59,7 @@ public:
 			sv_.emplace_back(qs_, randomSigma(n_, re_[0]));
 		}
 	}
+	
 
 	void sweep()
 	{
@@ -67,13 +68,13 @@ public:
 		{
 			int tid = omp_get_thread_num();
 			std::uniform_real_distribution<> urd(0.0,1.0);
-			std::uniform_int_distribution<> uid(0,n_-1);
-#pragma omp for 
+			std::uniform_int_distribution<> uid(0,flips_.size()-1);
+#pragma omp for schedule(static, 4)
 			for(int cidx = 0; cidx < numChain_; cidx++)
 			{
 				for(int sidx = 0; sidx < n_; sidx++)
 				{
-					int toFlip = uid(re_[tid]);
+					auto toFlip = flips_[uid(re_[tid])];
 					double p = std::min(1.0,exp(betas_[cidx]*2.0*real(sv_[cidx].logRatio(toFlip))));
 					double u = urd(re_[tid]);
 					if(u < p)//accept
@@ -92,7 +93,7 @@ public:
 		{
 			int tid = omp_get_thread_num();
 			std::uniform_real_distribution<> urd(0.0,1.0);
-#pragma omp for 
+#pragma omp for schedule(static,2)
 			for(int idx = 0; idx < numChain_; idx+=2)
 			{
 				double p = exp((betas_[idx+1]-betas_[idx])*2.0*
@@ -103,7 +104,7 @@ public:
 					std::swap(sv_[idx+1],sv_[idx]);
 				}
 			}
-#pragma omp for 
+#pragma omp for schedule(static,2)
 			for(int idx = 1; idx < numChain_-1; idx+=2)
 			{
 				double p = exp((betas_[idx+1]-betas_[idx])*2.0*
@@ -146,4 +147,4 @@ public:
 	}
 };
 } //NNQS
-#endif//CY_SIMPLE_SAMPLER_PT_HPP
+#endif//CY_HAMILTONIAN_SAMPLER_PT_HPP

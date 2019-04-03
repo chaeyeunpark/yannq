@@ -34,6 +34,7 @@ public:
 	typename State::T operator()(const State& smp) const
 	{
 		typename State::T s = 0.0;
+
 		//Nearest-neighbor
 		for(int i = 0; i < n_; i++)
 		{
@@ -63,17 +64,17 @@ public:
 	}
 
 
-	Eigen::VectorXd getCol(long long int col) const
+	std::map<uint32_t, double> operator()(uint32_t col) const
 	{
-		Eigen::VectorXd res = Eigen::VectorXd::Zero(1<<n_);
+		std::map<uint32_t, double> m;
 		for(int i = 0; i < n_; i++)
 		{
 			int b1 = (col >> i) & 1;
 			int b2 = (col >> ((i+1)%n_)) & 1;
 			int sgn = (1-2*b1)*(1-2*b2);
 			long long int x = (1 << i) | (1 << ((i+1)%(n_)));
-			res(col ^ x) += J1*(a_ - sgn*b_);
-			res(col) += J1*sgn;
+			m[col ^ x] += J1*(a_ - sgn*b_);
+			m[col] += J1*sgn;
 		}
 		for(int i = 0; i < n_; i++)
 		{
@@ -81,10 +82,10 @@ public:
 			int b2 = (col >> ((i+2)%n_)) & 1;
 			int sgn = (1-2*b1)*(1-2*b2);
 			long long int x = (1 << i) | (1 << ((i+2)%(n_)));
-			res(col ^ x) += J2*(b_ - sgn*a_);
-			res(col) += J2*sgn;
+			m[col ^ x] += J2*(b_ - sgn*a_);
+			m[col] += J2*sgn;
 		}
-		return res;
+		return m;
 	}
 };
 #endif//HAMILTONIANS_XYZNNN_HPP

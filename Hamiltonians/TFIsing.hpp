@@ -42,6 +42,7 @@ public:
 
 	std::vector< std::array<int, 1> > offDiagonals(const Eigen::VectorXi& s) const
 	{
+		(void)s;
 		std::vector< std::array<int, 1> > res;
 		for(int i = 0; i < n_; i++)
 		{
