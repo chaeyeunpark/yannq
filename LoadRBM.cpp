@@ -67,10 +67,10 @@ void process(
 			cnpy::npz_save(p.c_str(), "W", W.data(), {W.rows(), W.cols()}, "w");
 
 			Eigen::VectorXcd A = qs.getA();
-			cnpy::npz_save(p.c_str(), "A", A.data(), {A.cols()}, "a");
+			cnpy::npz_save(p.c_str(), "A", A.data(), {A.rows()}, "a");
 
 			Eigen::VectorXcd B = qs.getB();
-			cnpy::npz_save(p.c_str(), "B", B.data(), {B.cols()}, "a");
+			cnpy::npz_save(p.c_str(), "B", B.data(), {B.rows()}, "a");
 
 		}
 	}
@@ -126,10 +126,10 @@ int main(int argc, char** argv)
 	fout << params;
 	fout.close();
 
-	int n = params["machine"]["n"];
-	int m = params["machine"]["m"];
+	int n = params["Machine"]["n"];
+	int m = params["Machine"]["m"];
 
-	bool useBias = params["machine"]["useBias"];
+	bool useBias = params["Machine"]["useBias"];
 
 	if(useBias)
 		process<true>(dataDir, resDir,n,m);

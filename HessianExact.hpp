@@ -1,5 +1,5 @@
-#ifndef CY_SRMATEXACT_HPP
-#define CY_SRMATEXACT_HPP
+#ifndef CY_HESSIANEXACT_HPP
+#define CY_HESSIANEXACT_HPP
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
@@ -10,7 +10,7 @@ namespace nnqs
 {
 
 template<typename Machine>
-class SRMatExact
+class HessianExact
 {
 public:
 	using Scalar = typename Machine::ScalarType;
@@ -26,29 +26,31 @@ private:
 
 	Matrix deltas_;
 	Matrix deltasPsis_;
-	Vector grad_;
 
-	RealScalar energy_;
+	Matrix eDelta_;
+
+	Vector eloc_;
+	Vector grad_;
+	Vector eDer_; // <\psi |H|\del_i \psi> /<\psi|\psi>
+
+	Scalar energy_;
 
 public:
 
 	RealScalar getEnergy() const
 	{
-		return energy_;
+		return real(energy_);
 	}
 
 	void constructExact()
 	{
-		Vector st = getPsi(qs_, true);
+		Vector st = getPsi(qs_, false);
+		double Z = st.squaredNorm();
 		deltas_.setZero(1<<n_,qs_.getDim());
 
-		Vector k = ham_*st;
-
-		std::complex<double> t = st.adjoint()*k;
-		energy_ = std::real(t);
+		energy_ = st.adjoint()*k;
 		
-		Vector eloc = k.cwiseQuotient(st);
-
+		eloc_ = k.cwiseQuotient(st);
 
 #pragma omp parallel for schedule(static,8)
 		for(uint32_t k = 0; k < (1u << n_); k++)
@@ -56,6 +58,7 @@ public:
 			auto der = qs_.logDeriv(qs_.makeData(toSigma(n_, k)));
 			deltas_.row(k) = der;
 		}
+		ham_*(st.asDiagonal()*deltas_)
 		deltasPsis_ = st.cwiseAbs2().asDiagonal()*deltas_; 
 		grad_ = (st.asDiagonal()*deltas_).adjoint()*k;
 		grad_ -= t*deltasPsis_.colwise().sum().conjugate();
@@ -66,12 +69,9 @@ public:
 		return deltasPsis_.colwise().sum();
 	}
 
-	Matrix corrMat() const
+	Matrix hessian() const
 	{
-		Matrix res = deltas_.adjoint()*deltasPsis_;
-		auto t = deltasPsis_.colwise().sum();
-		res -= t.adjoint()*t;
-		return res;
+		Matrix res1 = deltas_.adjoint()*deltasPsis_;
 	}
 
 	Vector getF() const
@@ -80,7 +80,7 @@ public:
 	}
 
 	template<class ColFunc>
-	SRMatExact(Machine& qs, ColFunc&& col)
+	HessianExact(Machine& qs, ColFunc&& col)
 	  : n_{qs.getN()}, qs_(qs), ham_(edp::constructSparseMat<RealScalar>(1<<n_, std::forward<ColFunc>(col)))
 	{
 	}
@@ -88,4 +88,4 @@ public:
 } //namespace nnqs
 
 
-#endif//CY_SRMATEXACT_HPP
+#endif//CY_HESSIANEXACT_HPP
