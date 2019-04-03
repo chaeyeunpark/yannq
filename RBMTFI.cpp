@@ -9,7 +9,9 @@
 
 #include "Machines/RBM.hpp"
 #include "States/RBMState.hpp"
-#include "Samplers/SimpleSamplerPT.hpp"
+#include "Samplers/SamplerPT.hpp"
+#include "Samplers/LocalSweeper.hpp"
+
 #include "Optimizers/SGD.hpp"
 #include "Serializers/SerializeRBM.hpp"
 #include "Hamiltonians/TFIsing.hpp"
@@ -85,7 +87,8 @@ int main(int argc, char** argv)
 
 	typedef std::chrono::high_resolution_clock Clock;
 
-	SimpleSamplerPT<Machine, std::default_random_engine> ss(qs, numChains);
+	LocalSweeper sweeper(N);
+	SamplerPT<Machine, std::default_random_engine, RBMStateValue<Machine>, decltype(sweeper)> ss(qs, numChains, sweeper);
 	SRMatFree<Machine> srm(qs);
 	
 	ss.initializeRandomEngine();

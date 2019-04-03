@@ -1,34 +1,30 @@
-#ifndef CY_HAMILTONIAN_SAMPLER_PT_HPP
-#define CY_HAMILTONIAN_SAMPLER_PT_HPP
-#include <cmath>
-#include <Eigen/Eigen>
-#include <memory>
+#ifndef NNQS_SAMPLERS_SAMPLERPT_HPP
+#define NNQS_SAMPLERS_SAMPLERPT_HPP
+#include <vector>
+#include <random>
+#include <complex>
 #include <omp.h>
-#include <iostream>
-
-#include "Utilities/Utility.hpp"
-
 namespace nnqs
 {
 
-template<class Machine, class RandomEngine, int N>
-class HamiltonianSamplerPT
+template<class Machine, class RandomEngine, class StateValue, class Sweeper>
+class SamplerPT
 {
-public:
-	using StateValueT = typename MachineStateTypes<Machine>::StateValue;
 private:
-	int n_;
+	const Machine& qs_;
+	const int n_;
 	int numChain_;
-	Machine& qs_;
-	std::vector<StateValueT> sv_;
 	std::vector<double> betas_;
 
 	std::vector<RandomEngine> re_;
-	std::vector<std::array<int, N> > flips_;
+	Sweeper& sweeper_;
+
+protected:
+	std::vector<StateValue> sv_;
 
 public:
-	HamiltonianSamplerPT(Machine& qs, int numChain, const std::vector<std::array<int,N> >& flips)
-		: n_(qs.getN()), numChain_(numChain), qs_(qs), flips_(flips)
+	SamplerPT(const Machine& qs, int numChain, Sweeper& sweeper)
+		: qs_(qs), n_(qs.getN()), numChain_(numChain), sweeper_(sweeper)
 	{
 		for(int idx = 0; idx < numChain_; idx++)
 		{
@@ -59,33 +55,16 @@ public:
 			sv_.emplace_back(qs_, randomSigma(n_, re_[0]));
 		}
 	}
-	
 
-	void sweep()
+	void randomizeSigma(int nup)
 	{
-		using std::real;
-#pragma omp parallel
+		sv_.clear();
+		for(int i = 0; i < numChain_; i++)
 		{
-			int tid = omp_get_thread_num();
-			std::uniform_real_distribution<> urd(0.0,1.0);
-			std::uniform_int_distribution<> uid(0,flips_.size()-1);
-#pragma omp for schedule(static, 4)
-			for(int cidx = 0; cidx < numChain_; cidx++)
-			{
-				for(int sidx = 0; sidx < n_; sidx++)
-				{
-					auto toFlip = flips_[uid(re_[tid])];
-					double p = std::min(1.0,exp(betas_[cidx]*2.0*real(sv_[cidx].logRatio(toFlip))));
-					double u = urd(re_[tid]);
-					if(u < p)//accept
-					{
-						sv_[cidx].flip(toFlip);
-					}
-				}
-			}
+			sv_.emplace_back(qs_, randomSigma(n_, nup, re_[0]));
 		}
 	}
-
+	
 	void mixChains()
 	{
 		using std::real;
@@ -118,10 +97,24 @@ public:
 		}
 	}
 
-	auto sampling(int n_sweeps, int n_therm)
-		-> std::vector<typename std::result_of<decltype(&StateValueT::data)(StateValueT)>::type>
+	void sweep()
 	{
+		using std::real;
+#pragma omp parallel
+		{
+			int tid = omp_get_thread_num();
+#pragma omp for schedule(static, 4)
+			for(int cidx = 0; cidx < numChain_; cidx++)
+			{
+				sweeper_.localSweep(sv_[cidx], betas_[cidx], re_[tid]);
+			}
+		}
+	}
 
+
+	auto sampling(int n_sweeps, int n_therm)
+		-> std::vector<typename std::result_of<decltype(&StateValue::data)(StateValue)>::type>
+	{
 		using std::norm;
 		using std::pow;
 		using std::abs;
@@ -133,7 +126,7 @@ public:
 			sweep();
 			mixChains();
 		}
-		using DataT = typename std::result_of<decltype(&StateValueT::data)(StateValueT)>::type;
+		using DataT = typename std::result_of<decltype(&StateValue::data)(StateValue)>::type;
 
 		std::vector<DataT> res;
 		res.reserve(n_sweeps);
@@ -146,5 +139,5 @@ public:
 		return res;
 	}
 };
-} //NNQS
-#endif//CY_HAMILTONIAN_SAMPLER_PT_HPP
+}
+#endif//NNQS_SAMPLERS_SAMPLERPT_HPP
