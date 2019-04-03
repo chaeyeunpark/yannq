@@ -306,7 +306,6 @@ public:
 		return std::make_tuple(sigma, calcTheta(sigma));
 	}
 
-	//must be slow
 	T coeff(const std::tuple<Eigen::VectorXi, Vector>& t) const
 	{
 		using std::cosh;
@@ -467,10 +466,12 @@ public:
 	//Must be improved..
 	T A(int i) const
 	{
+		(void)i;
 		return 0.0;
 	}
 	T B(int j) const
 	{
+		(void)j;
 		return 0.0;
 	}
 

@@ -60,12 +60,25 @@ int main(int argc, char** argv)
 	int n = params["machine"]["n"];
 	int m = params["machine"]["m"];
 	double h = params["Hamiltonian"]["h"];
+
+	std::vector<int> idxs;
+	for(int i = 0; i <= 3000; i += 100)
+	{
+		idxs.emplace_back(i);
+	}
+
 	
 	TFIsing ham(n, -1.0, h);
 	Machine qs(n, m);
-	SimpleSamplerPT<Machine, std::default_random_engine> ss(qs, numChains);
+	using Sampler = SimpleSamplerPT<Machine, std::default_random_engine>;
+	Sampler ss(qs, numChains);
+	auto initSampler = [](Sampler& ss)
+	{
+		ss.randomizeSigma();
+	};
 
-	processCorrmat(dirPath, qs, ham, ss);
+	CorrMatProcessor<Machine, TFIsing, Sampler, decltype(initSampler)> cmp(qs, ham, ss, initSampler);
+	cmp.processIdxs(dirPath, idxs);
 
 	return 0;
 }

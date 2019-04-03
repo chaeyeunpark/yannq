@@ -10,55 +10,72 @@
 
 #include "SROptimizerCG.hpp"
 
-template<class Machine, class Hamiltonian, class Sampler>
-void processCorrmat(const boost::filesystem::path& dirPath, Machine& qs, Hamiltonian& ham, Sampler& sampler)
+
+template<class Machine, class Hamiltonian, class Sampler, class Randomizer>
+class CorrMatProcessor
 {
-	using namespace boost::filesystem;
-	using std::ios;
+private:
+	Machine qs_;
+	Hamiltonian& ham_;
+	Sampler& sampler_;
 
-	const int dim = qs.getDim();
+	std::ofstream energyOut_;
+	std::regex wRgx_;
 
-	char outName[] = "Energy.dat";
-	std::fstream eDat(outName, ios::out);
-	eDat << std::setprecision(10);
-	
-	std::regex reExp("^w([0-9]{4}).dat$", std::regex::extended);
+	Randomizer randomizer_;
 
-	sampler.initializeRandomEngine();
-
-	for(auto& entry: boost::make_iterator_range(directory_iterator(dirPath), {}))
+public:
+	CorrMatProcessor(Machine qs, Hamiltonian& ham, Sampler& sampler, Randomizer& randomizer)
+		:qs_(qs), ham_(ham), sampler_(sampler), 
+			wRgx_("^w([0-9]{4}).dat$", std::regex::extended), randomizer_(randomizer)
 	{
-		if(!is_regular_file(entry))
-			continue;
-		
-		path filePath = entry.path();
+		sampler_.initializeRandomEngine();
+
+		char outName[] = "Energy.dat";
+		energyOut_.open(outName, std::ios::out);
+		energyOut_ << std::setprecision(10);
+	}
+
+	~CorrMatProcessor()
+	{
+		energyOut_.close();
+	}
+
+	bool processFile(int idx, const boost::filesystem::path& filePath)
+	{
+		using std::ios;
+		using namespace boost::filesystem;
+		if(!is_regular_file(filePath))
+		{
+			fprintf(stderr, "Error: cannot open %s\n", filePath.string().c_str());
+			return false;
+		}
+
 		std::string fileName = filePath.filename().string();
 
-		std::smatch what;
-		bool matched = std::regex_match(fileName, what, reExp);
-		if(!matched)
-			continue;
-
-		std::string wStr = what[1].str();
-		int ll;
-
-		sscanf(wStr.c_str(), "%d", &ll);
-
+		Machine qs(qs_);
 		std::cout << "Opening " << fileName << std::endl;
-		fstream in(filePath, ios::binary|ios::in);
+		fstream qsIn(filePath, ios::binary|ios::in);
+		if(qsIn.fail())
 		{
-			boost::archive::binary_iarchive ia(in);
+			return false;
+		}
+		{
+			boost::archive::binary_iarchive ia(qsIn);
 			ia >> qs;
 		}
+		qsIn.close();
+
+		const int dim = qs.getDim();
 		std::cout << "hasNaN?: " << qs.hasNaN() << std::endl;
 
-		sampler.randomizeSigma();
-		auto sr = sampler.sampling(2*dim, int(0.2*2*dim));
+		randomizer_(sampler_);
+		auto sr = sampler_.sampling(2*dim, int(0.2*2*dim));
 
 		nnqs::SRMatFree<Machine> srm(qs);
-		srm.constructFromSampling(sr, ham);
+		srm.constructFromSampling(sr, ham_);
 
-		eDat << ll << "\t" << srm.getEloc() << "\t" << srm.getElocVar() << std::endl;
+		energyOut_ << idx << "\t" << srm.getEloc() << "\t" << srm.getElocVar() << std::endl;
 
 		auto m = srm.corrMat();
 
@@ -66,15 +83,53 @@ void processCorrmat(const boost::filesystem::path& dirPath, Machine& qs, Hamilto
 		es.compute(m, Eigen::EigenvaluesOnly);
 
 		char outputName[50];
-		sprintf(outputName, "EV_W%04d.dat", ll);
+		sprintf(outputName, "EV_W%04d.dat", idx);
 
-		std::fstream out(outputName, ios::out);
+		fstream out(outputName, ios::out);
 
 		out << std::setprecision(16);
 		out << es.eigenvalues().transpose() << std::endl;
 		out.close();
+		return true;
 	}
-	eDat.close();
-}
 
+	void processAll(const boost::filesystem::path& dirPath)
+	{
+		using namespace boost::filesystem;
+		using std::ios;
+
+
+		for(auto& entry: boost::make_iterator_range(directory_iterator(dirPath), {}))
+		{
+			path filePath = entry.path();
+
+			std::smatch what;
+			bool matched = std::regex_match(filePath.filename().string(), what, wRgx_);
+			if(!matched)
+			{
+				continue;
+			}
+
+			int ll;
+			std::string wStr = what[1].str();
+			sscanf(wStr.c_str(), "%d", &ll);
+
+			processFile(ll, filePath);
+		}
+	}
+
+	void processIdxs(const boost::filesystem::path& dirPath, const std::vector<int>& idxs)
+	{
+		using namespace boost::filesystem;
+		for(int idx: idxs)
+		{
+			char fileName[50];
+			sprintf(fileName, "w%04d.dat", idx);
+			
+			path filePath = dirPath / fileName;
+
+			processFile(idx, filePath);
+		}
+	}
+};
 #endif//CY_PROCESSCORRMAT_HPP

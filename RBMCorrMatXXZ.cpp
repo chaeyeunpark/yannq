@@ -12,8 +12,9 @@
 #include <Eigen/Eigenvalues> 
 
 #include "Machines/RBM.hpp"
-
-#include "Samplers/HamiltonianSamplerPT.hpp"
+#include "States/RBMState.hpp"
+#include "Samplers/SwapSamplerPT.hpp"
+#include "Samplers/SimpleSamplerPT.hpp"
 #include "Hamiltonians/XXZ.hpp"
 #include "Serializers/SerializeRBM.hpp"
 
@@ -53,16 +54,24 @@ int main(int argc, char** argv)
 	fout << params;
 	fout.close();
 
-	int n = params["machine"]["n"];
-	int m = params["machine"]["m"];
+	int n = params["Machine"]["n"];
+	int m = params["Machine"]["m"];
 
 	double delta = params["Hamiltonian"]["Delta"];
 	
 	XXZ ham(n, 1.0, delta);
 	Machine qs(n, m);
-	HamiltonianSamplerPT<Machine, std::default_random_engine,2> ss(qs, numChains, ham.flips());
 
-	processCorrmat(dirPath, qs, ham, ss);
+	using Sampler = SimpleSamplerPT<Machine, std::default_random_engine>;
+	//using Sampler = SwapSamplerPT<Machine, std::default_random_engine>;
+	Sampler ss(qs, numChains);
+
+	auto randomizer = [n](Sampler& ss)
+	{
+		ss.randomizeSigma();
+		//ss.randomizeSigma(n/2);
+	};
+	processCorrmat(dirPath, qs, ham, ss, randomizer);
 	
 	return 0;
 }

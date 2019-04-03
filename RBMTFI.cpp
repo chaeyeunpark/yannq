@@ -85,7 +85,7 @@ int main(int argc, char** argv)
 
 	typedef std::chrono::high_resolution_clock Clock;
 
-	SimpleSamplerPT<ValT, Machine, std::default_random_engine> ss(qs, numChains);
+	SimpleSamplerPT<Machine, std::default_random_engine> ss(qs, numChains);
 	SRMatFree<Machine> srm(qs);
 	
 	ss.initializeRandomEngine();

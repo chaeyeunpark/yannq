@@ -59,7 +59,6 @@ public:
 			sv_.emplace_back(qs_, randomSigma(n_, re_[0]));
 		}
 	}
-	
 
 	void sweep()
 	{
@@ -85,6 +84,7 @@ public:
 			}
 		}
 	}
+
 	void mixChains()
 	{
 		using std::real;

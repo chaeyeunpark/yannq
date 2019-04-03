@@ -142,7 +142,6 @@ int main(int argc, char** argv)
 
 		Vector g1;
 		Vector res1;
-		Vector del1;
 		double e1;
 		{
 			srex.constructExact();
@@ -155,12 +154,25 @@ int main(int argc, char** argv)
 
 			g1 = srex.getF();
 			res1 = llt.solve(g1);
-			del1 = srex.deltaMean();
+
+			if(ll % 5 == 0)
+			{
+				Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> es;
+				es.compute(corrMat, Eigen::EigenvaluesOnly);
+
+				char outputName[50];
+				sprintf(outputName, "EV_W%04d.dat", ll);
+
+				std::fstream out(outputName, ios::out);
+
+				out << std::setprecision(16);
+				out << es.eigenvalues().transpose() << std::endl;
+				out.close();
+			}
 		}
 	
 		Vector g2;
 		Vector res2;
-		Vector del2;
 		double e2;
 		{
 			ss.randomizeSigma(N/2);
@@ -175,13 +187,13 @@ int main(int argc, char** argv)
 
 			g2 = srm.getF();
 			res2 = cg.solve(g2);
-			del2 = srm.deltaMean();
 		}
 
 		Vector optV = opt->getUpdate(res1);
 		qs.updateParams(optV);
 		
 		std::cout << ll << "\t" << e1 << "\t" << e2 << "\t" << g1.norm() << "\t" << g2.norm() << "\t" << 
+			res1.norm() << "\t" << res2.norm() << "\t" <<
 			(g1-g2).norm() << "\t" << (res1-res2).norm() << std::endl;
 	}
 
