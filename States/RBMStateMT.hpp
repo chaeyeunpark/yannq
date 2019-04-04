@@ -233,6 +233,7 @@ public:
 
 	void flip(int k, int l)
 	{
+#pragma omp parallel for schedule(static,4)
 		for(int j = 0; j < theta_.size(); j++)
 		{
 			theta_(j) += -2.0*T(sigma_(k))*(this->qs_.W(j,k))
@@ -244,6 +245,7 @@ public:
 
 	void flip(int k)
 	{
+#pragma omp parallel for schedule(static,4)
 		for(int j = 0; j < theta_.size(); j++)
 		{
 			theta_(j) -= 2.0*T(sigma_(k))*(this->qs_.W(j,k));

@@ -15,7 +15,7 @@ template<class Machine, class Hamiltonian, class Sampler, class Randomizer>
 class CorrMatProcessor
 {
 private:
-	Machine qs_;
+	Machine& qs_;
 	Hamiltonian& ham_;
 	Sampler& sampler_;
 
@@ -25,7 +25,7 @@ private:
 	Randomizer randomizer_;
 
 public:
-	CorrMatProcessor(Machine qs, Hamiltonian& ham, Sampler& sampler, Randomizer& randomizer)
+	CorrMatProcessor(Machine& qs, Hamiltonian& ham, Sampler& sampler, Randomizer& randomizer)
 		:qs_(qs), ham_(ham), sampler_(sampler), 
 			wRgx_("^w([0-9]{4}).dat$", std::regex::extended), randomizer_(randomizer)
 	{
@@ -53,7 +53,6 @@ public:
 
 		std::string fileName = filePath.filename().string();
 
-		Machine qs(qs_);
 		std::cout << "Opening " << fileName << std::endl;
 		fstream qsIn(filePath, ios::binary|ios::in);
 		if(qsIn.fail())
@@ -62,17 +61,17 @@ public:
 		}
 		{
 			boost::archive::binary_iarchive ia(qsIn);
-			ia >> qs;
+			ia >> qs_;
 		}
 		qsIn.close();
 
-		const int dim = qs.getDim();
-		std::cout << "hasNaN?: " << qs.hasNaN() << std::endl;
+		const int dim = qs_.getDim();
+		std::cout << "hasNaN?: " << qs_.hasNaN() << std::endl;
 
 		randomizer_(sampler_);
 		auto sr = sampler_.sampling(2*dim, int(0.2*2*dim));
 
-		nnqs::SRMatFree<Machine> srm(qs);
+		nnqs::SRMatFree<Machine> srm(qs_);
 		srm.constructFromSampling(sr, ham_);
 
 		energyOut_ << idx << "\t" << srm.getEloc() << "\t" << srm.getElocVar() << std::endl;

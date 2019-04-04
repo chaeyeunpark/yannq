@@ -32,7 +32,7 @@ int main(int argc, char** argv)
 	std::cout << std::setprecision(8);
 
 	using ValT = std::complex<double>;
-	using Machine = RBM<ValT, false>;
+	using Machine = RBM<ValT, true>;
 
 	using namespace boost::filesystem;
 	using nlohmann::json;
@@ -62,7 +62,7 @@ int main(int argc, char** argv)
 	double h = params["Hamiltonian"]["h"];
 
 	std::vector<int> idxs;
-	for(int i = 0; i <= 3000; i += 100)
+	for(int i = 0; i <= 2000; i += 100)
 	{
 		idxs.emplace_back(i);
 	}
