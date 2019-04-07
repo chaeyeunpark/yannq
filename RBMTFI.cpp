@@ -8,8 +8,8 @@
 #include <nlohmann/json.hpp>
 
 #include "Machines/RBM.hpp"
-#include "States/RBMState.hpp"
-#include "Samplers/SamplerPT.hpp"
+#include "States/RBMStateMT.hpp"
+#include "Samplers/Sampler.hpp"
 #include "Samplers/LocalSweeper.hpp"
 
 #include "Optimizers/SGD.hpp"
@@ -27,7 +27,7 @@ int main(int argc, char** argv)
 	using namespace nnqs;
 	using nlohmann::json;
 
-	constexpr int N  = 28;
+	constexpr int N  = 60;
 	constexpr int numChains = 16;
 	
 	std::random_device rd;
@@ -88,7 +88,7 @@ int main(int argc, char** argv)
 	typedef std::chrono::high_resolution_clock Clock;
 
 	LocalSweeper sweeper(N);
-	SamplerPT<Machine, std::default_random_engine, RBMStateValue<Machine>, decltype(sweeper)> ss(qs, numChains, sweeper);
+	Sampler<Machine, std::default_random_engine, RBMStateValueMT<Machine>, decltype(sweeper)> ss(qs, sweeper);
 	SRMatFree<Machine> srm(qs);
 	
 	ss.initializeRandomEngine();
@@ -98,7 +98,7 @@ int main(int argc, char** argv)
 
 	for(int ll = 0; ll <=  2000; ll++)
 	{
-		if(ll % 5 == 0)
+		if(ll % 100 == 0)
 		{
 			char fileName[30];
 			sprintf(fileName, "w%04d.dat",ll);

@@ -10,8 +10,8 @@
 #include "Machines/RBM.hpp"
 
 #include "States/RBMState.hpp"
-//#include "Samplers/SimpleSamplerPT.hpp"
-#include "Samplers/SwapSamplerPT.hpp"
+#include "Samplers/SamplerPT.hpp"
+#include "Samplers/SwapSweeper.hpp"
 
 #include "Serializers/SerializeRBM.hpp"
 
@@ -38,7 +38,7 @@ int main(int argc, char** argv)
 
 	const double decaying = 0.9;
 	const double lmax = 10.0;
-	const double lmin = 1e-3;
+	const double lmin = 1e-4;
 
 	using ValT = std::complex<double>;
 
@@ -100,7 +100,8 @@ int main(int argc, char** argv)
 	}
 
 	//SimpleSamplerPT<Machine, std::default_random_engine> ss(qs, numChains);
-	SwapSamplerPT<Machine, std::default_random_engine> ss(qs, numChains);
+	SwapSweeper sweeper(N);
+	SamplerPT<Machine, std::default_random_engine, SwapSweeper> ss(qs, numChains, sweeper);
 	SRMatFree<Machine> srm(qs);
 	
 	ss.initializeRandomEngine();

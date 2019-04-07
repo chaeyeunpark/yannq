@@ -1,5 +1,5 @@
-#ifndef CY_NNQS_RBMSTATEMT_HPP
-#define CY_NNQS_RBMSTATEMT_HPP
+#ifndef NNQS_STATES_RBMSTATEMT_HPP
+#define NNQS_STATES_RBMSTATEMT_HPP
 
 #include "Machines/RBM.hpp"
 #include "Utilities/tuple_helper.hpp"
@@ -278,4 +278,4 @@ public:
 };
 
 } //namespace nnqs
-#endif//CY_NNQS_RBMSTATEMT_HPP
+#endif//NNQS_STATES_RBMSTATEMT_HPP
