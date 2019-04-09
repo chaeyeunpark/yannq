@@ -14,7 +14,8 @@
 #include "Optimizers/OptimizerFactory.hpp"
 
 #include "States/RBMState.hpp"
-#include "Samplers/SwapSamplerPT.hpp"
+#include "Samplers/SamplerPT.hpp"
+#include "Samplers/SwapSweeper.hpp"
 
 #include "SRMatExactBasis.hpp"
 #include "SROptimizerCG.hpp"
@@ -79,6 +80,8 @@ int main(int argc, char** argv)
 	const int N = paramIn.at("N").get<int>();
 	const int alpha = paramIn.at("alpha").get<int>();
 	const double delta = paramIn.at("delta").get<double>();
+	const bool useSR = paramIn.at("useSR").get<bool>();
+	const bool printSv = paramIn.at("printSv").get<bool>();
 
 	using Machine = RBM<ValT, true>;
 	Machine qs(N, alpha*N);
@@ -92,13 +95,14 @@ int main(int argc, char** argv)
 		j["Optimizer"] = opt->params();
 		j["Hamiltonian"] = ham.params();
 		
-		json lambda = 
+		json SR = 
 		{
+			{"useSR", useSR},
 			{"decaying", decaying},
 			{"lmax", lmax},
 			{"lmin", lmin},
 		};
-		j["lambda"] = lambda;
+		j["SR"] = SR;
 		j["numThreads"] = Eigen::nbThreads();
 		j["machine"] = qs.params();
 
@@ -116,7 +120,8 @@ int main(int argc, char** argv)
 
 	auto basis = generateBasis(N, N/2);
 
-	SwapSamplerPT<Machine, std::default_random_engine> ss(qs, numChains);
+	SwapSweeper sw(N);
+	SamplerPT<Machine, std::default_random_engine, RBMStateValue<Machine>, SwapSweeper> ss(qs, numChains, sw);
 	ss.initializeRandomEngine();
 
 	SRMatExactBasis<Machine> srex(qs, basis, ham);
@@ -155,7 +160,7 @@ int main(int argc, char** argv)
 			g1 = srex.getF();
 			res1 = llt.solve(g1);
 
-			if(ll % 5 == 0)
+			if(ll % 5 == 0 && printSv)
 			{
 				Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> es;
 				es.compute(corrMat, Eigen::EigenvaluesOnly);
@@ -188,13 +193,23 @@ int main(int argc, char** argv)
 			g2 = srm.getF();
 			res2 = cg.solve(g2);
 		}
-
-		Vector optV = opt->getUpdate(res1);
+		
+		Vector optV;
+		if(useSR)
+		{
+			optV = opt->getUpdate(res1);
+		}
+		else
+		{
+			optV = opt->getUpdate(g1);
+		}
 		qs.updateParams(optV);
 		
 		std::cout << ll << "\t" << e1 << "\t" << e2 << "\t" << g1.norm() << "\t" << g2.norm() << "\t" << 
 			res1.norm() << "\t" << res2.norm() << "\t" <<
-			(g1-g2).norm() << "\t" << (res1-res2).norm() << std::endl;
+			(g1-g2).norm() << "\t" << (res1-res2).norm() << "\t" <<
+			cosBetween(g1,g2) << "\t" << cosBetween(res1, res2)
+			<< std::endl;
 	}
 
 	return 0;

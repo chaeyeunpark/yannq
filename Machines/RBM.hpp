@@ -243,6 +243,21 @@ public:
 		W_ += Eigen::Map<const Matrix>(m.data()+n_+m_, m_,n_);
 	}
 
+	Vector getParams() const
+	{
+		Vector res(getDim());
+		res.head(n_) = a_;
+		res.segment(n_, m_) = b_;
+		res.segment(n_+m_, n_*m_) = Eigen::Map<const Vector>(W_.data(), W_.size());
+		return res;
+	}
+	void setParams(const Vector& r)
+	{
+		a_ = r.head(n_);
+		b_ = r.segment(n_, m_);
+		Eigen::Map<Vector>(W_.data(), W_.size()) = r.segment(n_+m_, n_*m_);
+	}
+
 	bool hasNaN() const
 	{
 		return a_.hasNaN() || b_.hasNaN() || W_.hasNaN();
@@ -499,6 +514,11 @@ public:
 	{
 		assert(m.size() == getDim());
 		W_ += Eigen::Map<const Matrix>(m.data(), m_,n_);
+	}
+
+	Vector getParams() const
+	{
+		return Eigen::Map<Vector>(W_.data(), W_.size());
 	}
 
 	bool hasNaN() const
