@@ -11,11 +11,11 @@
 
 #include "States/RBMState.hpp"
 #include "Samplers/SamplerPT.hpp"
-#include "Samplers/SwapSweeper.hpp"
+#include "Samplers/LocalSweeper.hpp"
 
 #include "Serializers/SerializeRBM.hpp"
 
-#include "Hamiltonians/XXZ.hpp"
+#include "Hamiltonians/XXZSto.hpp"
 #include "Optimizers/OptimizerFactory.hpp"
 
 #include "SROptimizerCG.hpp"
@@ -65,11 +65,11 @@ int main(int argc, char** argv)
 	using Machine = RBM<ValT, true>;
 	Machine qs(N, alpha*N);
 	qs.initializeRandom(re);
-	XXZ ham(N, 1.0, delta);
+	XXZSto ham(N, 1.0, delta);
 
 	const int dim = qs.getDim();
 
-	auto opt = OptimizerFactory<ValT>::getInstance().createOptimizerGeometry(paramIn.at("Optimizer")) ;
+	auto opt = OptimizerFactory<ValT>::getInstance().createOptimizer(paramIn.at("Optimizer")) ;
 
 	{
 		json j;
@@ -102,8 +102,9 @@ int main(int argc, char** argv)
 		flips.emplace_back(std::array<int,2>{i, (i+1)%N});
 	}
 
-	SwapSweeper sweeper(N);
-	SamplerPT<Machine, std::default_random_engine, RBMStateValue<Machine>, SwapSweeper> ss(qs, numChains, sweeper);
+	//SimpleSamplerPT<Machine, std::default_random_engine> ss(qs, numChains);
+	LocalSweeper sweeper(N, 1);
+	SamplerPT<Machine, std::default_random_engine, RBMStateValue<Machine>, LocalSweeper> ss(qs, numChains, sweeper);
 	SRMatFree<Machine> srm(qs);
 	
 	ss.initializeRandomEngine();
@@ -123,8 +124,8 @@ int main(int argc, char** argv)
 				oa << qs;
 			}
 		}
-		ss.randomizeSigma(N/2);
-		//ss.randomizeSigma();
+		//ss.randomizeSigma(N/2);
+		ss.randomizeSigma();
 
 		//Sampling
 		auto smp_start = Clock::now();

@@ -13,8 +13,8 @@
 
 #include "Machines/RBM.hpp"
 #include "States/RBMState.hpp"
-#include "Samplers/SwapSamplerPT.hpp"
-#include "Samplers/SimpleSamplerPT.hpp"
+#include "Samplers/SamplerPT.hpp"
+#include "Samplers/SwapSweeper.hpp"
 #include "Hamiltonians/XXZ.hpp"
 #include "Serializers/SerializeRBM.hpp"
 
@@ -62,16 +62,21 @@ int main(int argc, char** argv)
 	XXZ ham(n, 1.0, delta);
 	Machine qs(n, m);
 
-	using Sampler = SimpleSamplerPT<Machine, std::default_random_engine>;
-	//using Sampler = SwapSamplerPT<Machine, std::default_random_engine>;
-	Sampler ss(qs, numChains);
+	//using Sampler = SimpleSamplerPT<Machine, std::default_random_engine>;
+	
+	using Sampler = SamplerPT<Machine, std::default_random_engine, RBMStateValue<Machine>, SwapSweeper>;
+	SwapSweeper sweeper(n);
+	Sampler ss(qs, numChains, sweeper);
 
 	auto randomizer = [n](Sampler& ss)
 	{
-		ss.randomizeSigma();
-		//ss.randomizeSigma(n/2);
+		//ss.randomizeSigma();
+		ss.randomizeSigma(n/2);
 	};
-	processCorrmat(dirPath, qs, ham, ss, randomizer);
+
+	CorrMatProcessor<Machine, XXZ, Sampler, decltype(randomizer)> cmp(qs, ham, ss, randomizer);
+	cmp.processAll(dirPath);
+	//processCorrmat(dirPath, qs, ham, ss, randomizer);
 	
 	return 0;
 }

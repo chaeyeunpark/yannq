@@ -27,7 +27,7 @@ int main(int argc, char** argv)
 	using namespace nnqs;
 	using nlohmann::json;
 
-	constexpr int N  = 60;
+	constexpr int N  = 52;
 	constexpr int numChains = 16;
 	
 	std::random_device rd;

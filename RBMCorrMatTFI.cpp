@@ -10,9 +10,10 @@
 #include <nlohmann/json.hpp>
 
 #include "Machines/RBM.hpp"
-#include "States/RBMState.hpp"
+#include "States/RBMStateMT.hpp"
 
-#include "Samplers/SimpleSamplerPT.hpp"
+#include "Samplers/LocalSweeper.hpp"
+#include "Samplers/Sampler.hpp"
 #include "Serializers/SerializeRBM.hpp"
 #include "Hamiltonians/TFIsing.hpp"
 
@@ -70,14 +71,15 @@ int main(int argc, char** argv)
 	
 	TFIsing ham(n, -1.0, h);
 	Machine qs(n, m);
-	using Sampler = SimpleSamplerPT<Machine, std::default_random_engine>;
-	Sampler ss(qs, numChains);
-	auto initSampler = [](Sampler& ss)
+	LocalSweeper sweeper(n);
+	Sampler<Machine, std::default_random_engine, RBMStateValueMT<Machine>, decltype(sweeper)> ss(qs, sweeper);
+	using SamplerT=Sampler<Machine, std::default_random_engine, RBMStateValueMT<Machine>, decltype(sweeper)>;
+	auto initSampler = [](SamplerT& ss)
 	{
 		ss.randomizeSigma();
 	};
 
-	CorrMatProcessor<Machine, TFIsing, Sampler, decltype(initSampler)> cmp(qs, ham, ss, initSampler);
+	CorrMatProcessor<Machine, TFIsing, SamplerT, decltype(initSampler)> cmp(qs, ham, ss, initSampler);
 	cmp.processIdxs(dirPath, idxs);
 
 	return 0;

@@ -35,16 +35,6 @@ public:
 	{
 	}
 
-	static nlohmann::json defaultParams()
-	{
-		return nlohmann::json
-		{
-			{"name", "SGD"},
-			{"alhpa", DEFAULT_PARAMS[0]},
-			{"p", DEFAULT_PARAMS[1]}
-		};
-	}
-
 	nlohmann::json params() const override
 	{
 		return nlohmann::json

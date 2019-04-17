@@ -7,11 +7,12 @@ namespace nnqs
 class SwapSweeper
 {
 private:
-	int n_;
+	const int n_;
+	const int nSweep_;
 
 public:
-	SwapSweeper(int n)
-		: n_(n)
+	SwapSweeper(int n, int nSweep = 1)
+		: n_(n), nSweep_(nSweep)
 	{
 	}
 
@@ -20,7 +21,7 @@ public:
 	{
 		std::uniform_real_distribution<> urd(0.0,1.0);
 		std::uniform_int_distribution<> uid(0,n_-1);
-		for(int sidx = 0; sidx < n_; sidx++)
+		for(int sidx = 0; sidx < n_*nSweep_; sidx++)
 		{
 			int swap1 = uid(re);
 			int swap2 = uid(re);

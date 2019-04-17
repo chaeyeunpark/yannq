@@ -10,12 +10,13 @@ namespace nnqs
 class LocalSweeper
 {
 private:
-	int n_;
+	const int n_;
+	const int nSweep_;
 
 public:
 
-	LocalSweeper(int n)
-		: n_(n)
+	LocalSweeper(int n, int nSweep = 1)
+		: n_(n), nSweep_(nSweep)
 	{
 	}
 
@@ -24,7 +25,7 @@ public:
 	{
 		std::uniform_real_distribution<double> urd(0.0, 1.0);
 		std::uniform_int_distribution<int> uid_(0,n_-1);
-		for(int sidx = 0; sidx < n_; sidx++)
+		for(int sidx = 0; sidx < n_*nSweep_; sidx++)
 		{
 			int toFlip = uid_(re);
 			double p = std::min(1.0,exp(beta*2.0*real(sv.logRatio(toFlip))));
