@@ -23,7 +23,7 @@ private:
 	const double beta2_;
 
 	int t;
-	RealVector m_;
+	Vector m_;
 	RealVector v_;
 
 public:
@@ -63,13 +63,14 @@ public:
 	{
 	}
 
-	RealVector getUpdate(const RealVector& grad, const RealVector& oloc) override
+	Vector getUpdate(const Vector& grad, const Vector& oloc) override
 	{
 		const double eps = 1e-8;
+		auto norm = [](T x) -> RealT { return std::norm(x); };
 
 		if(t ==0)
 		{
-			m_ = RealVector::Zero(grad.rows());
+			m_ = Vector::Zero(grad.rows());
 			v_ = RealVector::Zero(grad.rows());
 		}
 		++t;
@@ -77,7 +78,7 @@ public:
 		m_ *= beta1_;
 		m_ += (1-beta1_)*grad;
 
-		RealVector g2 = oloc.unaryExpr([](RealT x){ return x*x;});
+		RealVector g2 = oloc.unaryExpr(norm);
 		v_ *= beta2_;
 		v_ += (1-beta2_)*g2;
 

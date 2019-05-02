@@ -15,7 +15,7 @@
 
 #include "Serializers/SerializeRBM.hpp"
 
-#include "Hamiltonians/XXZ.hpp"
+#include "Hamiltonians/XXXJ1J2.hpp"
 #include "Optimizers/OptimizerFactory.hpp"
 
 #include "SROptimizerCG.hpp"
@@ -57,14 +57,15 @@ int main(int argc, char** argv)
 
 	const int N = paramIn.at("N").get<int>();
 	const int alpha = paramIn.at("alpha").get<int>();
-	const double delta = paramIn.at("delta").get<double>();
+	const double J2 = paramIn.at("J2").get<double>();
 	const bool useSR = paramIn.at("useSR").get<bool>();
 	const bool printSv = paramIn.value("printSv", false);
+	const bool useCliff = paramIn.value("useCliff", false);
 
 	using Machine = RBM<ValT, true>;
 	Machine qs(N, alpha*N);
 	qs.initializeRandom(re);
-	XXZ ham(N, 1.0, delta);
+	XXXJ1J2 ham(N, 1.0, J2);
 
 	const int dim = qs.getDim();
 
@@ -94,12 +95,6 @@ int main(int argc, char** argv)
 	}
 
 	typedef std::chrono::high_resolution_clock Clock;
-
-	std::vector<std::array<int,2> > flips;
-	for(int i = 0; i < N; i++)
-	{
-		flips.emplace_back(std::array<int,2>{i, (i+1)%N});
-	}
 
 	SwapSweeper sweeper(N);
 	SamplerPT<Machine, std::default_random_engine, RBMStateValue<Machine>, SwapSweeper> ss(qs, numChains, sweeper);
@@ -171,6 +166,11 @@ int main(int argc, char** argv)
 		}
 
 		Vector optV = opt->getUpdate(v);
+
+		if( useCliff && (optV.norm() > cliffThreshold))
+		{
+			optV /= optV.norm()*cliffThreshold;
+		}
 
 		double nv = v.norm();
 

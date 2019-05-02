@@ -1,19 +1,17 @@
-#ifndef HAMILTONIANS_XXXXJ1J2_HPP
-#define HAMILTONIANS_XXXXJ1J2_HPP
+#ifndef HAMILTONIANS_XXXXMG_HPP
+#define HAMILTONIANS_XXXXMG_HPP
 #include <Eigen/Eigen>
 #include <nlohmann/json.hpp>
 
-class XXXJ1J2
+class XXXMG
 {
 private:
 	int n_;
-	double J1_;
-	double J2_;
 
 public:
 
-	XXXJ1J2(int n, double J1, double J2)
-		: n_(n), J1_(J1), J2_(J2)
+	XXXMG(int n)
+		: n_(n)
 	{
 	}
 
@@ -21,37 +19,49 @@ public:
 	{
 		return nlohmann::json
 		{
-			{"name", "XXXXJ1J2"},
+			{"name", "XXXXMG"},
 			{"n", n_},
-			{"J1", J1_},
-			{"J2", J2_}
 		};
 	}
 	
 	template<class State>
 	typename State::T operator()(const State& smp) const
 	{
+		constexpr double J1 = 1.0;
+		constexpr double J2 = 0.5;
 		typename State::T s = 0.0;
 
-		//Nearest-neighbor
-		for(int i = 0; i < n_; i++)
 		{
-			double yysign = -smp.sigmaAt(i)*smp.sigmaAt((i+1)%n_);
-			s += -J1_*yysign; //zz
-			s += J1_*(1.0+yysign)*smp.ratio(i, (i+1)%n_); //xx+yy
+			double yysign = -smp.sigmaAt(0)*smp.sigmaAt(1);
+			s += -J1/2*yysign; //zz
+			s += J1/2*(1.0+yysign)*smp.ratio(0, 1); //xx+yy
+		}
+		{
+			double yysign = -smp.sigmaAt(n_-2)*smp.sigmaAt(n_-1);
+			s += -J1/2*yysign; //zz
+			s += J1/2*(1.0+yysign)*smp.ratio(i, (i+1)%n_); //xx+yy
+		}	
+		//Nearest-neighbor
+		for(int i = 1; i < (n_-3); i++)
+		{
+			double yysign = -smp.sigmaAt(i)*smp.sigmaAt(i+1);
+			s += -J1*yysign; //zz
+			s += J1*(1.0+yysign)*smp.ratio(i, i+1); //xx+yy
 		}
 		//Next-nearest-neighbor
-		for(int i = 0; i < n_; i++)
+		for(int i = 0; i < n_-3; i++)
 		{
-			double yysign = -smp.sigmaAt(i)*smp.sigmaAt((i+2)%n_);
+			double yysign = -smp.sigmaAt(i)*smp.sigmaAt(i+2);
 			s += -J2_*yysign; //zz
-			s += J2_*(1.0+yysign)*smp.ratio(i, (i+2)%n_); //xx+yy
+			s += J2_*(1.0+yysign)*smp.ratio(i, i+2); //xx+yy
 		}
 		return s;
 	}
 
 	std::map<uint32_t, double> operator()(uint32_t col) const
 	{
+		constexpr double J1 = 1.0;
+		constexpr double J2 = 0.5;
 		std::map<uint32_t, double> m;
 		for(int i = 0; i < n_; i++)
 		{
@@ -74,4 +84,4 @@ public:
 		return m;
 	}
 };
-#endif//HAMILTONIANS_XXXXJ1J2_HPP
+#endif//HAMILTONIANS_XXXXMG_HPP

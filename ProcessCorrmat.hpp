@@ -6,6 +6,8 @@
 #include <boost/filesystem.hpp>
 #include <boost/range.hpp>
 
+#include <cnpy.h>
+
 #include <Eigen/Eigenvalues> 
 
 #include "SROptimizerCG.hpp"
@@ -23,11 +25,12 @@ private:
 	std::regex wRgx_;
 
 	Randomizer randomizer_;
+	const bool printSmat_;
 
 public:
-	CorrMatProcessor(Machine& qs, Hamiltonian& ham, Sampler& sampler, Randomizer& randomizer)
+	CorrMatProcessor(Machine& qs, Hamiltonian& ham, Sampler& sampler, Randomizer& randomizer, const bool printSmat = false)
 		:qs_(qs), ham_(ham), sampler_(sampler), 
-			wRgx_("^w([0-9]{4}).dat$", std::regex::extended), randomizer_(randomizer)
+			wRgx_("^w([0-9]{4}).dat$", std::regex::extended), randomizer_(randomizer), printSmat_(printSmat)
 	{
 		sampler_.initializeRandomEngine();
 
@@ -77,6 +80,15 @@ public:
 		energyOut_ << idx << "\t" << srm.getEloc() << "\t" << srm.getElocVar() << std::endl;
 
 		auto m = srm.corrMat();
+
+		if(printSmat_)
+		{
+			char fileName[50];
+			sprintf(fileName, "SMAT%04d.npz", idx);
+			cnpy::npz_save(fileName, "S", m.data(), {m.rows(), m.cols()}, "w");
+			auto f = srm.getF();
+			cnpy::npz_save(fileName, "g", f.data(), {f.rows()}, "a");
+		}
 
 		Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> es;
 		es.compute(m, Eigen::EigenvaluesOnly);
