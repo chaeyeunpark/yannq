@@ -48,7 +48,7 @@ double cosBetween(const Eigen::Matrix<T, Eigen::Dynamic, 1>& g1, const Eigen::Ma
 
 
 template<typename Machine>
-class InterpolateRBM
+class InterpolateMaxDir
 {
 public:
 	using Vector = typename Machine::Vector;
@@ -78,7 +78,7 @@ public:
 		return Eigen::Map<Vector>((T*)v.data(), v.rows()/2, 1);
 	}
 
-	InterpolateRBM(const Matrix& weights)
+	InterpolateMaxDir(const Matrix& weights)
 	{
 		w0_ = toRealVec(weights.col(0));
 		errors_.resize(weights.cols());
@@ -132,11 +132,80 @@ public:
 		p += beta*n2_*dir2_;
 		return reverse(p);
 	}
-
-
 };
+/*
+template<typename Machine>
+class InterpolateResi
+{
+public:
+	using RealT = typename remove_complex<typename Machine::ScalarType>::type;
+	using T = typename Machine::ScalarType;
+
+	using Vector = typename Machine::Vector;
+	using RealVector = Eigen::Matrix<RealT, Eigen::Dynamic, 1>;
+	using Matrix = typename Machine::Matrix;
+
+private:
+	RealVector w0_;
+	RealVector errors_;
+	RealVector errors2_;
+	RealVector dir1_;
+	Eigen::Matrix<RealT, Eigen::Dynamic, Eigen::Dynamic> dir2_;
 
 
+	double n1_;
+
+	double maxNorm_;
+
+
+public:
+	static RealVector toRealVec(const Vector& v) 
+	{
+		return Eigen::Map<RealVector>((RealT*)v.data(), 2*v.rows(), 1);
+	}
+	static Vector reverse(const RealVector& v) 
+	{
+		return Eigen::Map<Vector>((T*)v.data(), v.rows()/2, 1);
+	}
+
+	InterpolateResi(const Matrix& weights)
+	{
+		w0_ = toRealVec(weights.col(0));
+		errors_.resize(weights.cols());
+		dir1_ = toRealVec(weights.col(weights.cols() - 1) - weights.col(0));
+		n1_ = dir1_.norm();
+		dir1_ /= n1_;
+		
+		dir2_.resize(w0_.rows(), weights.cols()-2);
+
+		for(int i = 0; i < weights.cols(); i++)
+		{
+			RealVector r = toRealVec(weights.col(i) - weights.col(0));
+			r -= (dir1_.transpose()*r)*dir1_;
+			errors_(i) = r.norm();
+
+		}
+		maxNorm_ = errors_.maxCoeff();
+	}
+
+	RealVector getErrors() const
+	{
+		return errors_;
+	}
+	
+	RealVector getErrors2() const
+	{
+		return errors2_;
+	}
+
+	std::pair<double, Vector> getParamAt(int i, double beta)
+	{
+		RealVector p = w0_;
+
+		return reverse(p);
+	}
+};
+*/
 int main(int argc, char** argv)
 {
 	using namespace nnqs;
@@ -186,18 +255,21 @@ int main(int argc, char** argv)
 		weights.col(i) = p;
 	}
 
-	InterpolateRBM<Machine> interpolator(weights);
+	InterpolateMaxDir<Machine> interpolator(weights);
 
-	/*
 	auto errors = interpolator.getErrors();
 	auto errors2 = interpolator.getErrors2();
 
-	for(int i = 0; i < 600; i++)
+	std::ofstream ferr("Error1.dat");
+	std::ofstream ferr2("Error2.dat");
+
+	for(int i = 0; i <= 600; i++)
 	{
-		std::cout << errors(i) << std::endl;
-		std::cerr << errors2(i) << std::endl;
+		ferr << errors(i) << std::endl;
+		ferr2 << errors2(i) << std::endl;
 	}
-	*/
+	ferr.close();
+	ferr2.close();
 
 	auto basis = generateBasis(n, n/2);
 	XXZ ham(n, 1.0, delta);
