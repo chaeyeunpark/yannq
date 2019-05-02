@@ -24,25 +24,15 @@ private:
 public:
 
 	SGD(double alpha = DEFAULT_PARAMS[0], double p = DEFAULT_PARAMS[1])
-		: alpha_(alpha), p_(p)
+		: alpha_{alpha}, p_{p}, t_{0}
 	{
-		t_ = 0;
 	}
 
 	SGD(const nlohmann::json& params)
-		: alpha_(params.value("alpha", DEFAULT_PARAMS[0])), 
-			p_(params.value("p", DEFAULT_PARAMS[1]))
+		: alpha_{params.value("alpha", DEFAULT_PARAMS[0])}, 
+			p_{params.value("p", DEFAULT_PARAMS[1])},
+			t_{0}
 	{
-	}
-
-	static nlohmann::json defaultParams()
-	{
-		return nlohmann::json
-		{
-			{"name", "SGD"},
-			{"alhpa", DEFAULT_PARAMS[0]},
-			{"p", DEFAULT_PARAMS[1]}
-		};
 	}
 
 	nlohmann::json params() const override
@@ -60,6 +50,7 @@ public:
 		using std::pow;
 		++t_;
 		double eta = std::max((alpha_/pow(t_, p_)), 1e-4);
+		std::cerr << eta << std::endl;
 		return -eta*v;
 	}
 };

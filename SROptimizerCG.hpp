@@ -103,6 +103,11 @@ public:
 		elocVar_ = eloc.real().cwiseAbs2().sum()/rs.size() - eloc_*eloc_;
 	}
 
+	Vector oloc() const
+	{
+		return deltaMean_;
+	}
+
 	Matrix corrMat() const
 	{
 		//const int dim = qs_.getDim();

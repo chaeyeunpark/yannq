@@ -60,6 +60,7 @@ int main(int argc, char** argv)
 	const double delta = paramIn.at("delta").get<double>();
 	const bool useSR = paramIn.at("useSR").get<bool>();
 	const bool printSv = paramIn.value("printSv", false);
+	const bool useCliff = paramIn.value("useCliff", false);
 
 	using Machine = RBM<ValT, true>;
 	Machine qs(N, alpha*N);
@@ -68,7 +69,7 @@ int main(int argc, char** argv)
 
 	const int dim = qs.getDim();
 
-	auto opt = OptimizerFactory<ValT>::getInstance().createOptimizer(paramIn.at("Optimizer")) ;
+	auto opt = OptimizerFactory<ValT>::getInstance().createOptimizerGeometry(paramIn.at("Optimizer")) ;
 
 	{
 		json j;
@@ -170,7 +171,13 @@ int main(int argc, char** argv)
 			out.close();
 		}
 
-		Vector optV = opt->getUpdate(v);
+		auto oloc = srm.oloc();
+		Vector optV = opt->getUpdate(v, oloc);
+
+		if( useCliff && (optV.norm() > cliffThreshold))
+		{
+			optV /= optV.norm()*cliffThreshold;
+		}
 
 		double nv = v.norm();
 

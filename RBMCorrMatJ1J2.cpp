@@ -15,7 +15,7 @@
 #include "States/RBMState.hpp"
 #include "Samplers/SamplerPT.hpp"
 #include "Samplers/SwapSweeper.hpp"
-#include "Hamiltonians/XXZ.hpp"
+#include "Hamiltonians/XXXJ1J2.hpp"
 #include "Serializers/SerializeRBM.hpp"
 
 #include "ProcessCorrmat.hpp"
@@ -57,9 +57,9 @@ int main(int argc, char** argv)
 	int n = params["Machine"]["n"];
 	int m = params["Machine"]["m"];
 
-	double delta = params["Hamiltonian"]["Delta"];
+	double J2 = params["Hamiltonian"]["J2"];
 	
-	XXZ ham(n, 1.0, delta);
+	XXXJ1J2 ham(n, 1.0, J2);
 	Machine qs(n, m);
 
 	//using Sampler = SimpleSamplerPT<Machine, std::default_random_engine>;
@@ -74,7 +74,7 @@ int main(int argc, char** argv)
 		ss.randomizeSigma(n/2);
 	};
 
-	CorrMatProcessor<Machine, XXZ, Sampler, decltype(randomizer)> cmp(qs, ham, ss, randomizer);
+	CorrMatProcessor<Machine, XXXJ1J2, Sampler, decltype(randomizer)> cmp(qs, ham, ss, randomizer, true);
 	cmp.processAll(dirPath);
 	//processCorrmat(dirPath, qs, ham, ss, randomizer);
 	

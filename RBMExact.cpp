@@ -62,7 +62,6 @@ int main(int argc, char** argv)
 	const double decaying = 0.9;
 	const double lmax = 10.0;
 	const double lmin = 1e-3;
-	const double sgd_eta = 0.05;
 
 	using ValT = std::complex<double>;
 
@@ -112,8 +111,6 @@ int main(int argc, char** argv)
 		fout.close();
 	}
 
-	typedef std::chrono::high_resolution_clock Clock;
-
 	using std::sqrt;
 	using Vector = typename Machine::Vector;
 	using Matrix = typename Machine::Matrix;
@@ -153,12 +150,6 @@ int main(int argc, char** argv)
 
 			e1 = srex.getEnergy();
 			auto corrMat = srex.corrMat();
-			corrMat += lambda*Matrix::Identity(dim, dim);
-
-			Eigen::LLT<Eigen::MatrixXcd> llt(corrMat);
-
-			g1 = srex.getF();
-			res1 = llt.solve(g1);
 
 			if(ll % 5 == 0 && printSv)
 			{
@@ -174,6 +165,14 @@ int main(int argc, char** argv)
 				out << es.eigenvalues().transpose() << std::endl;
 				out.close();
 			}
+
+			corrMat += lambda*Matrix::Identity(dim, dim);
+
+			Eigen::LLT<Eigen::MatrixXcd> llt(corrMat);
+
+			g1 = srex.getF();
+			res1 = llt.solve(g1);
+
 		}
 	
 		Vector g2;
