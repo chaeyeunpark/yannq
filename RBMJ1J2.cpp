@@ -16,6 +16,7 @@
 #include "Serializers/SerializeRBM.hpp"
 
 #include "Hamiltonians/XXXJ1J2.hpp"
+#include "Hamiltonians/XXXMG.hpp"
 #include "Optimizers/OptimizerFactory.hpp"
 
 #include "SROptimizerCG.hpp"
@@ -43,6 +44,8 @@ int main(int argc, char** argv)
 	const double cliffThreshold = 10.0;
 
 	using ValT = std::complex<double>;
+	using Machine = RBM<ValT, true>;
+	using Hamiltonian = XXXMG;
 
 	if(argc != 2)
 	{
@@ -57,15 +60,14 @@ int main(int argc, char** argv)
 
 	const int N = paramIn.at("N").get<int>();
 	const int alpha = paramIn.at("alpha").get<int>();
-	const double J2 = paramIn.at("J2").get<double>();
+	//const double J2 = paramIn.at("J2").get<double>();
 	const bool useSR = paramIn.at("useSR").get<bool>();
 	const bool printSv = paramIn.value("printSv", false);
 	const bool useCliff = paramIn.value("useCliff", false);
 
-	using Machine = RBM<ValT, true>;
-	Machine qs(N, alpha*N);
+	Machine qs{N, alpha*N};
 	qs.initializeRandom(re);
-	XXXJ1J2 ham(N, 1.0, J2);
+	Hamiltonian ham{N};
 
 	const int dim = qs.getDim();
 

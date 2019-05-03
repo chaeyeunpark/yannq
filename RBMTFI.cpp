@@ -9,6 +9,7 @@
 
 #include "Machines/RBM.hpp"
 #include "States/RBMStateMT.hpp"
+#include "States/RBMState.hpp"
 #include "Samplers/Sampler.hpp"
 #include "Samplers/LocalSweeper.hpp"
 
@@ -27,7 +28,7 @@ int main(int argc, char** argv)
 	using namespace nnqs;
 	using nlohmann::json;
 
-	constexpr int N  = 52;
+	constexpr int N  = 16;
 	constexpr int numChains = 16;
 	
 	std::random_device rd;
@@ -88,7 +89,7 @@ int main(int argc, char** argv)
 	typedef std::chrono::high_resolution_clock Clock;
 
 	LocalSweeper sweeper(N);
-	Sampler<Machine, std::default_random_engine, RBMStateValueMT<Machine>, decltype(sweeper)> ss(qs, sweeper);
+	Sampler<Machine, std::default_random_engine, RBMStateValue<Machine>, decltype(sweeper)> ss(qs, sweeper);
 	SRMatFree<Machine> srm(qs);
 	
 	ss.initializeRandomEngine();
