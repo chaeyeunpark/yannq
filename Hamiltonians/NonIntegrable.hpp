@@ -41,17 +41,6 @@ public:
 		return s;
 	}
 
-	std::vector< std::array<int, 1> > flips() const
-	{
-		std::vector< std::array<int, 1> > res;
-		for(int i = 0; i < n_; i++)
-		{
-			res.push_back(std::array<int, 1>{i});
-		}
-		return res;
-	}
-
-
 	Eigen::VectorXd getCol(long long int col) const
 	{
 		Eigen::VectorXd res = Eigen::VectorXd::Zero(1<<n_);

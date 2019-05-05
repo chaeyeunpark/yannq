@@ -17,7 +17,7 @@
 #include "Serializers/SerializeRBM.hpp"
 #include "Hamiltonians/TFIsing.hpp"
 
-#include "SROptimizerCG.hpp"
+#include "GroundState/SRMat.hpp"
 
 
 using namespace yannq;
