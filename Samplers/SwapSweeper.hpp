@@ -2,7 +2,7 @@
 #define NNQS_SAMPLERS_SWAPSWEEPER_HPP
 #include <random>
 
-namespace nnqs
+namespace yannq
 {
 class SwapSweeper
 {

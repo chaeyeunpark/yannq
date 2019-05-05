@@ -10,11 +10,11 @@
 int main()
 {
 	const int N = 5;
-	using namespace nnqs;
+	using namespace yannq;
 
 	using ValT = std::complex<double>;
 
-	nnqs::Jastrow<ValT> qs(N);
+	yannq::Jastrow<ValT> qs(N);
 
 	std::random_device rd;
 	std::default_random_engine re{rd()};

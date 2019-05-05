@@ -10,7 +10,7 @@ constexpr double eps = 1e-6;
 
 TEST_CASE("Test coeffs for complex RBM", "[RBM]")
 {
-	using namespace nnqs;
+	using namespace yannq;
 	const int N = 10;
 	using Machine = RBM<std::complex<double>>;
 	Machine rbm(N,N);
@@ -69,7 +69,7 @@ TEST_CASE("Test coeffs for complex RBM", "[RBM]")
 
 TEST_CASE("Test coeffs for real RBM", "[RBM]")
 {
-	using namespace nnqs;
+	using namespace yannq;
 	const int N = 10;
 	using Machine = RBM<double>;
 	Machine rbm(N,N);

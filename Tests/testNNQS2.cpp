@@ -11,7 +11,7 @@
 #include <SparseMat/ConstructMat.hpp>
 #include <SparseMat/LocalSparseOperator.hpp>
 
-using namespace nnqs;
+using namespace yannq;
 
 template<typename ColFunc>
 Eigen::VectorXd getCol(int dim, ColFunc&& t, int i)
@@ -70,7 +70,7 @@ Eigen::MatrixXd getHam(int dim, const Ham& ham)
 
 int main(int argc, char* argv[])
 {
-	using namespace nnqs;
+	using namespace yannq;
 
 	const int N  = 12;
 	const int alpha = 1;

@@ -21,7 +21,7 @@
 #include <cnpy.h>
 
 template<typename T, bool useBias>
-void save_to_npz(const nnqs::RBM<T, useBias>& qs, const boost::filesystem::path& output_file )
+void save_to_npz(const yannq::RBM<T, useBias>& qs, const boost::filesystem::path& output_file )
 {
 	Eigen::MatrixXcd W = qs.getW();
 	cnpy::npz_save(output_file.c_str(), "W", W.data(), {W.rows(), W.cols()}, "w");
@@ -34,14 +34,14 @@ void save_to_npz(const nnqs::RBM<T, useBias>& qs, const boost::filesystem::path&
 }
 
 template<typename T, bool useBias>
-void print(const nnqs::RBM<T, useBias>& qs, std::ostream& out)
+void print(const yannq::RBM<T, useBias>& qs, std::ostream& out)
 {
 	boost::archive::text_oarchive oa(out);
 	oa << qs;
 }
 
 template<typename T, bool useBias>
-void load_qs_from_file(const boost::filesystem::path& input_file, nnqs::RBM<T, useBias>& qs)
+void load_qs_from_file(const boost::filesystem::path& input_file, yannq::RBM<T, useBias>& qs)
 {
 	using std::ios;
 	using namespace boost::filesystem;
@@ -62,7 +62,7 @@ void process_dir(
 	using namespace boost;
 
 	std::regex exp("^w([0-9]{4}).dat$", std::regex::extended);
-	nnqs::RBM<T, useBias> qs(1,1);
+	yannq::RBM<T, useBias> qs(1,1);
 
 	for(auto& entry: make_iterator_range(directory_iterator(input_path), {}))
 	{
@@ -164,7 +164,7 @@ int main(int argc, char** argv)
 		}
 		else
 		{
-			nnqs::RBM<std::complex<double>, true> qs(1,1);
+			yannq::RBM<std::complex<double>, true> qs(1,1);
 			load_qs_from_file(input_path, qs);
 			if(vm["print"].as<bool>())
 			{

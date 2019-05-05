@@ -9,7 +9,7 @@ namespace boost{
         template<class Archive, typename T>
 		inline void save(
             Archive & ar, 
-            const nnqs::Jastrow<T>& g, 
+            const yannq::Jastrow<T>& g, 
             const unsigned int version)
 		{
 			int n = g.getN();
@@ -22,15 +22,15 @@ namespace boost{
         template<class Archive, typename T>
 		inline void load(
             Archive & ar, 
-            nnqs::Jastrow<T>& g, 
+            yannq::Jastrow<T>& g, 
             const unsigned int version)
 		{
 			int n;
 
 			ar & n;
 
-			typename nnqs::Jastrow<T>::Vector a(n);
-			typename nnqs::Jastrow<T>::Matrix J(n,n);
+			typename yannq::Jastrow<T>::Vector a(n);
+			typename yannq::Jastrow<T>::Matrix J(n,n);
 
 			ar & boost::serialization::make_array(a.data(), n);
 			ar & boost::serialization::make_array(J.data(), n*n);
@@ -43,7 +43,7 @@ namespace boost{
         template<class Archive, typename T>
         inline void serialize(
             Archive & ar, 
-			nnqs::Jastrow<T>& g,
+			yannq::Jastrow<T>& g,
             const unsigned int version)
         {
             split_free(ar, g, version);

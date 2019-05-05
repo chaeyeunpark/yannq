@@ -4,7 +4,7 @@
 #include <nlohmann/json.hpp>
 #include "Optimizers/Optimizer.hpp"
 
-namespace nnqs
+namespace yannq
 {
 template<typename T>
 class SGD
@@ -53,7 +53,7 @@ public:
 		return -eta*v;
 	}
 };
-}//namespace nnqs
+}//namespace yannq
 template<typename T>
-constexpr double nnqs::SGD<T>::DEFAULT_PARAMS[];
+constexpr double yannq::SGD<T>::DEFAULT_PARAMS[];
 #endif//NNQS_OPTIMIZERS_SGD_HPP

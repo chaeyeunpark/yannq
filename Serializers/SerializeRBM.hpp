@@ -10,7 +10,7 @@ namespace boost{
                     typename T>
 		inline void save(
             Archive & ar, 
-            const nnqs::RBM<T, false>& g, 
+            const yannq::RBM<T, false>& g, 
             const unsigned int version)
             {
 				int n = g.getN();
@@ -24,7 +24,7 @@ namespace boost{
                     typename T>
 		inline void load(
             Archive & ar, 
-            nnqs::RBM<T, false>& g, 
+            yannq::RBM<T, false>& g, 
             const unsigned int version)
             {
 				int n, m;
@@ -32,7 +32,7 @@ namespace boost{
                 ar & n;
                 ar & m;
 
-				typename nnqs::RBM<T, true>::Matrix W(m,n);
+				typename yannq::RBM<T, true>::Matrix W(m,n);
 
 				ar & boost::serialization::make_array(W.data(), m*n);
 
@@ -43,7 +43,7 @@ namespace boost{
                     typename T>
         inline void save(
             Archive & ar, 
-            const nnqs::RBM<T, true>& g, 
+            const yannq::RBM<T, true>& g, 
             const unsigned int version)
             {
 				int n = g.getN();
@@ -59,7 +59,7 @@ namespace boost{
                     typename T>
 		inline void load(
             Archive & ar, 
-            nnqs::RBM<T, true>& g, 
+            yannq::RBM<T, true>& g, 
             const unsigned int version)
             {
 				int n, m;
@@ -67,9 +67,9 @@ namespace boost{
                 ar & n;
                 ar & m;
 
-				typename nnqs::RBM<T, true>::Vector A(n);
-				typename nnqs::RBM<T, true>::Vector B(m);
-				typename nnqs::RBM<T, true>::Matrix W(m,n);
+				typename yannq::RBM<T, true>::Vector A(n);
+				typename yannq::RBM<T, true>::Vector B(m);
+				typename yannq::RBM<T, true>::Matrix W(m,n);
 
 				ar & boost::serialization::make_array(A.data(), n);
 				ar & boost::serialization::make_array(B.data(), m);
@@ -85,7 +85,7 @@ namespace boost{
 					bool useBias>
         inline void serialize(
             Archive & ar, 
-			nnqs::RBM<T, useBias>& g,
+			yannq::RBM<T, useBias>& g,
             const unsigned int version)
         {
             split_free(ar, g, version);

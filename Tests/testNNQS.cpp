@@ -6,7 +6,7 @@
 #include <iomanip>
 #include <chrono>
 
-using namespace nnqs;
+using namespace yannq;
 
 template<typename T>
 class HamTI
@@ -57,7 +57,7 @@ public:
 };
 int main(int argc, char* argv[])
 {
-	using namespace nnqs;
+	using namespace yannq;
 
 	const int N  = 16;
 	const int alpha = 1;

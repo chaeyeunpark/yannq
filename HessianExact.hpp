@@ -6,7 +6,7 @@
 #include "ED/ConstructSparseMat.hpp"
 #include "Utilities/Utility.hpp"
 
-namespace nnqs
+namespace yannq
 {
 
 template<typename Machine>
@@ -85,7 +85,7 @@ public:
 	{
 	}
 };
-} //namespace nnqs
+} //namespace yannq
 
 
 #endif//CY_HESSIANEXACT_HPP

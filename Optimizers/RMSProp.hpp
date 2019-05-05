@@ -7,7 +7,7 @@
 #include "Utilities/type_traits.hpp"
 #include "Optimizers/Optimizer.hpp"
 
-namespace nnqs
+namespace yannq
 {
 template <typename T>
 class RMSProp
@@ -81,5 +81,5 @@ public:
 template<typename T>
 constexpr double RMSProp<T>::DEFAULT_PARAMS[];
 
-} //namespace nnqs
+} //namespace yannq
 #endif//NNQS_OPTIMIZERS_RMSPROP_HPP

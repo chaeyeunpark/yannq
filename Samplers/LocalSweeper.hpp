@@ -4,7 +4,7 @@
 #include <Eigen/Eigen>
 #include <random>
 
-namespace nnqs
+namespace yannq
 {
 
 class LocalSweeper

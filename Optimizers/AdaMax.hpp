@@ -2,7 +2,7 @@
 #define NNQS_OPTIMIZERS_ADAMAX_HPP
 
 #include "Optimizers/Optimizer.hpp"
-namespace nnqs
+namespace yannq
 {
 template<typename T>
 class AdaMax
@@ -77,7 +77,7 @@ public:
 	}
 
 };
-}//namespace nnqs
+}//namespace yannq
 template<typename T>
-constexpr double nnqs::AdaMax<T>::DEFAULT_PARAMS[];
+constexpr double yannq::AdaMax<T>::DEFAULT_PARAMS[];
 #endif//NNQS_OPTIMIZERS_ADAMAX_HPP

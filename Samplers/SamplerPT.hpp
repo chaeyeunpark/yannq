@@ -4,7 +4,7 @@
 #include <random>
 #include <complex>
 #include <omp.h>
-namespace nnqs
+namespace yannq
 {
 
 template<class Machine, class RandomEngine, class StateValue, class Sweeper>

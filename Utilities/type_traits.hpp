@@ -2,7 +2,7 @@
 #define CY_NNQS_TYPE_TRAITS_HPP
 
 #include <type_traits>
-namespace nnqs
+namespace yannq
 {
 template<typename T>
 struct is_complex_type: public std::false_type {};
@@ -29,6 +29,6 @@ class MachineStateTypesMT
 
 
 
-} //namespace nnqs
+} //namespace yannq
 
 #endif//CY_NNQS_TYPE_TRAITS_HPP

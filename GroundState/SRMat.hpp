@@ -7,22 +7,22 @@
 
 #include "Utilities/Utility.hpp"
 
-namespace nnqs
+namespace yannq
 {
 
 template<typename Machine>
 class SRMat;
 
-} //namespace nnqs
+} //namespace yannq
 
 namespace Eigen {
 namespace internal {
 	template<typename Machine>
-	struct traits<nnqs::SRMat<Machine> > :  public Eigen::internal::traits<Eigen::SparseMatrix<typename Machine::ScalarType> > {};
+	struct traits<yannq::SRMat<Machine> > :  public Eigen::internal::traits<Eigen::SparseMatrix<typename Machine::ScalarType> > {};
 }
 } //namespace Eigen
 
-namespace nnqs
+namespace yannq
 {
 
 template<typename Machine>
@@ -154,18 +154,18 @@ public:
 	}
 
 };
-} //namespace nnqs
+} //namespace yannq
 
-// Implementation of nnqs::SRMat * Eigen::DenseVector though a specialization of internal::generic_product_impl:
+// Implementation of yannq::SRMat * Eigen::DenseVector though a specialization of internal::generic_product_impl:
 namespace Eigen {
 namespace internal {
 	template<typename Rhs, typename Machine>
-	struct generic_product_impl<nnqs::SRMat<Machine>, Rhs, SparseShape, DenseShape, GemvProduct> // GEMV stands for matrix-vector
-	: generic_product_impl_base<nnqs::SRMat<Machine>, Rhs, generic_product_impl<nnqs::SRMat<Machine>, Rhs> >
+	struct generic_product_impl<yannq::SRMat<Machine>, Rhs, SparseShape, DenseShape, GemvProduct> // GEMV stands for matrix-vector
+	: generic_product_impl_base<yannq::SRMat<Machine>, Rhs, generic_product_impl<yannq::SRMat<Machine>, Rhs> >
 	{
-		typedef typename Product<nnqs::SRMat<Machine>, Rhs>::Scalar Scalar;
+		typedef typename Product<yannq::SRMat<Machine>, Rhs>::Scalar Scalar;
 		template<typename Dest>
-		static void scaleAndAddTo(Dest& dst, const nnqs::SRMat<Machine>& lhs, const Rhs& rhs, const Scalar& alpha)
+		static void scaleAndAddTo(Dest& dst, const yannq::SRMat<Machine>& lhs, const Rhs& rhs, const Scalar& alpha)
 		{
 			// This method should implement "dst += alpha * lhs * rhs" inplace,
 			// however, for iterative solvers, alpha is always equal to 1, so let's not bother about it.

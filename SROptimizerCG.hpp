@@ -7,22 +7,22 @@
 
 #include "Utilities/Utility.hpp"
 
-namespace nnqs
+namespace yannq
 {
 
 template<typename Machine>
 class SRMatFree;
 
-} //namespace nnqs
+} //namespace yannq
 
 namespace Eigen {
 namespace internal {
 	template<typename Machine>
-	struct traits<nnqs::SRMatFree<Machine> > :  public Eigen::internal::traits<Eigen::SparseMatrix<typename Machine::ScalarType> > {};
+	struct traits<yannq::SRMatFree<Machine> > :  public Eigen::internal::traits<Eigen::SparseMatrix<typename Machine::ScalarType> > {};
 }
 } //namespace Eigen
 
-namespace nnqs
+namespace yannq
 {
 
 template<typename Machine>
@@ -156,18 +156,18 @@ public:
 	}
 
 };
-} //namespace nnqs
+} //namespace yannq
 
-// Implementation of nnqs::SRMatFree * Eigen::DenseVector though a specialization of internal::generic_product_impl:
+// Implementation of yannq::SRMatFree * Eigen::DenseVector though a specialization of internal::generic_product_impl:
 namespace Eigen {
 namespace internal {
 	template<typename Rhs, typename Machine>
-	struct generic_product_impl<nnqs::SRMatFree<Machine>, Rhs, SparseShape, DenseShape, GemvProduct> // GEMV stands for matrix-vector
-	: generic_product_impl_base<nnqs::SRMatFree<Machine>, Rhs, generic_product_impl<nnqs::SRMatFree<Machine>, Rhs> >
+	struct generic_product_impl<yannq::SRMatFree<Machine>, Rhs, SparseShape, DenseShape, GemvProduct> // GEMV stands for matrix-vector
+	: generic_product_impl_base<yannq::SRMatFree<Machine>, Rhs, generic_product_impl<yannq::SRMatFree<Machine>, Rhs> >
 	{
-		typedef typename Product<nnqs::SRMatFree<Machine>, Rhs>::Scalar Scalar;
+		typedef typename Product<yannq::SRMatFree<Machine>, Rhs>::Scalar Scalar;
 		template<typename Dest>
-		static void scaleAndAddTo(Dest& dst, const nnqs::SRMatFree<Machine>& lhs, const Rhs& rhs, const Scalar& alpha)
+		static void scaleAndAddTo(Dest& dst, const yannq::SRMatFree<Machine>& lhs, const Rhs& rhs, const Scalar& alpha)
 		{
 			// This method should implement "dst += alpha * lhs * rhs" inplace,
 			// however, for iterative solvers, alpha is always equal to 1, so let's not bother about it.

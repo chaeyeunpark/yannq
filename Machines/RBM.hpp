@@ -11,7 +11,7 @@
 #include "Utilities/type_traits.hpp"
 #include "Utilities/Utility.hpp"
 
-namespace nnqs
+namespace yannq
 {
 
 template<typename T, bool useBias = true>

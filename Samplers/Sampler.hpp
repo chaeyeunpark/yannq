@@ -5,7 +5,7 @@
 #include <complex>
 
 #include "Utilities/Utility.hpp"
-namespace nnqs
+namespace yannq
 {
 template<class Machine, class RandomEngine, class StateValue, class Sweeper>
 class Sampler

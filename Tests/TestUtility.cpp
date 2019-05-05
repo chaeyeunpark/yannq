@@ -7,12 +7,12 @@
 
 #define CATCH_CONFIG_MAIN
 #include <catch.hpp>
-using namespace nnqs;
+using namespace yannq;
 
 
 TEST_CASE("logCoh(x) should be same to log(cosh(x))", "LOGCOSH")
 {
-	using namespace nnqs;
+	using namespace yannq;
 
 	std::random_device rd;
 	std::default_random_engine re{rd()};

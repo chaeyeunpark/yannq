@@ -4,7 +4,7 @@
 #include "Machines/RBM.hpp"
 
 
-namespace nnqs
+namespace yannq
 {
 template<class Machine>
 class OverlapOptimizer
@@ -73,11 +73,11 @@ public:
 	double logOverlap() const
 	{
 		using std::real;
-		typename nnqs::RBM<T>::Vector psi = getPsi(rbm, true);
+		typename yannq::RBM<T>::Vector psi = getPsi(rbm, true);
 		T r = psi.adjoint()*target_;
 		return -2*real(std::log(r));
 	}
 	*/
 };
-}//namespace nnqs
+}//namespace yannq
 #endif//CY_OVERLAP_OPTIMIZER_HPP

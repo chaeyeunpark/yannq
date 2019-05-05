@@ -27,7 +27,7 @@ int main()
 	std::cout << st.norm() << std::endl;
 
 	OverlapOptimizer oo(N, st);
-	nnqs::RBM<std::complex<double> > rbm(N, 3*N);
+	yannq::RBM<std::complex<double> > rbm(N, 3*N);
 
 	rbm.initializeRandom(re);
 	Adam<double> adam{};

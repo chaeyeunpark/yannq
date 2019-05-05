@@ -5,7 +5,7 @@
 #include "Utilities/type_traits.hpp"
 #include "Utilities/tuple_helper.hpp"
 
-namespace nnqs
+namespace yannq
 {
 template<typename T, typename... Args>
 std::unique_ptr<T> make_unique(Args&&... args) {
@@ -148,6 +148,6 @@ long long int toValue(const Eigen::VectorXi& sigma)
 	return res;
 }
 
-}//namespace nnqs
+}//namespace yannq
 
 #endif//CY_NNQS_UTILITY_HPP

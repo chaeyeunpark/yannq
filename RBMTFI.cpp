@@ -20,12 +20,12 @@
 #include "SROptimizerCG.hpp"
 
 
-using namespace nnqs;
+using namespace yannq;
 using std::ios;
 
 int main(int argc, char** argv)
 {
-	using namespace nnqs;
+	using namespace yannq;
 	using nlohmann::json;
 
 	constexpr int N  = 16;
