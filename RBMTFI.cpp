@@ -90,7 +90,7 @@ int main(int argc, char** argv)
 
 	LocalSweeper sweeper(N);
 	Sampler<Machine, std::default_random_engine, RBMStateValue<Machine>, decltype(sweeper)> ss(qs, sweeper);
-	SRMatFree<Machine> srm(qs);
+	SRMat<Machine> srm(qs);
 	
 	ss.initializeRandomEngine();
 
@@ -117,7 +117,7 @@ int main(int argc, char** argv)
 		auto smp_dur = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - smp_start).count();
 
 		auto slv_start = Clock::now();
-		Eigen::ConjugateGradient<SRMatFree<Machine>, Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
+		Eigen::ConjugateGradient<SRMat<Machine>, Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
 		srm.constructFromSampling(sr, ham);
 		double lambda = std::max(lmax*pow(decaying,ll), lmin);
 		double currE = srm.getEloc();
