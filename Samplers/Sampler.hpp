@@ -41,7 +41,7 @@ public:
 
 	
 
-	void sweep()
+	inline void sweep()
 	{
 		sweeper_.localSweep(*sv_, 1.0, re_);
 	}

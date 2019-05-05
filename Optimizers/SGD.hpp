@@ -50,7 +50,6 @@ public:
 		using std::pow;
 		++t_;
 		double eta = std::max((alpha_/pow(t_, p_)), 1e-4);
-		std::cerr << eta << std::endl;
 		return -eta*v;
 	}
 };

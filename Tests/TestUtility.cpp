@@ -24,7 +24,7 @@ TEST_CASE("logCoh(x) should be same to log(cosh(x))", "LOGCOSH")
 	using std::log;
 	using std::cosh;
 	using std::abs;
-	for(int i = 0; i < 10000; i++)
+	for(int i = 0; i < 100000; i++)
 	{
 		std::complex<double> p{urd(re), urd(re)};
 		REQUIRE(abs(logCosh(p)-log(cosh(p))) < 1e-7);
