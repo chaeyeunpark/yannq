@@ -11,7 +11,7 @@
 #include "Utilities/type_traits.hpp"
 #include "Utilities/Utility.hpp"
 
-namespace nnqs
+namespace yannq
 {
 
 template<typename T, bool useBias = true>
@@ -263,51 +263,101 @@ public:
 		return a_.hasNaN() || b_.hasNaN() || W_.hasNaN();
 	}
 
+	/* When T is real type
+	 * */
 	template <typename RandomEngine, class U=T,
                typename std::enable_if < !is_complex_type<U>::value, int >::type = 0 >
-	void initializeRandom(RandomEngine& re, T weight = 0.001)
+	void initializeRandomUniform(RandomEngine& re, T weight = 1e-3)
 	{
-		std::normal_distribution<double> nd{};
-		//std::uniform_real_distribution<T> nd{-0.5,0.5};
-		
+		std::uniform_real_distribution<T> nd{-0.5*weight,0.5*weight};
 		for(int i = 0; i < n_; i++)
 		{
-			a_.coeffRef(i) = weight*nd(re);
+			a_.coeffRef(i) = nd(re);
 		}
 		for(int i = 0; i < m_; i++)
 		{
-			b_.coeffRef(i) = weight*nd(re);
+			b_.coeffRef(i) = nd(re);
 		}
 		for(int j = 0; j < n_; j++)
 		{
 			for(int i = 0; i < m_; i++)
 			{
-				W_.coeffRef(i, j) = weight*nd(re);
+				W_.coeffRef(i, j) = nd(re);
 			}
 		}
 	}
+
+
+	template <typename RandomEngine, class U=T,
+               typename std::enable_if < !is_complex_type<U>::value, int >::type = 0 >
+	void initializeRandom(RandomEngine& re, T sigma = 1e-3)
+	{
+		std::normal_distribution<double> nd{0, sigma};
+		
+		for(int i = 0; i < n_; i++)
+		{
+			a_.coeffRef(i) = nd(re);
+		}
+		for(int i = 0; i < m_; i++)
+		{
+			b_.coeffRef(i) = nd(re);
+		}
+		for(int j = 0; j < n_; j++)
+		{
+			for(int i = 0; i < m_; i++)
+			{
+				W_.coeffRef(i, j) = nd(re);
+			}
+		}
+	}
+
+	/* When T is complex type */
 	template <typename RandomEngine, class U=T,
                typename std::enable_if < is_complex_type<U>::value, int >::type = 0 >
-	void initializeRandom(RandomEngine& re, typename remove_complex<T>::type weight = 0.001)
+	void initializeRandomUniform(RandomEngine& re, typename remove_complex<T>::type weight = 1e-3)
 	{
-		std::uniform_real_distribution<typename remove_complex<T>::type> nd{-0.5,0.5};
+		std::uniform_real_distribution<typename remove_complex<T>::type> nd{-0.5*weight, 0.5*weight};
 		
 		for(int i = 0; i < n_; i++)
 		{
-			a_.coeffRef(i) = weight*T{nd(re), nd(re)};
+			a_.coeffRef(i) = T{nd(re), nd(re)};
 		}
 		for(int i = 0; i < m_; i++)
 		{
-			b_.coeffRef(i) = weight*T{nd(re), nd(re)};
+			b_.coeffRef(i) = T{nd(re), nd(re)};
 		}
 		for(int j = 0; j < n_; j++)
 		{
 			for(int i = 0; i < m_; i++)
 			{
-				W_.coeffRef(i, j) = weight*T{nd(re), nd(re)};
+				W_.coeffRef(i, j) = T{nd(re), nd(re)};
 			}
 		}
 	}
+
+	template <typename RandomEngine, class U=T,
+               typename std::enable_if < is_complex_type<U>::value, int >::type = 0 >
+	void initializeRandom(RandomEngine& re, typename remove_complex<T>::type sigma = 1e-3)
+	{
+		std::normal_distribution<typename remove_complex<T>::type> nd{0, sigma};
+		
+		for(int i = 0; i < n_; i++)
+		{
+			a_.coeffRef(i) = T{nd(re), nd(re)};
+		}
+		for(int i = 0; i < m_; i++)
+		{
+			b_.coeffRef(i) = T{nd(re), nd(re)};
+		}
+		for(int j = 0; j < n_; j++)
+		{
+			for(int i = 0; i < m_; i++)
+			{
+				W_.coeffRef(i, j) = T{nd(re), nd(re)};
+			}
+		}
+	}
+
 
 	bool operator==(const RBM<T>& rhs) const
 	{

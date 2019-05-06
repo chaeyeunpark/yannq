@@ -4,7 +4,7 @@
 #include <Eigen/Dense>
 #include "Utilities/type_traits.hpp"
 #include <nlohmann/json.hpp>
-namespace nnqs
+namespace yannq
 {
 template<typename T>
 class Jastrow

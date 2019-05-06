@@ -6,7 +6,7 @@
 #include "Utilities/type_traits.hpp"
 #include "Optimizers/Optimizer.hpp"
 
-namespace nnqs
+namespace yannq
 {
 
 template<typename T>
@@ -87,5 +87,5 @@ public:
 };
 template<typename T>
 constexpr double AdaDelta<T>::DEFAULT_PARAMS[];
-} //namespace nnqs
+} //namespace yannq
 #endif//NNQS_OPTIMIZERS_ADADELTA_HPP

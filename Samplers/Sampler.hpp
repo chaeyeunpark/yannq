@@ -5,7 +5,7 @@
 #include <complex>
 
 #include "Utilities/Utility.hpp"
-namespace nnqs
+namespace yannq
 {
 template<class Machine, class RandomEngine, class StateValue, class Sweeper>
 class Sampler
@@ -41,7 +41,7 @@ public:
 
 	
 
-	void sweep()
+	inline void sweep()
 	{
 		sweeper_.localSweep(*sv_, 1.0, re_);
 	}

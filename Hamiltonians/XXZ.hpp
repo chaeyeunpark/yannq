@@ -41,18 +41,6 @@ public:
 		return s;
 	}
 
-	std::vector<std::array<int,2> > offDiagonals(const Eigen::VectorXi& s) const
-	{
-		std::vector< std::array<int, 2> > res;
-		for(int i = 0; i < n_; i++)
-		{
-			if( s(i) != s((i+1)%n_) )
-				res.push_back(std::array<int,2>{ i,(i+1)%n_ });
-		}
-		return res;
-	}
-
-
 	std::map<uint32_t, double> operator()(uint32_t col) const
 	{
 		std::map<uint32_t, double> m;

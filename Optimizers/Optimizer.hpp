@@ -4,13 +4,13 @@
 #include <nlohmann/json.hpp>
 #include "Utilities/type_traits.hpp"
 
-namespace nnqs
+namespace yannq
 {
 template<typename T>
 class Optimizer
 {
 public:
-	using RealT = typename nnqs::remove_complex<T>::type;
+	using RealT = typename yannq::remove_complex<T>::type;
 	using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
 	using RealVector = Eigen::Matrix<RealT, Eigen::Dynamic, 1>;
 

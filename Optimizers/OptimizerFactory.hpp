@@ -13,7 +13,7 @@
 #include "Utilities/Utility.hpp"
 #include "Utilities/type_traits.hpp"
 
-namespace nnqs
+namespace yannq
 {
 
 template<typename T>

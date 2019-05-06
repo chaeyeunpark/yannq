@@ -3,7 +3,7 @@
 #include "Machines/Jastrow.hpp"
 #include "Utilities/type_traits.hpp"
 
-namespace nnqs
+namespace yannq
 {
 
 template<typename T>
@@ -147,5 +147,5 @@ public:
 
 };
 
-} //namespace nnqs
+} //namespace yannq
 #endif//CY_NNQS_JASTROW_SAMPLES_HPP

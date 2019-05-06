@@ -3,73 +3,62 @@
 #include <chrono>
 #include <fstream>
 #include <ios>
+#include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 
 #include <nlohmann/json.hpp>
 
-#include "Machines/Jastrow.hpp"
-#include "States/JastrowState.hpp"
-#include "Samplers/SwapSamplerPT.hpp"
-#include "Serializers/SerializeJastrow.hpp"
-#include "Hamiltonians/XXZ.hpp"
-#include "Optimizers/SGD.hpp"
+#include "Machines/RBM.hpp"
+#include "States/RBMStateMT.hpp"
+#include "States/RBMState.hpp"
+#include "Samplers/Sampler.hpp"
+#include "Samplers/LocalSweeper.hpp"
+
+#include "Optimizers/OptimizerFactory.hpp"
+#include "Serializers/SerializeRBM.hpp"
+#include "Hamiltonians/TFIsing.hpp"
 
 #include "SROptimizerCG.hpp"
+#include "GroundStates/SRMat.hpp"
 
-using namespace nnqs;
+#include "Serializers/SerializeEigen.hpp"
+
+
+using namespace yannq;
 using std::ios;
 
 int main(int argc, char** argv)
 {
-	using namespace nnqs;
+	using namespace yannq;
 	using nlohmann::json;
 
-	constexpr int N  = 28;
-	constexpr int numChains = 16;
+	constexpr int N = 20;
 	
 	std::random_device rd;
 	std::default_random_engine re(rd());
 
 	std::cout << std::setprecision(8);
 
-	const double decaying = 0.9;
-	const double lmax = 10.0;
-	const double lmin = 1e-3;
-
-	//const double adam_eta = 0.05;
-	const double sgd_eta = 0.05;
-
 	using ValT = std::complex<double>;
 
-	if(argc != 2)
-	{
-		printf("Usage: %s [Delta]\n", argv[0]);
-		return 1;
-	}
-	double Delta;
-	sscanf(argv[1], "%lf", &Delta);
-	std::cout << "#Delta: " << Delta << std::endl;
+	constexpr int alpha = 3;
+	constexpr double h = 1.0;
+	constexpr double lambda = 1e-3;
+	constexpr double sgd_eta = 0.05;
 
-	using Machine = Jastrow<ValT>;
-	Machine qs(N);
-	qs.initializeRandom(re);
-	XXZ ham(N, 1.0, Delta);
+	using Machine = RBM<ValT, true>;
+	Machine qs(N, alpha*N);
+	
+	TFIsing ham(N, -1.0, -h);
 
+	qs.initializeRandom(re, 1e-2);
+	SGD<ValT> opt(sgd_eta, 0);
 	const int dim = qs.getDim();
-
-	SGD<ValT> opt(sgd_eta);
-
 	{
 		json j;
 		j["Optimizer"] = opt.params();
 		j["Hamiltonian"] = ham.params();
 		
-		json lambda = 
-		{
-			{"decaying", decaying},
-			{"lmax", lmax},
-			{"lmin", lmin},
-		};
 		j["lambda"] = lambda;
 		j["numThreads"] = Eigen::nbThreads();
 		j["machine"] = qs.params();
@@ -82,46 +71,52 @@ int main(int argc, char** argv)
 
 	typedef std::chrono::high_resolution_clock Clock;
 
-	SwapSamplerPT<ValT, Machine, std::default_random_engine> ss(qs, numChains);
-	SRMatFree<Machine> srm(qs);
+	LocalSweeper sweeper(N);
+	Sampler<Machine, std::default_random_engine, RBMStateValue<Machine>, decltype(sweeper)> ss(qs, sweeper);
+	SRMatFree<Machine> srmf(qs);
+	//SRMat<Machine> srm(qs);
 	
 	ss.initializeRandomEngine();
 
 	using std::sqrt;
 	using Vector = typename Machine::Vector;
 
-	for(int ll = 0; ll <=  7000; ll++)
+	for(int ll = 0; ll <=  2000; ll++)
 	{
-		if(ll % 10 == 0)
+		if(ll % 100 == 0)
 		{
 			char fileName[30];
 			sprintf(fileName, "w%04d.dat",ll);
-			std::fstream out(fileName, ios::binary|ios::out);
+			std::fstream out(fileName, ios::out);
 			{
-				boost::archive::binary_oarchive oa(out);
+				boost::archive::text_oarchive oa(out);
 				oa << qs;
 			}
 		}
-		ss.randomizeSigma(N/2);
+		ss.randomizeSigma();
 
 		//Sampling
 		auto smp_start = Clock::now();
-		auto sr = ss.sampling(dim, int(0.2*dim));
+		auto sr = ss.sampling(dim, int(0.1*dim));
 		auto smp_dur = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - smp_start).count();
 
 		auto slv_start = Clock::now();
+		srmf.constructFromSampling(sr, ham);
+		//srm.constructFromSampling(sr, ham);
+		//std::cout << (srm.getF() - srmf.getF()).norm() << std::endl;
+
+		double currE = srmf.getEloc();
+		//srm.setShift(lambda);
+		srmf.setShift(lambda);
+
 		Eigen::ConjugateGradient<SRMatFree<Machine>, Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
-		srm.constructFromSampling(sr, ham);
-		double lambda = std::max(lmax*pow(decaying,ll), lmin);
-		double currE = srm.getEloc();
-		srm.setShift(lambda);
-		cg.compute(srm);
-		cg.setTolerance(1e-4);
-		Vector v = cg.solve(srm.getF());
+		cg.compute(srmf);
+		cg.setTolerance(1e-3);
+		Vector v = cg.solve(srmf.getF());
 		Vector optV = opt.getUpdate(v);
 		auto slv_dur = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - slv_start).count();
 
-		double cgErr = (srm.apply(v)-srm.getF()).norm();
+		double cgErr = (srmf.apply(v)-srmf.getF()).norm();
 		double nv = v.norm();
 
 		qs.updateParams(optV);

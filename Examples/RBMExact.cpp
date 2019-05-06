@@ -17,8 +17,7 @@
 #include "Samplers/SamplerPT.hpp"
 #include "Samplers/SwapSweeper.hpp"
 
-#include "SRMatExactBasis.hpp"
-#include "SROptimizerCG.hpp"
+#include "GroundState/SRMatExact.hpp"
 
 
 using namespace yannq;
@@ -37,14 +36,6 @@ std::vector<uint32_t> generateBasis(int n, int nup)
 		v = w;
 	}
 	return basis;
-}
-
-template<typename T>
-double cosBetween(const Eigen::Matrix<T, Eigen::Dynamic, 1>& g1, const Eigen::Matrix<T, Eigen::Dynamic, 1>& g2)
-{
-	double t = g1.real().transpose()*g2.real();
-	t += g1.imag().transpose()*g2.imag();
-	return t/(g1.norm()*g2.norm());
 }
 
 int main(int argc, char** argv)
@@ -121,8 +112,7 @@ int main(int argc, char** argv)
 	SamplerPT<Machine, std::default_random_engine, RBMStateValue<Machine>, SwapSweeper> ss(qs, numChains, sw);
 	ss.initializeRandomEngine();
 
-	SRMatExactBasis<Machine> srex(qs, basis, ham);
-	SRMatFree<Machine> srm(qs);
+	SRMatExact<Machine> srex(qs, basis, ham);
 
 	const int dim = qs.getDim();
 
@@ -130,7 +120,7 @@ int main(int argc, char** argv)
 	{
 		double lambda = std::max(lmax*pow(decaying,ll), lmin);
 
-		if(ll % 5 == 0)
+		if(ll % 50 == 0)
 		{
 			char fileName[30];
 			sprintf(fileName, "w%04d.dat",ll);
@@ -142,73 +132,21 @@ int main(int argc, char** argv)
 		}
 
 
-		Vector g1;
-		Vector res1;
-		double e1;
-		{
-			srex.constructExact();
+		srex.constructExact();
 
-			e1 = srex.getEnergy();
-			auto corrMat = srex.corrMat();
+		double e = srex.getEnergy();
+		auto corrMat = srex.corrMat();
 
-			if(ll % 5 == 0 && printSv)
-			{
-				Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> es;
-				es.compute(corrMat, Eigen::EigenvaluesOnly);
+		corrMat += lambda*Matrix::Identity(dim, dim);
 
-				char outputName[50];
-				sprintf(outputName, "EV_W%04d.dat", ll);
+		Eigen::LLT<Eigen::MatrixXcd> llt(corrMat);
 
-				std::fstream out(outputName, ios::out);
-
-				out << std::setprecision(16);
-				out << es.eigenvalues().transpose() << std::endl;
-				out.close();
-			}
-
-			corrMat += lambda*Matrix::Identity(dim, dim);
-
-			Eigen::LLT<Eigen::MatrixXcd> llt(corrMat);
-
-			g1 = srex.getF();
-			res1 = llt.solve(g1);
-
-		}
+		Vector v = llt.solve(srex.getF());
 	
-		Vector g2;
-		Vector res2;
-		double e2;
-		{
-			ss.randomizeSigma(N/2);
-			auto sr = ss.sampling(dim, 0.2*dim);
-			srm.constructFromSampling(sr, ham);
-			
-			Eigen::ConjugateGradient<SRMatFree<Machine>, Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
-			e2 = srm.getEloc();
-			srm.setShift(lambda);
-			cg.compute(srm);
-			cg.setTolerance(1e-4);
-
-			g2 = srm.getF();
-			res2 = cg.solve(g2);
-		}
-		
-		Vector optV;
-		if(useSR)
-		{
-			optV = opt->getUpdate(res1);
-		}
-		else
-		{
-			optV = opt->getUpdate(g1);
-		}
+		Vector optV = opt->getUpdate(res1);
 		qs.updateParams(optV);
 		
-		std::cout << ll << "\t" << e1 << "\t" << e2 << "\t" << g1.norm() << "\t" << g2.norm() << "\t" << 
-			res1.norm() << "\t" << res2.norm() << "\t" <<
-			(g1-g2).norm() << "\t" << (res1-res2).norm() << "\t" <<
-			cosBetween(g1,g2) << "\t" << cosBetween(res1, res2)
-			<< std::endl;
+		std::cout << ll << "\t" << e << std::endl;
 	}
 
 	return 0;

@@ -7,7 +7,7 @@
 #include "Utilities/Utility.hpp"
 
 #include "States/RBMState.hpp"
-namespace nnqs
+namespace yannq
 {
 
 template<typename Machine>
@@ -277,5 +277,5 @@ public:
 	}
 };
 
-} //namespace nnqs
+} //namespace yannq
 #endif//NNQS_STATES_RBMSTATEMT_HPP

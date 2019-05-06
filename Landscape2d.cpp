@@ -20,7 +20,7 @@
 #include "SROptimizerCG.hpp"
 
 
-using namespace nnqs;
+using namespace yannq;
 using std::ios;
 
 std::vector<uint32_t> generateBasis(int n, int nup)
@@ -208,7 +208,7 @@ public:
 */
 int main(int argc, char** argv)
 {
-	using namespace nnqs;
+	using namespace yannq;
 	using namespace boost::filesystem;
 	using std::ios;
 	using nlohmann::json;

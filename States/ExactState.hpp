@@ -3,7 +3,7 @@
 #include <Eigen/Dense>
 #include "Utilities/type_traits.hpp"
 
-namespace nnqs
+namespace yannq
 {
 
 class ExactState
@@ -72,5 +72,5 @@ public:
 
 };
 
-} //namespace nnqs
+} //namespace yannq
 #endif//CY_NNQS_EXACTSTATE_HPP

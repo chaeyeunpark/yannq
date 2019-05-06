@@ -8,10 +8,10 @@
 #include "SROptimizer.hpp"
 #include "XYZNNN.hpp"
 
-using namespace nnqs;
+using namespace yannq;
 int main(int argc, char* argv[])
 {
-	using namespace nnqs;
+	using namespace yannq;
 
 	const int N  = 12;
 	const int alpha = 1;

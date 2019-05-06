@@ -6,7 +6,7 @@
 #include "Utilities/type_traits.hpp"
 #include "Utilities/Utility.hpp"
 
-namespace nnqs
+namespace yannq
 {
 
 template<typename Machine>
@@ -295,5 +295,5 @@ public:
 template<typename T>
 struct is_reference_state_type<RBMStateRef<T> >: public std::true_type {};
 
-} //namespace nnqs
+} //namespace yannq
 #endif//CY_NNQS_RBMSTATEHPP

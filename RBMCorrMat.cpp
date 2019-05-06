@@ -22,12 +22,12 @@
 #include "Hamiltonians/XYZNNN.hpp"
 //#include "Hamiltonians/XXZ.hpp"
 
-using namespace nnqs;
+using namespace yannq;
 using std::ios;
 
 int main(int argc, char** argv)
 {
-	using namespace nnqs;
+	using namespace yannq;
 	constexpr int numChains = 32;
 	
 	std::random_device rd;

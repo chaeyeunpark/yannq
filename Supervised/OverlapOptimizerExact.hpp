@@ -1,4 +1,5 @@
-
+#ifndef YANNQ_SUPERVISED_OVERLAPOPTIMIZEREXACT_HPP
+#define YANNQ_SUPERVISED_OVERLAPOPTIMIZEREXACT_HPP
 class OverlapOptimizerExact
 {
 private:
@@ -31,7 +32,7 @@ public:
 #pragma omp for schedule(static,8)
 			for(uint32_t n = 0; n < (1u<<N_); n++)
 			{
-				auto s = nnqs::toSigma(N_, n);
+				auto s = yannq::toSigma(N_, n);
 				auto der = rbm.logDeriv(std::make_tuple(s,rbm.calcTheta(s)));
 				resLocal += der.conjugate()*std::norm(psi(n));
 				r1Local += conj(psi(n))*target_(n)*der.conjugate();
@@ -50,3 +51,4 @@ public:
 	}
 
 };
+#endif//YANNQ_SUPERVISED_OVERLAPOPTIMIZEREXACT_HPP

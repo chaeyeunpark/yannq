@@ -74,7 +74,7 @@ public:
 		randomizer_(sampler_);
 		auto sr = sampler_.sampling(2*dim, int(0.2*2*dim));
 
-		nnqs::SRMatFree<Machine> srm(qs_);
+		yannq::SRMatFree<Machine> srm(qs_);
 		srm.constructFromSampling(sr, ham_);
 
 		energyOut_ << idx << "\t" << srm.getEloc() << "\t" << srm.getElocVar() << std::endl;

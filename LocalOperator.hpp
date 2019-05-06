@@ -1,7 +1,7 @@
 #ifndef CY_LOCAL_OPERATER_HPP
 #define CY_LOCAL_OPERATER_HPP
 #include "SampingResult.hpp"
-namespace nnqs
+namespace yannq
 {
 template<typename T, class LocalOperatorT>
 class LOState

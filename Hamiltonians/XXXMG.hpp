@@ -39,7 +39,7 @@ public:
 		{
 			double yysign = -smp.sigmaAt(n_-2)*smp.sigmaAt(n_-1);
 			s += -J1/2*yysign; //zz
-			s += J1/2*(1.0+yysign)*smp.ratio(i, (i+1)%n_); //xx+yy
+			s += J1/2*(1.0+yysign)*smp.ratio(n_-2, n_-1); //xx+yy
 		}	
 		//Nearest-neighbor
 		for(int i = 1; i < (n_-3); i++)
@@ -52,8 +52,8 @@ public:
 		for(int i = 0; i < n_-3; i++)
 		{
 			double yysign = -smp.sigmaAt(i)*smp.sigmaAt(i+2);
-			s += -J2_*yysign; //zz
-			s += J2_*(1.0+yysign)*smp.ratio(i, i+2); //xx+yy
+			s += -J2*yysign; //zz
+			s += J2*(1.0+yysign)*smp.ratio(i, i+2); //xx+yy
 		}
 		return s;
 	}
@@ -69,8 +69,8 @@ public:
 			int b2 = (col >> ((i+1)%n_)) & 1;
 			int sgn = (1-2*b1)*(1-2*b2);
 			long long int x = (1 << i) | (1 << ((i+1)%(n_)));
-			m[col ^ x] += J1_*(1.0 - sgn*1.0);
-			m[col] += J1_*sgn;
+			m[col ^ x] += J1*(1.0 - sgn*1.0);
+			m[col] += J1*sgn;
 		}
 		for(int i = 0; i < n_; i++)
 		{
@@ -78,8 +78,8 @@ public:
 			int b2 = (col >> ((i+2)%n_)) & 1;
 			int sgn = (1-2*b1)*(1-2*b2);
 			long long int x = (1 << i) | (1 << ((i+2)%(n_)));
-			m[col ^ x] += J2_*(1.0 - sgn*1.0);
-			m[col] += J2_*sgn;
+			m[col ^ x] += J2*(1.0 - sgn*1.0);
+			m[col] += J2*sgn;
 		}
 		return m;
 	}

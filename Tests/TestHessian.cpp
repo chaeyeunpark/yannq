@@ -6,7 +6,7 @@
 
 TEST_CASE( "Hessians are computed", "[hessian]" )
 {
-	using namespace nnqs;
+	using namespace yannq;
 
 	const int n = 16;
 	const int m = 16;

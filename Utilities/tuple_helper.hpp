@@ -1,6 +1,6 @@
 #ifndef CY_TUPLE_HELPER_HPP
 #define CY_TUPLE_HELPER_HPP
-namespace nnqs
+namespace yannq
 {
 //Chromium implementaion of index sequence template
 //

@@ -4,7 +4,7 @@
 #include <nlohmann/json.hpp>
 #include "Optimizers/Optimizer.hpp"
 
-namespace nnqs
+namespace yannq
 {
 template<typename T>
 class SGD
@@ -50,11 +50,10 @@ public:
 		using std::pow;
 		++t_;
 		double eta = std::max((alpha_/pow(t_, p_)), 1e-4);
-		std::cerr << eta << std::endl;
 		return -eta*v;
 	}
 };
-}//namespace nnqs
+}//namespace yannq
 template<typename T>
-constexpr double nnqs::SGD<T>::DEFAULT_PARAMS[];
+constexpr double yannq::SGD<T>::DEFAULT_PARAMS[];
 #endif//NNQS_OPTIMIZERS_SGD_HPP

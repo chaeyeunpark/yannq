@@ -3,7 +3,7 @@
 #include <random>
 #include <complex>
 
-namespace nnqs
+namespace yannq
 {
 template<class Hamiltonian>
 class HamiltonianSweeper

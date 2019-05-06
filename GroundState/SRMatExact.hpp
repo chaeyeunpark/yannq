@@ -1,16 +1,16 @@
-#ifndef CY_SRMATEXACT_HPP
-#define CY_SRMATEXACT_HPP
+#ifndef YANNQ_GROUNDSTATE_SRMATEACT_HPP
+#define YANNQ_GROUNDSTATE_SRMATEACT_HPP
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
 #include "ED/ConstructSparseMat.hpp"
 #include "Utilities/Utility.hpp"
 
-namespace nnqs
+namespace yannq
 {
 
 template<typename Machine>
-class SRMatExactBasis
+class SRMatExact
 {
 public:
 	using Scalar = typename Machine::ScalarType;
@@ -80,14 +80,18 @@ public:
 		return grad_;
 	}
 
-	template<class ColFunc>
-	SRMatExactBasis(const Machine& qs, const std::vector<uint32_t>& basis, ColFunc&& col)
-	  : n_{qs.getN()}, qs_(qs), basis_(basis)
+	template<class ColFunc, class Iterable>
+	SRMatExact(const Machine& qs, Iterable&& basis, ColFunc&& col)
+	  : n_{qs.getN()}, qs_(qs)
 	{
+		for(auto elt: basis)
+		{
+			basis_.emplace_back(elt);
+		}
 		ham_ = edp::constructSubspaceMat<double>(std::forward<ColFunc>(col), basis_);
 	}
 };
-} //namespace nnqs
+} //namespace yannq
 
 
-#endif//CY_SRMATEXACT_HPP
+#endif//YANNQ_GROUNDSTATE_SRMATEACT_HPP

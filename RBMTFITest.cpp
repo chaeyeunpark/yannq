@@ -3,6 +3,7 @@
 #include <chrono>
 #include <fstream>
 #include <ios>
+#include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 
 #include <nlohmann/json.hpp>
@@ -13,11 +14,13 @@
 #include "Samplers/Sampler.hpp"
 #include "Samplers/LocalSweeper.hpp"
 
-#include "Optimizers/SGD.hpp"
+#include "Optimizers/OptimizerFactory.hpp"
 #include "Serializers/SerializeRBM.hpp"
 #include "Hamiltonians/TFIsing.hpp"
 
-#include "GroundState/SRMat.hpp"
+#include "SROptimizerCG.hpp"
+
+#include "Serializers/SerializeEigen.hpp"
 
 
 using namespace yannq;
@@ -28,54 +31,62 @@ int main(int argc, char** argv)
 	using namespace yannq;
 	using nlohmann::json;
 
-	constexpr int N  = 16;
-	constexpr int numChains = 16;
+	constexpr int N = 20;
 	
 	std::random_device rd;
 	std::default_random_engine re(rd());
 
 	std::cout << std::setprecision(8);
 
-	const double decaying = 0.9;
-	const double lmax = 10.0;
-	const double lmin = 1e-3;
-
-	//const double adam_eta = 0.05;
-	const double sgd_eta = 0.05;
-
 	using ValT = std::complex<double>;
 
-	if(argc != 3)
-	{
-		printf("Usage: %s [alpha] [h]\n", argv[0]);
-		return 1;
-	}
-	int alpha;
-	double h;
-	sscanf(argv[1], "%d", &alpha);
-	sscanf(argv[2], "%lf", &h);
-	std::cout << "#h: " << h << std::endl;
+	constexpr int alpha = 3;
+	constexpr double h = 1.0;
+	constexpr double lambda = 1e-3;
 
 	using Machine = RBM<ValT, true>;
 	Machine qs(N, alpha*N);
-	qs.initializeRandom(re);
+	
 	TFIsing ham(N, -1.0, -h);
+
+	if(argc != 2)
+	{
+		printf("Usage: %s [param.json]\n", argv[0]);
+		return 1;
+	}
+
+	json paramIn;
+	std::ifstream fin(argv[1]);
+	fin >> paramIn;
+	fin.close();
+
+	const bool useCG = paramIn.at("useCG").get<bool>();
+	auto opt = OptimizerFactory<ValT>::getInstance().createOptimizer(paramIn.at("Optimizer")) ;
+
+	const std::string method = paramIn.at("RBM").at("random").get<std::string>();
+	const double weight = paramIn.at("RBM").at("weight").get<double>();
+
+	if(method.compare("uniform") == 0)
+	{
+		qs.initializeRandomUniform(re, weight);
+	}
+	else if(method.compare("normal") == 0)
+	{
+		qs.initializeRandom(re, weight);
+	}
+	else
+	{
+		std::cerr << "json error" << std::endl;
+		return 1;
+	}
 
 	const int dim = qs.getDim();
 
-	SGD<ValT> opt(sgd_eta);
-
 	{
 		json j;
-		j["Optimizer"] = opt.params();
+		j["Optimizer"] = opt->params();
 		j["Hamiltonian"] = ham.params();
 		
-		json lambda = 
-		{
-			{"decaying", decaying},
-			{"lmax", lmax},
-			{"lmin", lmin},
-		};
 		j["lambda"] = lambda;
 		j["numThreads"] = Eigen::nbThreads();
 		j["machine"] = qs.params();
@@ -90,7 +101,7 @@ int main(int argc, char** argv)
 
 	LocalSweeper sweeper(N);
 	Sampler<Machine, std::default_random_engine, RBMStateValue<Machine>, decltype(sweeper)> ss(qs, sweeper);
-	SRMat<Machine> srm(qs);
+	SRMatFree<Machine> srm(qs);
 	
 	ss.initializeRandomEngine();
 
@@ -103,9 +114,9 @@ int main(int argc, char** argv)
 		{
 			char fileName[30];
 			sprintf(fileName, "w%04d.dat",ll);
-			std::fstream out(fileName, ios::binary|ios::out);
+			std::fstream out(fileName, ios::out);
 			{
-				boost::archive::binary_oarchive oa(out);
+				boost::archive::text_oarchive oa(out);
 				oa << qs;
 			}
 		}
@@ -117,15 +128,26 @@ int main(int argc, char** argv)
 		auto smp_dur = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - smp_start).count();
 
 		auto slv_start = Clock::now();
-		Eigen::ConjugateGradient<SRMat<Machine>, Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
 		srm.constructFromSampling(sr, ham);
-		double lambda = std::max(lmax*pow(decaying,ll), lmin);
 		double currE = srm.getEloc();
 		srm.setShift(lambda);
-		cg.compute(srm);
-		cg.setTolerance(1e-4);
-		Vector v = cg.solve(srm.getF());
-		Vector optV = opt.getUpdate(v);
+
+		Vector v;
+		if(useCG){
+			Eigen::ConjugateGradient<SRMatFree<Machine>, Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
+			cg.compute(srm);
+			cg.setTolerance(1e-3);
+			v = cg.solve(srm.getF());
+		}
+		else
+		{
+			using namespace Eigen;
+			MatrixXcd A = srm.corrMat() + lambda*MatrixXcd::Identity(dim, dim);
+			LLT<MatrixXcd> llt(A);
+			v = llt.solve(srm.getF());
+		}
+
+		Vector optV = opt->getUpdate(v);
 		auto slv_dur = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - slv_start).count();
 
 		double cgErr = (srm.apply(v)-srm.getF()).norm();

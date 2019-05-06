@@ -1,5 +1,5 @@
-#ifndef CY_SROPTIMIZER_CG_HPP
-#define CY_SROPTIMIZER_CG_HPP
+#ifndef YANNQ_GROUNDSTATES_SRMAT_HPP_HPP
+#define YANNQ_GROUNDSTATES_SRMAT_HPP_HPP
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <Eigen/IterativeLinearSolvers>
@@ -7,27 +7,27 @@
 
 #include "Utilities/Utility.hpp"
 
-namespace nnqs
+namespace yannq
 {
 
 template<typename Machine>
-class SRMatFree;
+class SRMat;
 
-} //namespace nnqs
+} //namespace yannq
 
 namespace Eigen {
 namespace internal {
 	template<typename Machine>
-	struct traits<nnqs::SRMatFree<Machine> > :  public Eigen::internal::traits<Eigen::SparseMatrix<typename Machine::ScalarType> > {};
+	struct traits<yannq::SRMat<Machine> > :  public Eigen::internal::traits<Eigen::SparseMatrix<typename Machine::ScalarType> > {};
 }
 } //namespace Eigen
 
-namespace nnqs
+namespace yannq
 {
 
 template<typename Machine>
-class SRMatFree
-	: public Eigen::EigenBase<SRMatFree<Machine> > 
+class SRMat
+	: public Eigen::EigenBase<SRMat<Machine> > 
 {
 public:
 	using Scalar = typename Machine::ScalarType;
@@ -41,11 +41,16 @@ private:
 	Machine& qs_;
 	RealScalar shift_;
 	
+
 	double eloc_;
+
 	double elocVar_;
+
+
 	Matrix deltas_;
 	Vector deltaMean_;
 	Vector grad_;
+	Vector elocs_;
 
 public:
 	// Required typedefs, constants, and method:
@@ -61,8 +66,8 @@ public:
 	Eigen::Index cols() const { return qs_.getDim(); }
 
 	template<typename Rhs>
-	Eigen::Product<SRMatFree<Machine>, Rhs, Eigen::AliasFreeProduct> operator*(const Eigen::MatrixBase<Rhs>& x) const {
-	  return Eigen::Product<SRMatFree<Machine>, Rhs, Eigen::AliasFreeProduct>(*this, x.derived());
+	Eigen::Product<SRMat<Machine>, Rhs, Eigen::AliasFreeProduct> operator*(const Eigen::MatrixBase<Rhs>& x) const {
+	  return Eigen::Product<SRMat<Machine>, Rhs, Eigen::AliasFreeProduct>(*this, x.derived());
 	}
 
 	void setShift(RealScalar shift)
@@ -81,10 +86,8 @@ public:
 		int nsmp = rs.size();
 
 		deltas_.setZero(nsmp, qs_.getDim());
-		deltaMean_.setZero(nsmp);
 		grad_.setZero(nsmp);
-
-		Eigen::VectorXcd eloc(nsmp);
+		elocs_.setZero(nsmp);
 
 #pragma omp parallel for schedule(static,8)
 		for(std::size_t n = 0; n < rs.size(); n++)
@@ -92,17 +95,22 @@ public:
 			const auto& elt = rs[n];
 			auto smp = construct_state<typename MachineStateTypes<Machine>::StateRef>(qs_, elt);
 
-			eloc(n) = ham(smp);
+			elocs_(n) = ham(smp);
 
 			deltas_.row(n) = qs_.logDeriv(elt);
 		}
 		deltaMean_ = deltas_.colwise().mean();
-		grad_ = deltas_.adjoint()*eloc/nsmp;
-		grad_ -= eloc.mean()*deltaMean_.conjugate();
-		eloc_ = real(eloc.mean());
-		elocVar_ = eloc.real().cwiseAbs2().sum()/rs.size() - eloc_*eloc_;
-	}
+		deltas_ = deltas_.rowwise() - deltaMean_.transpose();
 
+		eloc_ = real(elocs_.mean());
+		elocVar_ = elocs_.real().cwiseAbs2().sum()/rs.size() - eloc_*eloc_;
+
+		elocs_ -= elocs_.mean() * Eigen::VectorXd::Ones(nsmp);
+
+		grad_ = deltas_.adjoint() * elocs_;
+		grad_ /= nsmp;
+
+	}
 	Vector oloc() const
 	{
 		return deltaMean_;
@@ -110,11 +118,8 @@ public:
 
 	Matrix corrMat() const
 	{
-		//const int dim = qs_.getDim();
 		int nsmp = deltas_.rows();
-		Matrix res = deltas_.adjoint()*deltas_/nsmp;
-		res -= deltaMean_.conjugate()*deltaMean_.transpose();
-		return res;// + shift_*Matrix::Identity(dim,dim);;
+		return (deltas_.adjoint() * deltas_)/nsmp;
 	}
 
 	double getEloc() const
@@ -127,22 +132,16 @@ public:
 		return elocVar_;
 	}
 	
-	SRMatFree(Machine& qs)
+	SRMat(Machine& qs)
 	  : n_{qs.getN()}, qs_(qs), shift_{}
 	{
 	}
+
 	Vector getF() const
 	{
 		return grad_;
 	}
-	const Eigen::MatrixXcd& getDeltas() const
-	{
-		return deltas_;
-	}
-	const Eigen::VectorXcd& deltaMean() const
-	{
-		return deltaMean_;
-	}
+
 	template<class Rhs>
 	typename Machine::Vector apply(const Rhs& rhs) const
 	{
@@ -150,39 +149,33 @@ public:
 		typename Machine::Vector r = deltas_*rhs;
 
 		typename Machine::Vector res = deltas_.adjoint()*r/r.rows();
-		res -= deltaMean_.conjugate()*r.mean();
 
 		return res + Scalar(shift_)*rhs;
 	}
 
 };
-} //namespace nnqs
+} //namespace yannq
 
-// Implementation of nnqs::SRMatFree * Eigen::DenseVector though a specialization of internal::generic_product_impl:
+// Implementation of yannq::SRMat * Eigen::DenseVector though a specialization of internal::generic_product_impl:
 namespace Eigen {
 namespace internal {
 	template<typename Rhs, typename Machine>
-	struct generic_product_impl<nnqs::SRMatFree<Machine>, Rhs, SparseShape, DenseShape, GemvProduct> // GEMV stands for matrix-vector
-	: generic_product_impl_base<nnqs::SRMatFree<Machine>, Rhs, generic_product_impl<nnqs::SRMatFree<Machine>, Rhs> >
+	struct generic_product_impl<yannq::SRMat<Machine>, Rhs, SparseShape, DenseShape, GemvProduct> // GEMV stands for matrix-vector
+	: generic_product_impl_base<yannq::SRMat<Machine>, Rhs, generic_product_impl<yannq::SRMat<Machine>, Rhs> >
 	{
-		typedef typename Product<nnqs::SRMatFree<Machine>, Rhs>::Scalar Scalar;
+		typedef typename Product<yannq::SRMat<Machine>, Rhs>::Scalar Scalar;
 		template<typename Dest>
-		static void scaleAndAddTo(Dest& dst, const nnqs::SRMatFree<Machine>& lhs, const Rhs& rhs, const Scalar& alpha)
+		static void scaleAndAddTo(Dest& dst, const yannq::SRMat<Machine>& lhs, const Rhs& rhs, const Scalar& alpha)
 		{
 			// This method should implement "dst += alpha * lhs * rhs" inplace,
 			// however, for iterative solvers, alpha is always equal to 1, so let's not bother about it.
 			assert(alpha==Scalar(1) && "scaling is not implemented");
 			EIGEN_ONLY_USED_FOR_DEBUG(alpha);
-			/*
-			auto r = lhs.getDeltas()*rhs;
-			dst += lhs.getDeltas().adjoint()*r/r.rows();
-			dst -= lhs.getDeltaMean().conjugate()*r.mean();
-			dst += lhs.getShift()*rhs;
-			*/
+
 			dst += lhs.apply(rhs);
 		}
 	};
 } //namespace internal
 } //namespace Eigen
 
-#endif//CY_SROPTIMIZER_CG_HPP
+#endif//YANNQ_GROUNDSTATES_SRMAT_HPP_HPP
