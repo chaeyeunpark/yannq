@@ -19,9 +19,9 @@ public:
 	using Matrix = typename Machine::Matrix;
 	using Vector = typename Machine::Vector;
 private:
-	int n_;
+	const int n_;
 	const Machine& qs_;
-	const std::vector<uint32_t>& basis_;
+	std::vector<uint32_t> basis_;
 
 	Eigen::SparseMatrix<RealScalar> ham_;
 
