@@ -22,9 +22,14 @@ namespace internal {
 }
 } //namespace Eigen
 
+
+
+
 namespace yannq
 {
-
+/** 
+ * Construct the fisher information metric for quantum states
+ * */
 template<typename Machine>
 class SRMat
 	: public Eigen::EigenBase<SRMat<Machine> > 

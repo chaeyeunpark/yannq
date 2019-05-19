@@ -133,14 +133,14 @@ public:
 		}
 		for(auto &yy: yLinks())
 		{
-			int zzval = (1-2*(col >> yy.first))*(1-2*(col >> yy.second));
-			int t = (1 << xx.first) | (1 << xx.second);
+			int zzval = (1-2*((col >> yy.first) & 1))*(1-2*((col >> yy.second) & 1));
+			int t = (1 << yy.first) | (1 << yy.second);
 			m[col ^ t] += -J_*zzval; //yy
 		}
 		for(auto &zz: zLinks())
 		{
-			int zzval = (1-2*(col >> zz.first))*(1-2*(col >> zz.second));
-			m[col] += J_*zzval; //yy
+			int zzval = (1-2*((col >> zz.first) & 1))*(1-2*((col >> zz.second) & 1));
+			m[col] += J_*zzval; //zz
 		}
 
 		return m;
