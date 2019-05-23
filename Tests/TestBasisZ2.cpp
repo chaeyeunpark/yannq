@@ -1,22 +1,8 @@
 #include <vector>
 #include <cstdint>
-
+#include "Basis/BasisJz.hpp"
 #define CATCH_CONFIG_MAIN
 #include <catch.hpp>
-std::vector<uint32_t> generateBasis(int n, int nup)
-{
-	std::vector<uint32_t> basis;
-	uint32_t v = (1u<<nup)-1;
-	uint32_t w;
-	while(v < (1u<<n))
-	{
-		basis.emplace_back(v);
-		uint32_t t = v | (v-1);
-		w = (t + 1) | (((~t & -~t) - 1) >> (__builtin_ctz(v) + 1));
-		v = w;
-	}
-	return basis;
-}
 
 uint32_t binomialCoeff(uint32_t n, uint32_t k)
 {
@@ -38,15 +24,19 @@ uint32_t binomialCoeff(uint32_t n, uint32_t k)
 
 TEST_CASE("GenerateBasis", "[GenBas]")
 {
-	auto b = generateBasis(10, 5);
-	uint32_t s = 0;
-	REQUIRE(b.size() == binomialCoeff(10,5));
-	for(auto t: b)
+	std::vector<uint32_t> basis;
+	for(auto t: BasisJz(10,3))
 	{
-		REQUIRE(__builtin_popcount(t) == 5);
+		basis.emplace_back(t);
 	}
-	for(int i = 0; i < b.size()-1; i++)
+	uint32_t s = 0;
+	REQUIRE(basis.size() == binomialCoeff(10,3));
+	for(auto t: basis)
 	{
-		REQUIRE(b[i+1] > b[i]);
+		REQUIRE(__builtin_popcount(t) == 3);
+	}
+	for(int i = 0; i < basis.size()-1; i++)
+	{
+		REQUIRE(basis[i+1] > basis[i]);
 	}
 }

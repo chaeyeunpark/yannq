@@ -10,7 +10,7 @@
 
 #include <Eigen/Eigenvalues> 
 
-#include "SROptimizerCG.hpp"
+#include "GroundState/SRMat.hpp"
 
 
 template<class Machine, class Hamiltonian, class Sampler, class Randomizer>
@@ -74,14 +74,14 @@ public:
 		randomizer_(sampler_);
 		auto sr = sampler_.sampling(2*dim, int(0.2*2*dim));
 
-		yannq::SRMatFree<Machine> srm(qs_);
+		yannq::SRMat<Machine> srm(qs_);
 		srm.constructFromSampling(sr, ham_);
 
 		energyOut_ << idx << "\t" << srm.getEloc() << "\t" << srm.getElocVar() << std::endl;
 
 		auto m = srm.corrMat();
 
-		if(printSmat_)
+		if(printSmat_ && (idx % 100 == 0))
 		{
 			char fileName[50];
 			sprintf(fileName, "SMAT%04d.npz", idx);
