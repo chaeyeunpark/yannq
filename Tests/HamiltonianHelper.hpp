@@ -78,6 +78,7 @@ public:
 		{
 			res[sigma_ ^ elt.first] = elt.second;
 		}
+		return res;
 	}
 };
 

@@ -62,7 +62,7 @@ public:
 		grad_ -= t*deltasPsis_.colwise().sum().conjugate();
 	}
 
-	Vector deltaMean() const
+	Vector oloc() const
 	{
 		return deltasPsis_.colwise().sum();
 	}

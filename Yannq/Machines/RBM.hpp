@@ -13,7 +13,18 @@
 
 namespace yannq
 {
-
+/** @addtogroup RBM
+ * \ingroup Machines
+ * @{
+ * RBM class represents restricted Boltzmann machine for quantum states.
+ *
+ * Two parameters n and m are the numbers of hidden and visible units.
+ * The RBM is defined by \f$\{A, B, W\} \f$. \f$A\f$ and \f$B\f$ are bias vertors of size n and m,
+ * repectively, and \f$W\f$ is a weight matrix of size m by n. 
+ * Wave function in computational basis is given by
+ * \f$ \langle \sigma | \psi \rangle = e^{a \cdot \sigma} \prod_j 2 \cosh[\theta_j] \f$
+ * where \f$ \theta_j = \sum_i W_{j,i} \sigma_i + b_j \f$.
+ */
 template<typename T, bool useBias = true>
 class RBM
 {
@@ -617,7 +628,6 @@ public:
 		return std::make_tuple(sigma, calcTheta(sigma));
 	}
 
-	//must be slow
 	T coeff(const std::tuple<Eigen::VectorXi, Vector>& t) const
 	{
 		using std::cosh;
@@ -637,7 +647,6 @@ public:
 		{
 			for(int j = 0; j < m_; j++)
 			{
-				//res(i*m_ + j) = T(std::get<0>(t)(i))*std::get<1>(t)(j);
 				res(i*m_ + j) = T(std::get<0>(t)(i))*tanh(std::get<1>(t)(j));
 			}
 		}
@@ -677,6 +686,6 @@ typename RBM<T, useBias>::Vector getPsi(const RBM<T, useBias>& qs, const std::ve
 	else
 		return psi;
 }
-
+/** @} */
 }//NNQS
 #endif//CY_NNQS_RBM_HPP
