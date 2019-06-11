@@ -8,12 +8,14 @@ class KitaevHex
 private:
 	const int n_;
 	const int m_;
-	const double J_;
+	const double Jx_;
+	const double Jy_;
+	const double Jz_;
 
 public:
 
-	KitaevHex(int n, int m, double J)
-		: n_(n), m_(m), J_(J)
+	KitaevHex(int n, int m, double Jx, double Jy, double Jz)
+		: n_(n), m_(m), Jx_(Jx), Jy_(Jy), Jz_(Jz)
 	{
 		assert(n % 2 == 0);
 		assert(m % 2 == 0);
@@ -108,17 +110,17 @@ public:
 
 		for(auto &xx: xLinks())
 		{
-			s += J_*smp.ratio(xx.first, xx.second); //xx
+			s += Jx_*smp.ratio(xx.first, xx.second); //xx
 		}
 		for(auto &yy: yLinks())
 		{
 			int zzval = smp.sigmaAt(yy.first)*smp.sigmaAt(yy.second);
-			s += -J_*zzval*smp.ratio(yy.first, yy.second); //yy
+			s += -Jy_*zzval*smp.ratio(yy.first, yy.second); //yy
 		}
 		for(auto &zz: zLinks())
 		{
 			int zzval = smp.sigmaAt(zz.first)*smp.sigmaAt(zz.second);
-			s += J_*zzval; //yy
+			s += Jz_*zzval; //yy
 		}
 		return s;
 	}
@@ -129,18 +131,18 @@ public:
 		for(auto &xx: xLinks())
 		{
 			int t = (1 << xx.first) | (1 << xx.second);
-			m[col ^ t] += J_; //xx
+			m[col ^ t] += Jx_; //xx
 		}
 		for(auto &yy: yLinks())
 		{
 			int zzval = (1-2*((col >> yy.first) & 1))*(1-2*((col >> yy.second) & 1));
 			int t = (1 << yy.first) | (1 << yy.second);
-			m[col ^ t] += -J_*zzval; //yy
+			m[col ^ t] += -Jy_*zzval; //yy
 		}
 		for(auto &zz: zLinks())
 		{
 			int zzval = (1-2*((col >> zz.first) & 1))*(1-2*((col >> zz.second) & 1));
-			m[col] += J_*zzval; //zz
+			m[col] += Jz_*zzval; //zz
 		}
 
 		return m;
