@@ -12,10 +12,19 @@ private:
 	const double Jy_;
 	const double Jz_;
 
+	const double h_;
+
 public:
 
+	KitaevHex(int n, int m, double J, double h = 0.0)
+		: n_(n), m_(m), Jx_(J), Jy_(J), Jz_(J), h_(h)
+	{
+		assert(n % 2 == 0);
+		assert(m % 2 == 0);
+	}
+
 	KitaevHex(int n, int m, double Jx, double Jy, double Jz)
-		: n_(n), m_(m), Jx_(Jx), Jy_(Jy), Jz_(Jz)
+		: n_(n), m_(m), Jx_(Jx), Jy_(Jy), Jz_(Jz), h_{0.0}
 	{
 		assert(n % 2 == 0);
 		assert(m % 2 == 0);
@@ -98,6 +107,10 @@ public:
 		return nlohmann::json
 		{
 			{"name", "KITAEVHEX"},
+			{"Jx", Jx_},
+			{"Jy", Jy_},
+			{"Jz", Jz_},
+			{"h", h_},
 			{"n", n_},
 			{"m", m_},
 		};
@@ -107,6 +120,13 @@ public:
 	typename State::T operator()(const State& smp) const
 	{
 		typename State::T s = 0.0;
+		constexpr std::complex<double> I(0.,1.);
+
+		for(int i = 0; i < n_*m_; ++i)
+		{
+			s += h_*smp.sigmaAt(i); //hz
+			s += h_*smp.ratio(i); //hx
+		}
 
 		for(auto &xx: xLinks())
 		{
@@ -128,6 +148,14 @@ public:
 	std::map<uint32_t, double> operator()(uint32_t col) const
 	{
 		std::map<uint32_t, double> m;
+
+		for(int i = 0; i < n_*m_; ++i)
+		{
+			double k = (1-2*int((col >> i) & 1));
+			m[col] += h_*k; //hz
+			m[col ^ (1<<i)] += h_; //hx
+		}
+
 		for(auto &xx: xLinks())
 		{
 			int t = (1 << xx.first) | (1 << xx.second);
@@ -135,13 +163,13 @@ public:
 		}
 		for(auto &yy: yLinks())
 		{
-			int zzval = (1-2*((col >> yy.first) & 1))*(1-2*((col >> yy.second) & 1));
+			int zzval = (1-2*int((col >> yy.first) & 1))*(1-2*int((col >> yy.second) & 1));
 			int t = (1 << yy.first) | (1 << yy.second);
 			m[col ^ t] += -Jy_*zzval; //yy
 		}
 		for(auto &zz: zLinks())
 		{
-			int zzval = (1-2*((col >> zz.first) & 1))*(1-2*((col >> zz.second) & 1));
+			int zzval = (1-2*int((col >> zz.first) & 1))*(1-2*int((col >> zz.second) & 1));
 			m[col] += Jz_*zzval; //zz
 		}
 
