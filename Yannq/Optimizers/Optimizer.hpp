@@ -17,6 +17,8 @@ public:
 	virtual nlohmann::json params() const = 0; 
 
 	virtual Vector getUpdate(const Vector& grad) = 0;
+
+	virtual ~Optimizer() { }
 };
 
 template<typename T, typename Enable = void>
