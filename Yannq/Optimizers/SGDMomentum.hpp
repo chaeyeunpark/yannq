@@ -60,8 +60,8 @@ public:
 
 		++t_;
 		m_ *= gamma_;
-		m_ += v;
-		double eta = std::max((alpha_/pow(t_, p_)), 1e-4);
+		m_ += (1-gamma_)*v;
+		double eta = std::max((alpha_/pow(t_, p_)), 1e-4)/(1.0 - pow(gamma_, t_));
 		return -eta*m_;
 	}
 };

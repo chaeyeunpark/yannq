@@ -416,6 +416,11 @@ public:
 		}
 		return res;
 	}
+
+	uint32_t widx(int i, int j) const
+	{
+		return i*m_ + j;
+	}
 };
 
 template<typename T>

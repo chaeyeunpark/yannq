@@ -62,7 +62,6 @@ public:
 		std::complex<double> r = psi.adjoint() * target_;
 		res -= r1/r;
 
-		//Eigen::VectorXd rr = Eigen::Map<Eigen::VectorXd>((double*)res.data(), 2*rbm.getDim(), 1);
 		return res;
 	}
 	

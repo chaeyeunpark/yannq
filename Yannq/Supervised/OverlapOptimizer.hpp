@@ -3,14 +3,13 @@
 #include <Eigen/Dense>
 #include "Machines/RBM.hpp"
 
-
 namespace yannq
 {
 template<class Machine>
 class OverlapOptimizer
 {
 public:
-	using Scalar = typename Machine::ScalarType;
+	using ScalarType = typename Machine::ScalarType;
 	using Vector = typename Machine::Vector;
 	using Matrix = typename Machine::Matrix;
 
@@ -23,6 +22,7 @@ private:
 
 	Matrix dervs_;
 	Vector ratios_;
+	ScalarType ov_;
 
 public:
 	explicit OverlapOptimizer(Machine& qs, const Eigen::VectorXcd& target)
@@ -30,16 +30,16 @@ public:
 	{
 	}
 
-	template<class Machine, class SamplingResult>
+	template<class SamplingResult>
 	void constructFromSampling(const Machine& qs, SamplingResult&& rs)
 	{
 		using std::conj;
 
-		dervs_.resize(rs.size(), rbm.getDim());
+		dervs_.resize(rs.size(), qs.getDim());
 		ratios_.resize(rs.size());
 
-		dervs.setZero();
-		ratios.setZero();
+		dervs_.setZero();
+		ratios_.setZero();
 
 #pragma omp parallel for schedule(static,8)
 		for(std::size_t n = 0; n < rs.size(); n++)
@@ -47,8 +47,8 @@ public:
 			const auto elt = rs[n];
 			auto smp = construct_state<typename MachineStateTypes<Machine>::StateRef>(qs, elt);
 
-			dervs.row(n) = qs.logDeriv(elt);
-			ratios(n) = target_(toValue(std::get<0>(elt)))/qs.coeff(elt);
+			dervs_.row(n) = qs.logDeriv(elt);
+			ratios_(n) = target_(toValue(std::get<0>(elt)))/qs.coeff(elt);
 		}
 		ov_ = ratios_.mean();
 	}
@@ -56,28 +56,15 @@ public:
 	Vector getGrad() const
 	{
 		Vector res = dervs_.colwise().mean();
-		res -= dervs_.adjoint()*ratios/ov_;
+		res -= dervs_.adjoint()*ratios_/ov_;
 		return res;
 	}
 	
 	//<\phi|\psi>
-	T getOverlap() const
+	ScalarType getOverlap() const
 	{
 		return ov_;
 	}
-		/*
-		Eigen::VectorXd rr = Eigen::Map<Eigen::VectorXd>((double*)res.data(), 2*rbm.getDim(), 1);
-		return rr;
-		*/
-	/*
-	double logOverlap() const
-	{
-		using std::real;
-		typename yannq::RBM<T>::Vector psi = getPsi(rbm, true);
-		T r = psi.adjoint()*target_;
-		return -2*real(std::log(r));
-	}
-	*/
 };
 }//namespace yannq
 #endif//CY_OVERLAP_OPTIMIZER_HPP
