@@ -18,16 +18,26 @@ private:
 	Vector target_;
 
 public:
-
-	explicit OverlapOptimizerExact(int N, const Vector& target)
-		: N_(N), target_(target)
+	template<class Target>
+	explicit OverlapOptimizerExact(int N, const Target& t)
+		: N_(N)
 	{
+		target_.resize(1<<N);
+		for(int i = 0; i < (1<<N); i++)
+		{
+			target_(i) = t(i);
+		}
+	}
+
+	Vector getTarget() const 
+	{
+		return target_;
 	}
 
 	/**
 	 * This method return the gradient of the lograithmic fidelity: -log(\langle \psi_\theta | \phi  \rangle).
 	 * */
-	typename Machine::Vector gradient(const Machine& qs) const
+	typename Machine::Vector calcGrad(const Machine& qs) const
 	{
 		using std::conj;
 		using Vector = typename Machine::Vector;
@@ -37,7 +47,7 @@ public:
 		res.setZero();
 		r1.setZero();
 
-		Vector psi = getPsi(qs, false);
+		Vector psi = getPsi(qs, true);
 #pragma omp parallel
 		{
 			Vector resLocal(qs.getDim());
@@ -71,8 +81,10 @@ public:
 	double fidelity(const Machine& qs) const
 	{
 		using std::norm;
-		auto psi = getPsi(qs, false);
-		return norm( psi.adjoint() * target_);
+		auto psi = getPsi(qs, true);
+		ScalarType ov = psi.adjoint() * target_;
+		
+		return norm( ov);
 	}
 };
 } //yannq
