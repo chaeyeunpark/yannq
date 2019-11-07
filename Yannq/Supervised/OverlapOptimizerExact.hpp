@@ -13,14 +13,16 @@ public:
 	using ScalarType = typename Machine::ScalarType;
 	using Vector = typename Machine::Vector;
 	using Matrix = typename Machine::Matrix;
+
 private:
 	int N_;
+	const Machine& qs_;
 	Vector target_;
 
 public:
 	template<class Target>
-	explicit OverlapOptimizerExact(int N, const Target& t)
-		: N_(N)
+	explicit OverlapOptimizerExact(int N, const Machine& qs, const Target& t)
+		: N_(N), qs_(qs)
 	{
 		target_.resize(1<<N);
 		for(int i = 0; i < (1<<N); i++)
@@ -37,21 +39,21 @@ public:
 	/**
 	 * This method return the gradient of the lograithmic fidelity: -log(\langle \psi_\theta | \phi  \rangle).
 	 * */
-	typename Machine::Vector calcGrad(const Machine& qs) const
+	typename Machine::Vector calcGrad() const
 	{
 		using std::conj;
 		using Vector = typename Machine::Vector;
 
-		Vector res(qs.getDim());
-		Vector r1(qs.getDim());
+		Vector res(qs_.getDim());
+		Vector r1(qs_.getDim());
 		res.setZero();
 		r1.setZero();
 
-		Vector psi = getPsi(qs, true);
+		Vector psi = getPsi(qs_, true);
 #pragma omp parallel
 		{
-			Vector resLocal(qs.getDim());
-			Vector r1Local(qs.getDim());
+			Vector resLocal(qs_.getDim());
+			Vector r1Local(qs_.getDim());
 			resLocal.setZero();
 			r1Local.setZero();
 
@@ -59,7 +61,7 @@ public:
 			for(uint32_t n = 0; n < (1u<<N_); n++)
 			{
 				auto s = toSigma(N_, n);
-				auto der = qs.logDeriv(qs.makeData(s));
+				auto der = qs_.logDeriv(qs_.makeData(s));
 				resLocal += der.conjugate()*std::norm(psi(n));
 				r1Local += conj(psi(n))*target_(n)*der.conjugate();
 			}
@@ -84,7 +86,7 @@ public:
 		auto psi = getPsi(qs, true);
 		ScalarType ov = psi.adjoint() * target_;
 		
-		return norm( ov);
+		return norm(ov);
 	}
 };
 } //yannq
