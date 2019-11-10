@@ -1,11 +1,11 @@
-#ifndef CY_OVERLAP_OPTIMIZER_HPP
-#define CY_OVERLAP_OPTIMIZER_HPP
+#ifndef YANNQ_SUPERVISED_OVERLAPOPTIMZER_HPP
+#define YANNQ_SUPERVISED_OVERLAPOPTIMZER_HPP
 #include <Eigen/Dense>
 #include "Machines/RBM.hpp"
 
 namespace yannq
 {
-template<class Machine>
+template<class Machine, class Target>
 class OverlapOptimizer
 {
 public:
@@ -16,26 +16,25 @@ public:
 private:
 	int N_;
 
-	Machine& qs_;
-
-	Eigen::VectorXcd target_;
+	const Machine& qs_;
+	const Target& target_;
 
 	Matrix dervs_;
 	Vector ratios_;
 	ScalarType ov_;
 
 public:
-	explicit OverlapOptimizer(Machine& qs, const Eigen::VectorXcd& target)
+	explicit OverlapOptimizer(const Machine& qs, const Target& target)
 		: N_(qs.getN()), qs_(qs), target_(target)
 	{
 	}
 
 	template<class SamplingResult>
-	void constructFromSampling(const Machine& qs, SamplingResult&& rs)
+	void constructFromSampling(SamplingResult&& rs)
 	{
 		using std::conj;
 
-		dervs_.resize(rs.size(), qs.getDim());
+		dervs_.resize(rs.size(), qs_.getDim());
 		ratios_.resize(rs.size());
 
 		dervs_.setZero();
@@ -45,17 +44,18 @@ public:
 		for(std::size_t n = 0; n < rs.size(); n++)
 		{
 			const auto elt = rs[n];
-			auto smp = construct_state<typename MachineStateTypes<Machine>::StateRef>(qs, elt);
+			auto smp = construct_state<typename MachineStateTypes<Machine>::StateRef>(qs_, elt);
 
-			dervs_.row(n) = qs.logDeriv(elt);
-			ratios_(n) = target_(toValue(std::get<0>(elt)))/qs.coeff(elt);
+			dervs_.row(n) = qs_.logDeriv(elt);
+			ratios_(n) = target_(toValue(smp.getSigma()))/qs_.coeff(elt);
 		}
 		ov_ = ratios_.mean();
 	}
 
-	Vector getGrad() const
+	Vector calcGrad() const
 	{
 		Vector res = dervs_.colwise().mean();
+		res = res.conjugate();
 		res -= dervs_.adjoint()*ratios_/ov_;
 		return res;
 	}
@@ -67,4 +67,4 @@ public:
 	}
 };
 }//namespace yannq
-#endif//CY_OVERLAP_OPTIMIZER_HPP
+#endif//YANNQ_SUPERVISED_OVERLAPOPTIMZER_HPP

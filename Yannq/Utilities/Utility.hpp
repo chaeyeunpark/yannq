@@ -85,7 +85,7 @@ auto calcObs(const AuxData& ad, const Container& sr, Observable& obs)
 }
 */
 
-
+/*
 template<class Hamiltonian, typename Enable=void>
 struct NumArgsHam;
 template<class Hamiltonian>
@@ -103,6 +103,7 @@ struct NumArgsHam<Hamiltonian, typename std::enable_if<std::is_constructible<Ham
 {
 	constexpr static int value = 3;
 };
+*/
 
 template <typename RandomEngine>
 Eigen::VectorXi randomSigma(int n, RandomEngine& re)

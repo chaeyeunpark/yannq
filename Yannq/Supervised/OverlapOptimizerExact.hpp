@@ -80,12 +80,11 @@ public:
 	/**
 	 * return squared fidelity: |\langle \psi_\theta | \phi \rangle|^2
 	 */
-	double fidelity(const Machine& qs) const
+	double fidelity() const
 	{
 		using std::norm;
-		auto psi = getPsi(qs, true);
+		auto psi = getPsi(qs_, true);
 		ScalarType ov = psi.adjoint() * target_;
-		
 		return norm(ov);
 	}
 };

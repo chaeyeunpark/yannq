@@ -2,37 +2,19 @@
 #define YANNQ_GROUNDSTATES_SRMAT_HPP_HPP
 #include <Eigen/Core>
 #include <Eigen/Dense>
-#include <Eigen/IterativeLinearSolvers>
-#include <unsupported/Eigen/IterativeSolvers>
+#include<Eigen/IterativeLinearSolvers>
 
 #include "Utilities/Utility.hpp"
-
-namespace yannq
-{
-
-template<typename Machine>
-class SRMat;
-
-} //namespace yannq
-
-namespace Eigen {
-namespace internal {
-	template<typename Machine>
-	struct traits<yannq::SRMat<Machine> > :  public Eigen::internal::traits<Eigen::SparseMatrix<typename Machine::ScalarType> > {};
-}
-} //namespace Eigen
-
-
-
+#include "Observables/FisherMatrix.hpp"
+#include "Observables/Energy.hpp"
 
 namespace yannq
 {
 /** 
  * Construct the fisher information metric for quantum states
  * */
-template<typename Machine>
+template<typename Machine, typename Hamiltonian>
 class SRMat
-	: public Eigen::EigenBase<SRMat<Machine> > 
 {
 public:
 	using Scalar = typename Machine::ScalarType;
@@ -45,150 +27,105 @@ public:
 private:
 	int n_;
 
-	Machine& qs_;
-	RealScalar shift_;
+	const Machine& qs_;
+	const Hamiltonian& ham_;
 	
+	FisherMatrix<Machine> fisher_;
+	Energy<Scalar, Hamiltonian> energy_;
 
-	double eloc_;
-
-	double elocVar_;
-
-
-	Matrix deltas_;
-	Vector deltaMean_;
-	Vector grad_;
-	Vector elocs_;
+	Vector energyGrad_;
 
 public:
-	// Required typedefs, constants, and method:
-	typedef int StorageIndex;
-
-	enum {
-		ColsAtCompileTime = Eigen::Dynamic,
-		MaxColsAtCompileTime = Eigen::Dynamic,
-		IsRowMajor = false
-	};
-
-	Eigen::Index rows() const { return qs_.getDim(); }
-	Eigen::Index cols() const { return qs_.getDim(); }
-
-	template<typename Rhs>
-	Eigen::Product<SRMat<Machine>, Rhs, Eigen::AliasFreeProduct> operator*(const Eigen::MatrixBase<Rhs>& x) const {
-	  return Eigen::Product<SRMat<Machine>, Rhs, Eigen::AliasFreeProduct>(*this, x.derived());
-	}
-
-	void setShift(RealScalar shift)
+	SRMat(const Machine& qs, const Hamiltonian& ham)
+	  : n_{qs.getN()}, qs_(qs), ham_(ham),
+		fisher_(qs), energy_(ham)
 	{
-		shift_ = shift;
 	}
 
-	RealScalar getShift() const
-	{
-		return shift_;
-	}
-
-	template<class SamplingResult, class Hamiltonian>
-	void constructFromSampling(SamplingResult& rs, Hamiltonian& ham)
+	template<class SamplingResult>
+	void constructFromSampling(SamplingResult&& rs)
 	{
 		int nsmp = rs.size();
-
-		deltas_.setZero(nsmp, qs_.getDim());
-		grad_.setZero(nsmp);
-		elocs_.setZero(nsmp);
+		fisher_.initIter(nsmp);
+		energy_.initIter(nsmp);
 
 #pragma omp parallel for schedule(static,8)
 		for(std::size_t n = 0; n < rs.size(); n++)
 		{
 			const auto& elt = rs[n];
-			auto smp = construct_state<typename MachineStateTypes<Machine>::StateRef>(qs_, elt);
-
-			elocs_(n) = ham(smp);
-
-			deltas_.row(n) = qs_.logDeriv(elt);
+			auto state = construct_state<typename MachineStateTypes<Machine>::StateRef>(qs_, elt);
+			fisher_.eachSample(n, elt, state);
+			energy_.eachSample(n, elt, state);
 		}
-		deltaMean_ = deltas_.colwise().mean();
-		deltas_ = deltas_.rowwise() - deltaMean_.transpose();
 
-		eloc_ = real(elocs_.mean());
-		elocVar_ = elocs_.real().cwiseAbs2().sum()/rs.size() - eloc_*eloc_;
+		fisher_.finIter();
+		energy_.finIter();
+		
+		auto derv = fisher_.logDervs().adjoint();
 
-		elocs_ -= elocs_.mean() * Eigen::VectorXd::Ones(nsmp);
-
-		grad_ = deltas_.adjoint() * elocs_;
-		grad_ /= nsmp;
-
+		energyGrad_ =  derv * energy_.elocs();
+		energyGrad_ /= nsmp;
 	}
-	Vector oloc() const
+	const Vector& oloc() const&
 	{
-		return deltaMean_;
+		return fisher_.oloc();
 	}
-
-	Matrix corrMat() const
+	Vector&& oloc() &&
 	{
-		int nsmp = deltas_.rows();
-		return (deltas_.adjoint() * deltas_)/nsmp;
+		return fisher_.oloc();
 	}
 
-	RealVector diagCorrMat() const
+	Matrix& corrMat() const&
 	{
-		RealMatrix sqrDeltas = deltas_.cwiseAbs2();
-		return sqrDeltas.colwise().mean();
+		return fisher_.corrMat();
+	}
+	Matrix corrMat() &&
+	{
+		return fisher_.corrMat();
 	}
 
-	double getEloc() const
+	RealScalar eloc() const
 	{
-		return eloc_;
+		return std::real(energy_.eloc());
 	}
 
-	double getElocVar() const
+	Scalar elocVar() const
 	{
-		return elocVar_;
+		return std::real(energy_.elocVar());
 	}
 	
-	SRMat(Machine& qs)
-	  : n_{qs.getN()}, qs_(qs), shift_{}
+	const Vector& energyGrad() const&
 	{
+		return energyGrad_;
+	}
+	Vector energyGrad() &&
+	{
+		return energyGrad_;
 	}
 
-	Vector getF() const
+	Vector apply(const Vector& v) const
 	{
-		return grad_;
+		return fisher_.apply(v);
 	}
-
-	template<class Rhs>
-	typename Machine::Vector apply(const Rhs& rhs) const
+	/**
+	 * If useCG is set, we use the CG solver with given tol
+	 */
+	Vector solveCG(double shift, double tol = 1e-4)
 	{
-		assert(rhs.size() == qs_.getDim());
-		typename Machine::Vector r = deltas_*rhs;
-
-		typename Machine::Vector res = deltas_.adjoint()*r/r.rows();
-
-		return res + Scalar(shift_)*rhs;
+		fisher_.setShift(shift);
+		Eigen::ConjugateGradient<FisherMatrix<Machine>, Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
+		cg.compute(fisher_);
+		cg.setTolerance(tol);
+		return cg.solve(energyGrad_);
+	}
+	Vector solveExact(double shift)
+	{
+		Matrix mat = fisher_.corrMat();
+		mat += shift*Matrix::Identity(mat.rows(),mat.cols());
+		Eigen::LLT<Matrix> llt{mat};
+		return llt.solve(energyGrad_);
 	}
 
 };
 } //namespace yannq
-
-// Implementation of yannq::SRMat * Eigen::DenseVector though a specialization of internal::generic_product_impl:
-namespace Eigen {
-namespace internal {
-	template<typename Rhs, typename Machine>
-	struct generic_product_impl<yannq::SRMat<Machine>, Rhs, SparseShape, DenseShape, GemvProduct> // GEMV stands for matrix-vector
-	: generic_product_impl_base<yannq::SRMat<Machine>, Rhs, generic_product_impl<yannq::SRMat<Machine>, Rhs> >
-	{
-		typedef typename Product<yannq::SRMat<Machine>, Rhs>::Scalar Scalar;
-		template<typename Dest>
-		static void scaleAndAddTo(Dest& dst, const yannq::SRMat<Machine>& lhs, const Rhs& rhs, const Scalar& alpha)
-		{
-			// This method should implement "dst += alpha * lhs * rhs" inplace,
-			// however, for iterative solvers, alpha is always equal to 1, so let's not bother about it.
-			assert(alpha==Scalar(1) && "scaling is not implemented");
-			EIGEN_ONLY_USED_FOR_DEBUG(alpha);
-
-			dst += lhs.apply(rhs);
-		}
-	};
-} //namespace internal
-} //namespace Eigen
-
 #endif//YANNQ_GROUNDSTATES_SRMAT_HPP_HPP
