@@ -22,7 +22,7 @@ private:
 	const double beta1_;
 	const double beta2_;
 
-	int t;
+	int t_;
 	Vector m_;
 	RealVector v_;
 
@@ -54,12 +54,13 @@ public:
 	Adam(const nlohmann::json& params)
 		: alpha_(params.value("alpha", DEFAULT_PARAMS[0])), 
 			beta1_(params.value("beta1", DEFAULT_PARAMS[1])),
-			beta2_(params.value("beta2", DEFAULT_PARAMS[2]))
+			beta2_(params.value("beta2", DEFAULT_PARAMS[2])),
+			t_{0}
 	{
 	}
 
 	Adam(double alpha = DEFAULT_PARAMS[0], double beta1 = DEFAULT_PARAMS[1], double beta2 = DEFAULT_PARAMS[2])
-		: alpha_(alpha), beta1_(beta1), beta2_(beta2)
+		: alpha_(alpha), beta1_(beta1), beta2_(beta2), t_{0}
 	{
 	}
 
@@ -68,12 +69,12 @@ public:
 		const double eps = 1e-8;
 		auto norm = [](T x) -> RealT { return std::norm(x); };
 
-		if(t ==0)
+		if(t_ ==0)
 		{
 			m_ = Vector::Zero(grad.rows());
 			v_ = RealVector::Zero(grad.rows());
 		}
-		++t;
+		++t_;
 
 		m_ *= beta1_;
 		m_ += (1-beta1_)*grad;
@@ -82,10 +83,10 @@ public:
 		v_ *= beta2_;
 		v_ += (1-beta2_)*g2;
 
-		double epsnorm = eps*sqrt(1.0-pow(beta2_,t));
+		double epsnorm = eps*sqrt(1.0-pow(beta2_,t_));
 		RealVector denom = v_.unaryExpr([epsnorm](RealT x){ return sqrt(x)+epsnorm; });
 
-		double alphat = alpha_*sqrt(1.0-pow(beta2_,t))/(1.0-pow(beta1_,t));
+		double alphat = alpha_*sqrt(1.0-pow(beta2_,t_))/(1.0-pow(beta1_,t_));
 
 		return -alphat*m_.cwiseQuotient(denom);
 	}

@@ -38,8 +38,10 @@ public:
 	using Scalar = typename Machine::ScalarType;
 	using RealScalar = typename remove_complex<Scalar>::type;
 
-	using Matrix = typename Machine::Matrix;
-	using Vector = typename Machine::Vector;
+	using Matrix = typename Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
+	using Vector = typename Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
+	using RealMatrix = typename Eigen::Matrix<RealScalar, Eigen::Dynamic, Eigen::Dynamic>;
+	using RealVector = typename Eigen::Matrix<RealScalar, Eigen::Dynamic, 1>;
 private:
 	int n_;
 
@@ -125,6 +127,12 @@ public:
 	{
 		int nsmp = deltas_.rows();
 		return (deltas_.adjoint() * deltas_)/nsmp;
+	}
+
+	RealVector diagCorrMat() const
+	{
+		RealMatrix sqrDeltas = deltas_.cwiseAbs2();
+		return sqrDeltas.colwise().mean();
 	}
 
 	double getEloc() const

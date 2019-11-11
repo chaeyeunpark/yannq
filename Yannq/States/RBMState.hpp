@@ -1,5 +1,5 @@
-#ifndef CY_NNQS_RBMSTATEHPP
-#define CY_NNQS_RBMSTATEHPP
+#ifndef YANNQ_STATES_RBMSTATE_HPP
+#define YANNQ_STATES_RBMSTATE_HPP
 
 #include "Machines/RBM.hpp"
 #include "Utilities/tuple_helper.hpp"
@@ -296,4 +296,4 @@ template<typename T>
 struct is_reference_state_type<RBMStateRef<T> >: public std::true_type {};
 
 } //namespace yannq
-#endif//CY_NNQS_RBMSTATEHPP
+#endif//YANNQ_STATES_RBMSTATE_HPP
