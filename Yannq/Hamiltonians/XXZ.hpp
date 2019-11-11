@@ -9,13 +9,19 @@ private:
 	int n_;
 	double J_;
 	double Delta_;
+	double sign_;
 
 public:
 
-	XXZ(int n, double J, double Delta)
+	XXZ(int n, double J, double Delta, bool signRule = false)
 		: n_(n), J_(J), Delta_(Delta)
 	{
+		if(signRule)
+			sign_ = 1.0;
+		else
+			sign_ = -1.0;
 	}
+
 	nlohmann::json params() const
 	{
 		return nlohmann::json
@@ -23,7 +29,8 @@ public:
 			{"name", "XXZ"},
 			{"n", n_},
 			{"J", J_},
-			{"Delta", Delta_}
+			{"Delta", Delta_},
+			{"sign_rule", int(sign_)}
 		};
 	}
 	
@@ -36,7 +43,7 @@ public:
 		{
 			int zz = smp.sigmaAt(i)*smp.sigmaAt((i+1)%n_);
 			s += J_*Delta_*zz; //zz
-			s += J_*(1-zz)*smp.ratio(i, (i+1)%n_); //xx+yy
+			s += sign_*J_*(1-zz)*smp.ratio(i, (i+1)%n_); //xx+yy
 		}
 		return s;
 	}
@@ -51,7 +58,7 @@ public:
 			int zz = (1-2*b1)*(1-2*b2);
 			long long int x = (1 << i) | (1 << ((i+1)%(n_)));
 			m[col] += J_*Delta_*zz;
-			m[col ^ x] += J_*(1 - zz);
+			m[col ^ x] += sign_*J_*(1 - zz);
 		}
 		return m;
 	}
