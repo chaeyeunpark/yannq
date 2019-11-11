@@ -83,7 +83,6 @@ public:
 
 		//RealVector denom = second_.unaryExpr([eps](RealT x)->RealT { return x + eps; });
 		RealVector denom = second_.array() + std::max(1.0*pow(0.9,t),eps);
-		std::cerr << denom.transpose() << std::endl;
 		++t;
 
 		return -alpha_*grad.cwiseQuotient(denom);

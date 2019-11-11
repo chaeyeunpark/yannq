@@ -2,7 +2,6 @@
 #define NNQS_STATES_RBMSTATEMT_HPP
 
 #include "Machines/RBM.hpp"
-#include "Utilities/tuple_helper.hpp"
 #include "Utilities/type_traits.hpp"
 #include "Utilities/Utility.hpp"
 
