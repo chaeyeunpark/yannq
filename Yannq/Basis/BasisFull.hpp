@@ -45,6 +45,10 @@ public:
 	{
 		return BasisFullIterator{(1u<<N_)};
 	}
+	uint32_t size() const
+	{
+		return (1u<<N_);
+	}
 };
 
 #endif//YANNQ_BASIS_BASISFULL_HPP

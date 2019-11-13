@@ -27,7 +27,7 @@ class RBMStateObj
 protected:
 	const Machine& qs_;
 public:
-	using T = typename Machine::ScalarType;
+	using T = typename Machine::Scalar;
 
 	RBMStateObj(const Machine& qs)
 		: qs_(qs)
@@ -135,7 +135,7 @@ private:
 
 public:
 	using Vector=typename Machine::Vector;
-	using T = typename Machine::ScalarType;
+	using T = typename Machine::Scalar;
 
 	RBMStateValue(const Machine& qs, Eigen::VectorXi&& sigma)
 		: RBMStateObj<Machine, RBMStateValue<Machine> >(qs), sigma_(std::move(sigma))
@@ -263,7 +263,7 @@ private:
 	ThetaType& theta_;
 public:
 	
-	using T = typename Machine::ScalarType;
+	using T = typename Machine::Scalar;
 
 	RBMStateRef(const Machine& qs, SigmaType& sigma, ThetaType& theta)
 		: RBMStateObj<Machine, RBMStateRef<Machine, is_const> >(qs), sigma_(sigma), theta_(theta)

@@ -31,7 +31,8 @@ class RBM
 	static_assert(std::is_floating_point<T>::value || is_complex_type<T>::value, "T must be floating or complex");
 
 public:
-	using ScalarType=T;
+	using Scalar = T;
+	using RealScalar = typename yannq::remove_complex<T>::type;
 	typedef Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> Matrix;
 	typedef Eigen::Matrix<T, Eigen::Dynamic, 1>  Vector;
 
@@ -429,7 +430,7 @@ class RBM<T, false>
 	static_assert(std::is_floating_point<T>::value || is_complex_type<T>::value, "T must be floating or complex");
 
 public:
-	using ScalarType=T;
+	using Scalar=T;
 
 	typedef Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> Matrix;
 	typedef Eigen::Matrix<T, Eigen::Dynamic, 1>  Vector;
@@ -677,7 +678,7 @@ typename RBM<T, useBias>::Vector getPsi(const RBM<T, useBias>& qs, bool normaliz
 		return psi;
 }
 template<typename T, bool useBias>
-typename RBM<T, useBias>::Vector getPsi(const RBM<T, useBias>& qs, const std::vector<uint32_t>& basis, bool normalize)
+typename RBM<T, useBias>::Vector getPsi(const RBM<T, useBias>& qs, const std::vector<T>& basis, bool normalize)
 {
 	const int n = qs.getN();
 	typename RBM<T>::Vector psi(basis.size());
@@ -690,6 +691,19 @@ typename RBM<T, useBias>::Vector getPsi(const RBM<T, useBias>& qs, const std::ve
 		return psi.normalized();
 	else
 		return psi;
+}
+template<typename T, bool useBias, class BasisIter>
+typename RBM<T, useBias>::RealScalar getNorm(const RBM<T, useBias>& qs, BasisIter&& basis)
+{
+	const int n = qs.getN();
+	typename RBM<T>::Vector psi(basis.size());
+	for(auto sigma: basis)
+	{
+		auto s = toSigma(n, sigma);
+		psi(sigma) = qs.coeff(std::make_tuple(s, qs.calcTheta(s)));
+	}
+	return psi.squaredNorm();
+
 }
 /** @} */
 }//NNQS

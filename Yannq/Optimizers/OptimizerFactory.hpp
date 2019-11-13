@@ -1,6 +1,8 @@
 #ifndef NNQS_OPTIMIZERS_OPTIMIZERFACTORY_HPP
 #define NNQS_OPTIMIZERS_OPTIMIZERFACTORY_HPP
 #include <functional>
+#include <utility>
+
 #include "Optimizers/Optimizer.hpp"
 
 #include "Optimizers/SGD.hpp"
@@ -28,7 +30,7 @@ private:
 	{
 		optCstr_[name] = [](const nlohmann::json& param) -> std::unique_ptr<Optimizer<T> >
 		{
-			return make_unique<OptimizerT>(param); 
+			return std::make_unique<OptimizerT>(param); 
 		};
 	}
 
@@ -37,7 +39,7 @@ private:
 	{
 		optGeoCstr_[name] = [](const nlohmann::json& param) -> std::unique_ptr<OptimizerGeometry<T> >
 		{
-			return make_unique<OptimizerT>(param); 
+			return std::make_unique<OptimizerT>(param); 
 		};
 	}
 
@@ -48,21 +50,25 @@ private:
 		resiterOptimizer<AdaDelta<T> >("AdaDelta");
 		resiterOptimizer<RMSProp<T> >("RMSProp");
 		resiterOptimizer<Adam<T> >("Adam");
+		resiterOptimizer<AdaMax<T> >("AdaMax");
 		resiterOptimizer<ModifiedAdam<T> >("ModifiedAdam");
 
 		resiterOptimizer<AdaDelta<typename remove_complex<T>::type> >("AdaDeltaReal");
 		resiterOptimizer<RMSProp<typename remove_complex<T>::type> >("RMSPropReal");
 		resiterOptimizer<Adam<typename remove_complex<T>::type> >("AdamReal");
+		resiterOptimizer<AdaMax<typename remove_complex<T>::type> >("AdaMaxReal");
 
 
 		resiterOptimizerGeometry<AdaDelta<T> >("AdaDelta");
 		resiterOptimizerGeometry<RMSProp<T> >("RMSProp");
 		resiterOptimizerGeometry<Adam<T> >("Adam");
+		resiterOptimizerGeometry<AdaMax<T> >("AdaMax");
 		resiterOptimizerGeometry<ModifiedAdam<T> >("ModifiedAdam");
 
 		resiterOptimizerGeometry<AdaDelta<typename remove_complex<T>::type> >("AdaDeltaReal");
 		resiterOptimizerGeometry<RMSProp<typename remove_complex<T>::type> >("RMSPropReal");
 		resiterOptimizerGeometry<Adam<typename remove_complex<T>::type> >("AdamReal");
+		resiterOptimizerGeometry<AdaMax<typename remove_complex<T>::type> >("AdaMaxReal");
 	}
 
 public:

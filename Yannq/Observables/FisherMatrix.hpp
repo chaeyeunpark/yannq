@@ -18,7 +18,7 @@ class FisherMatrix;
 namespace Eigen {
 namespace internal {
 	template<typename Machine>
-	struct traits<yannq::FisherMatrix<Machine> > :  public Eigen::internal::traits<Eigen::SparseMatrix<typename Machine::ScalarType> > {};
+	struct traits<yannq::FisherMatrix<Machine> > :  public Eigen::internal::traits<Eigen::SparseMatrix<typename Machine::Scalar> > {};
 }
 } //namespace Eigen
 
@@ -33,7 +33,7 @@ class FisherMatrix
 	public Eigen::EigenBase<FisherMatrix<Machine> >
 {
 public:
-	using Scalar = typename Machine::ScalarType;
+	using Scalar = typename Machine::Scalar;
 	using RealScalar = typename remove_complex<Scalar>::type;
 
 	using Matrix = typename Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
@@ -84,7 +84,7 @@ public:
 	}
 
 	template<class Elt, class State>
-	void eachSample(int n, Elt&& elt, State&& state)
+	inline void eachSample(int n, Elt&& elt, State&& state)
 	{
 		deltas_.row(n) = qs_.logDeriv(elt);
 	}
@@ -95,19 +95,23 @@ public:
 		deltas_ = deltas_.rowwise() - deltaMean_.transpose();
 	}
 
+	inline 
 	const Matrix& logDervs() const&
 	{
 		return deltas_;
 	}
+	inline 
 	Matrix logDervs() &&
 	{
 		return std::move(deltas_);
 	}
 
+	inline 
 	const Vector& oloc() const&
 	{
 		return deltaMean_;
 	}
+	inline 
 	Vector oloc() &&
 	{
 		return std::move(deltaMean_);

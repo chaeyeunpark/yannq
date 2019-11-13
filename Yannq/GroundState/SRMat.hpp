@@ -17,7 +17,7 @@ template<typename Machine, typename Hamiltonian>
 class SRMat
 {
 public:
-	using Scalar = typename Machine::ScalarType;
+	using Scalar = typename Machine::Scalar;
 	using RealScalar = typename remove_complex<Scalar>::type;
 
 	using Matrix = typename Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;

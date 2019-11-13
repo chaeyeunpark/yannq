@@ -1,12 +1,13 @@
 #ifndef YANNQ_BASIS_BASJSJZ_HPP
 #define YANNQ_BASIS_BASJSJZ_HPP
+#include <boost/math/special_functions/binomial.hpp>
 
 class BasisJz
 {
 private:
 	int N_;
 	int nup_;
-
+	
 public:
 	struct BasisJzIterator
 	{
@@ -54,6 +55,23 @@ public:
 		BasisJzIterator r{((1u<<nup_)-1) << (N_-nup_)};
 		r.next();
 		return r;
+	}
+	uint32_t size() const
+	{
+		uint32_t res = 1;  
+	  	uint32_t k = nup_;
+		// Since C(n, k) = C(n, n-k)  
+		if ( k > N_ - k )  
+			k = N_ - k;  
+	  
+		// Calculate value of  
+		// [n * (n-1) *---* (n-k+1)] / [k * (k-1) *----* 1]  
+		for (int i = 0; i < k; ++i)  
+		{  
+			res *= (N_ - i);  
+			res /= (i + 1);  
+		}  
+    	return res;  
 	}
 };
 

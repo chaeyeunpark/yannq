@@ -9,7 +9,7 @@ template<class Machine, class Target>
 class OverlapOptimizer
 {
 public:
-	using ScalarType = typename Machine::ScalarType;
+	using Scalar = typename Machine::Scalar;
 	using Vector = typename Machine::Vector;
 	using Matrix = typename Machine::Matrix;
 
@@ -21,7 +21,7 @@ private:
 
 	Matrix dervs_;
 	Vector ratios_;
-	ScalarType ov_;
+	Scalar ov_;
 
 public:
 	explicit OverlapOptimizer(const Machine& qs, const Target& target)
@@ -56,14 +56,18 @@ public:
 	{
 		Vector res = dervs_.colwise().mean();
 		res = res.conjugate();
-		res -= dervs_.adjoint()*ratios_/ov_;
+		res -= dervs_.adjoint()*ratios_/ov_/dervs_.rows();
 		return res;
 	}
 	
-	//<\phi|\psi>
-	ScalarType getOverlap() const
+	//<\phi|\psi>/Z
+	Scalar meanRatio() const
 	{
 		return ov_;
+	}
+	Scalar meanRatioSqr() const
+	{
+		return ratios_.cwiseAbs2().mean();
 	}
 };
 }//namespace yannq

@@ -16,7 +16,7 @@ template<typename T>
 class Jastrow
 {
 public:
-	using ScalarType=T;
+	using Scalar=T;
 	typedef Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> Matrix;
 	typedef Eigen::Matrix<T, Eigen::Dynamic, 1>  Vector;
 

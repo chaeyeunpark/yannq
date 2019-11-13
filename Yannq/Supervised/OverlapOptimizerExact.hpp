@@ -10,22 +10,28 @@ template<typename Machine>
 class OverlapOptimizerExact
 {
 public:
-	using ScalarType = typename Machine::ScalarType;
+	using Scalar = typename Machine::Scalar;
 	using Vector = typename Machine::Vector;
 	using Matrix = typename Machine::Matrix;
 
 private:
-	int N_;
 	const Machine& qs_;
+	const int N_;
 	Vector target_;
+
+	Matrix deltas_;
+	Matrix psiDeltas_;
+	Vector ovs_;
+	Vector oloc_;
+	Scalar ov_;
 
 public:
 	template<class Target>
-	explicit OverlapOptimizerExact(int N, const Machine& qs, const Target& t)
-		: N_(N), qs_(qs)
+	explicit OverlapOptimizerExact(const Machine& qs, const Target& t)
+		: qs_(qs), N_(qs.getN())
 	{
-		target_.resize(1<<N);
-		for(int i = 0; i < (1<<N); i++)
+		target_.resize(1<<N_);
+		for(int i = 0; i < (1<<N_); i++)
 		{
 			target_(i) = t(i);
 		}
@@ -39,53 +45,54 @@ public:
 	/**
 	 * This method return the gradient of the lograithmic fidelity: -log(\langle \psi_\theta | \phi  \rangle).
 	 * */
-	typename Machine::Vector calcGrad() const
+	void constructExact() 
 	{
 		using std::conj;
 		using Vector = typename Machine::Vector;
 
-		Vector res(qs_.getDim());
-		Vector r1(qs_.getDim());
-		res.setZero();
-		r1.setZero();
+		deltas_.setZero(1<<N_, qs_.getDim());
 
-		Vector psi = getPsi(qs_, true);
-#pragma omp parallel
+		Vector st = getPsi(qs_, true);
+
+#pragma omp parallel for schedule(static,8)
+		for(uint32_t n = 0; n < (1u<<N_); n++)
 		{
-			Vector resLocal(qs_.getDim());
-			Vector r1Local(qs_.getDim());
-			resLocal.setZero();
-			r1Local.setZero();
-
-#pragma omp for schedule(static,8)
-			for(uint32_t n = 0; n < (1u<<N_); n++)
-			{
-				auto s = toSigma(N_, n);
-				auto der = qs_.logDeriv(qs_.makeData(s));
-				resLocal += der.conjugate()*std::norm(psi(n));
-				r1Local += conj(psi(n))*target_(n)*der.conjugate();
-			}
-#pragma omp critical
-			{
-				res += resLocal;
-				r1 += r1Local;
-			}
+			auto s = toSigma(N_, n);
+			deltas_.row(n) = qs_.logDeriv(qs_.makeData(s));
 		}
-		std::complex<double> r = psi.adjoint() * target_;
-		res -= r1/r;
+		psiDeltas_ = st.cwiseAbs2().asDiagonal()*deltas_; 
+		ovs_ = st.conjugate().cwiseProduct(target_);
+		ov_ = ovs_.sum();
+		oloc_ = psiDeltas_.colwise().sum();
+	}
+
+	Vector calcGrad() const
+	{
+		Vector res = oloc().conjugate();
+		Vector r1 = ovs_.transpose()*deltas_.conjugate();
+		res -= r1/ov_;
 
 		return res;
 	}
 	
+	Vector oloc() const
+	{
+		return oloc_;
+	}
+
+	Matrix corrMat() const
+	{
+		Matrix res = deltas_.adjoint()*psiDeltas_;
+		return res - oloc_.conjugate()*oloc_.transpose();
+	}
+
 	/**
 	 * return squared fidelity: |\langle \psi_\theta | \phi \rangle|^2
 	 */
 	double fidelity() const
 	{
 		using std::norm;
-		auto psi = getPsi(qs_, true);
-		ScalarType ov = psi.adjoint() * target_;
-		return norm(ov);
+		return norm(ov_);
 	}
 };
 } //yannq

@@ -13,7 +13,7 @@ template<typename Machine>
 class SRMatExact
 {
 public:
-	using Scalar = typename Machine::ScalarType;
+	using Scalar = typename Machine::Scalar;
 	using RealScalar = typename remove_complex<Scalar>::type;
 
 	using Matrix = typename Machine::Matrix;

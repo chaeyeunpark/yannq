@@ -26,7 +26,7 @@ class RBMStateObjMT
 protected:
 	const Machine& qs_;
 public:
-	using T = typename Machine::ScalarType;
+	using T = typename Machine::Scalar;
 
 	RBMStateObjMT(const Machine& qs)
 		: qs_(qs)
@@ -160,7 +160,7 @@ private:
 
 public:
 	using Vector=typename Machine::Vector;
-	using T = typename Machine::ScalarType;
+	using T = typename Machine::Scalar;
 
 	RBMStateValueMT(const Machine& qs, Eigen::VectorXi&& sigma)
 		: RBMStateObjMT<Machine, RBMStateValueMT<Machine> >(qs), sigma_(std::move(sigma))

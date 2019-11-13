@@ -6,11 +6,11 @@ namespace yannq
 {
 template<typename T>
 class AdaMax
-	: public Optimizer<T>
+	: public OptimizerGeometry<T>
 {
 public:
-	using typename Optimizer<T>::Vector;
-	using typename Optimizer<T>::RealVector;
+	using typename OptimizerGeometry<T>::Vector;
+	using typename OptimizerGeometry<T>::RealVector;
 
 	static constexpr double DEFAULT_PARAMS[] = {0.002, 0.9, 0.999};
 
@@ -35,7 +35,8 @@ public:
 	AdaMax(const nlohmann::json& params)
 		: alpha_(params.value("alpha", DEFAULT_PARAMS[0])), 
 			beta1_(params.value("beta1", DEFAULT_PARAMS[1])),
-			beta2_(params.value("beta2", DEFAULT_PARAMS[2]))
+			beta2_(params.value("beta2", DEFAULT_PARAMS[2])),
+			t_{}
 	{
 	}
 
@@ -62,17 +63,17 @@ public:
 
 	}
 
-	Vector getUpdate(const Vector& v) override
+	Vector getUpdate(const Vector& grad, const Vector& oloc) override
 	{
 		using std::pow;
 		if(t_ == 0)
 		{
-			m_ = Vector::Zero(v.rows());
+			m_ = Vector::Zero(grad.rows());
 		}
 		++t_;
 		m_ *= beta1_;
-		m_ += (1.0-beta1_)*v;
-		u_ = std::max(beta2_*u_, v.norm());
+		m_ += (1.0-beta1_)*grad;
+		u_ = std::max(beta2_*u_, oloc.norm());
 		return -(alpha_/(1-pow(beta1_,t_)))*m_/u_;
 	}
 
