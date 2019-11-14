@@ -21,13 +21,14 @@ private:
 	const double alpha_;
 	const double beta1_;
 	const double beta2_;
+	const double eps_;
 
 	int t_;
 	Vector m_;
 	RealVector v_;
 
 public:
-	static constexpr double DEFAULT_PARAMS[] = {1e-3, 0.9, 0.999};
+	static constexpr double DEFAULT_PARAMS[] = {1e-3, 0.9, 0.999, 1e-8};
 
 	static nlohmann::json defaultParams()
 	{
@@ -36,7 +37,8 @@ public:
 			{"name", "Adam"},
 			{"alhpa", DEFAULT_PARAMS[0]},
 			{"beta1", DEFAULT_PARAMS[1]},
-			{"beta2", DEFAULT_PARAMS[2]}
+			{"beta2", DEFAULT_PARAMS[2]},
+			{"eps", DEFAULT_PARAMS[3]},
 		};
 	}
 
@@ -47,7 +49,8 @@ public:
 			{"name", "Adam"},
 			{"alhpa", alpha_},
 			{"beta1", beta1_},
-			{"beta2", beta2_}
+			{"beta2", beta2_},
+			{"eps", eps_},
 		};
 	}
 
@@ -55,18 +58,18 @@ public:
 		: alpha_(params.value("alpha", DEFAULT_PARAMS[0])), 
 			beta1_(params.value("beta1", DEFAULT_PARAMS[1])),
 			beta2_(params.value("beta2", DEFAULT_PARAMS[2])),
+			eps_(params.value("beta2", DEFAULT_PARAMS[3])),
 			t_{0}
 	{
 	}
 
-	Adam(double alpha = DEFAULT_PARAMS[0], double beta1 = DEFAULT_PARAMS[1], double beta2 = DEFAULT_PARAMS[2])
-		: alpha_(alpha), beta1_(beta1), beta2_(beta2), t_{0}
+	Adam(double alpha = DEFAULT_PARAMS[0], double beta1 = DEFAULT_PARAMS[1], double beta2 = DEFAULT_PARAMS[2], double eps = DEFAULT_PARAMS[3])
+		: alpha_(alpha), beta1_(beta1), beta2_(beta2), eps_(eps), t_{0}
 	{
 	}
 
 	Vector getUpdate(const Vector& grad, const Vector& oloc) override
 	{
-		const double eps = 1e-8;
 		auto norm = [](T x) -> RealT { return std::norm(x); };
 
 		if(t_ ==0)
@@ -83,7 +86,7 @@ public:
 		v_ *= beta2_;
 		v_ += (1-beta2_)*g2;
 
-		double epsnorm = eps*sqrt(1.0-pow(beta2_,t_));
+		double epsnorm = eps_*sqrt(1.0-pow(beta2_,t_));
 		RealVector denom = v_.unaryExpr([epsnorm](RealT x){ return sqrt(x)+epsnorm; });
 
 		double alphat = alpha_*sqrt(1.0-pow(beta2_,t_))/(1.0-pow(beta1_,t_));

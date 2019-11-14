@@ -21,12 +21,13 @@ public:
 private:
 	const double alpha_;
 	const double beta_;
+	const double eps_;
 
-	int t;
+	int t_;
 	RealVector v_;
 
 public:
-	static constexpr double DEFAULT_PARAMS[] = {0.05, 0.9};
+	static constexpr double DEFAULT_PARAMS[] = {0.05, 0.9, 1e-8};
 
 	static nlohmann::json defaultParams()
 	{
@@ -35,6 +36,7 @@ public:
 			{"name", "RMSProp"},
 			{"alhpa", DEFAULT_PARAMS[0]},
 			{"beta", DEFAULT_PARAMS[1]},
+			{"eps", DEFAULT_PARAMS[2]},
 		};
 	}
 
@@ -45,35 +47,36 @@ public:
 			{"name", "RMSProp"},
 			{"alhpa", alpha_},
 			{"beta", beta_},
+			{"eps", eps_},
 		};
 	}
 
 	RMSProp(const nlohmann::json& params)
 		: alpha_(params.value("alpha", DEFAULT_PARAMS[0])), 
 			beta_(params.value("beta", DEFAULT_PARAMS[1])),
-			 t{}
+			eps_(params.value("eps", DEFAULT_PARAMS[2])),
+			 t_{}
 	{
 	}
 
 	//use oloc to estimate local geometry 
 	Vector getUpdate(const Vector& grad, const Vector& oloc) override
 	{
-		const double eps = 1e-8;
 		auto sqr = [](T x) -> RealT {
 			return std::norm(x);
 		};
 
-		if(t == 0)
+		if(t_ == 0)
 		{
 			v_ = RealVector::Zero(grad.rows());
 		}
-		++t;
+		++t_;
 
 		RealVector g = oloc.unaryExpr(sqr);
 		v_ *= beta_;
 		v_ += (1-beta_)*g;
 
-		RealVector denom = v_.unaryExpr([eps](RealT x){ return sqrt(x)+eps; });
+		RealVector denom = v_.unaryExpr([eps = this->eps_](RealT x){ return sqrt(x)+eps; });
 		return -alpha_*grad.cwiseQuotient(denom);
 	}
 };

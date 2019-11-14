@@ -1,8 +1,9 @@
 #ifndef YANNQ_SUPERVISED_OVERLAPOPTIMIZEREXACT_HPP
 #define YANNQ_SUPERVISED_OVERLAPOPTIMIZEREXACT_HPP
 #include <Eigen/Dense>
-
+#include <limits>
 #include "Utilities/Utility.hpp"
+#include "Utilities/type_traits.hpp"
 
 namespace yannq
 {

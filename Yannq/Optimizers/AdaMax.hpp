@@ -9,8 +9,8 @@ class AdaMax
 	: public OptimizerGeometry<T>
 {
 public:
-	using typename OptimizerGeometry<T>::Vector;
-	using typename OptimizerGeometry<T>::RealVector;
+	using Vector = typename OptimizerGeometry<T>::Vector;
+	using RealVector = typename OptimizerGeometry<T>::RealVector;
 
 	static constexpr double DEFAULT_PARAMS[] = {0.002, 0.9, 0.999};
 
@@ -19,15 +19,15 @@ private:
 	double beta1_;
 	double beta2_;
 	
-	double u_;
 	int t_;
 
 	Vector m_;
+	RealVector u_;
 
 public:
 
 	AdaMax(double alpha = DEFAULT_PARAMS[0], double beta1 = DEFAULT_PARAMS[1], double beta2 = DEFAULT_PARAMS[2])
-		: alpha_(alpha), beta1_(beta1), beta2_(beta2), t_(0)
+		: alpha_(alpha), beta1_(beta1), beta2_(beta2), t_{0}
 	{
 		u_ = 0;
 	}
@@ -36,7 +36,7 @@ public:
 		: alpha_(params.value("alpha", DEFAULT_PARAMS[0])), 
 			beta1_(params.value("beta1", DEFAULT_PARAMS[1])),
 			beta2_(params.value("beta2", DEFAULT_PARAMS[2])),
-			t_{}
+			t_{0}
 	{
 	}
 
@@ -69,12 +69,15 @@ public:
 		if(t_ == 0)
 		{
 			m_ = Vector::Zero(grad.rows());
+			u_ = RealVector::Zero(grad.rows());
 		}
 		++t_;
 		m_ *= beta1_;
 		m_ += (1.0-beta1_)*grad;
-		u_ = std::max(beta2_*u_, oloc.norm());
-		return -(alpha_/(1-pow(beta1_,t_)))*m_/u_;
+
+		u_ *= beta2_;
+		u_ = u_.cwiseMax(oloc.cwiseAbs());
+		return -(alpha_/(1-pow(beta1_,t_)))*m_.cwiseQuotient(u_);
 	}
 
 };
