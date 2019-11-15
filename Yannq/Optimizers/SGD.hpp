@@ -14,7 +14,7 @@ public:
 	using typename Optimizer<T>::Vector;
 	using typename Optimizer<T>::RealVector;
 
-	static constexpr double DEFAULT_PARAMS[] = {0.05, 0.5};
+	static constexpr double DEFAULT_PARAMS[] = {0.05, 0.0};
 
 private:
 	double alpha_;
