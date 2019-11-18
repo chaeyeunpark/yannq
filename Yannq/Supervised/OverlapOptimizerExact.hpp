@@ -12,6 +12,7 @@ class OverlapOptimizerExact
 {
 public:
 	using Scalar = typename Machine::Scalar;
+	using RealScalar = typename yannq::remove_complex<Scalar>::type;
 	using Vector = typename Machine::Vector;
 	using Matrix = typename Machine::Matrix;
 
@@ -71,8 +72,11 @@ public:
 		ov_ = ovs_.sum();
 		oloc_ = psiDeltas_.colwise().sum();
 	}
-
-	Vector calcGrad() const
+	
+	/**
+	 * return \nabla_{\theta^*} \log |\langle \Phi | \psi_\theta \rangle|^2
+	 */
+	Vector calcLogGrad() const
 	{
 		Vector res = oloc().conjugate();
 		Vector r1 = ovs_.transpose()*deltas_.conjugate();
@@ -80,8 +84,12 @@ public:
 
 		return res;
 	}
-
-
+	Vector calcGrad() const
+	{
+		Vector res = oloc().conjugate()*std::norm(ov_);
+		res -= ovs_.transpose()*deltas_.conjugate()*conj(ov_);
+		return res;
+	}
 	
 	Vector oloc() const
 	{
