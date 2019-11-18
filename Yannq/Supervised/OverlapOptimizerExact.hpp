@@ -38,7 +38,12 @@ public:
 		}
 	}
 
-	Vector getTarget() const 
+	const Vector& getTarget() const&
+	{
+		return target_;
+	}
+
+	Vector getTarget() &&
 	{
 		return target_;
 	}
@@ -75,6 +80,8 @@ public:
 
 		return res;
 	}
+
+
 	
 	Vector oloc() const
 	{
