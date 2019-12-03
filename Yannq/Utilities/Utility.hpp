@@ -4,6 +4,7 @@
 #include <random>
 #include <utility>
 
+#include <Eigen/Dense>
 #include "Utilities/type_traits.hpp"
 
 namespace yannq

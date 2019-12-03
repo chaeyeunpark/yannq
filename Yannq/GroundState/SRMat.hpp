@@ -75,11 +75,7 @@ public:
 		return fisher_.oloc();
 	}
 
-	const Matrix& corrMat() const&
-	{
-		return fisher_.corrMat();
-	}
-	Matrix corrMat() &&
+	Matrix corrMat() 
 	{
 		return fisher_.corrMat();
 	}

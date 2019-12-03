@@ -1,8 +1,8 @@
 #include <iostream>
 #include <iomanip>
 #include <chrono>
-#include "NNQS.hpp"
-#include "Utility.hpp"
+#include <complex>
+#include "Utilities/Utility.hpp"
 
 
 #define CATCH_CONFIG_MAIN

@@ -116,6 +116,8 @@ public:
 	{
 		a_.resize(n_);
 		b_.resize(m_);
+		a_.setZero();
+		b_.setZero();
 		static_assert(std::is_convertible<U,T>::value, "U should be convertible to T");
 	}
 	template<typename U>
@@ -124,6 +126,8 @@ public:
 	{
 		a_.resize(n_);
 		b_.resize(m_);
+		a_.setZero();
+		b_.setZero();
 		static_assert(std::is_convertible<U,T>::value, "U should be convertible to T");
 	}
 

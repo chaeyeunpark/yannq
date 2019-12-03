@@ -29,8 +29,10 @@ endif()
 
 
 add_executable(TestRBMState "Tests/TestRBMState.cpp")
+add_executable(TestRatio "Tests/TestRatio.cpp")
 add_executable(TestHamTFI "Tests/TestHamTFI.cpp")
 add_executable(TestHamKitaev "Tests/TestHamKitaev.cpp")
+add_executable(TestUtility "Tests/TestUtility.cpp")
 
 add_executable(RBMTFI "Examples/RBMTFI.cpp")
 target_link_libraries(RBMTFI boost_serialization boost_filesystem boost_system boost_regex)
