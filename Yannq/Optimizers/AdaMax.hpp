@@ -1,7 +1,12 @@
 #ifndef NNQS_OPTIMIZERS_ADAMAX_HPP
 #define NNQS_OPTIMIZERS_ADAMAX_HPP
-
+#include <limits>
 #include "Optimizers/Optimizer.hpp"
+#include "Utilities/type_traits.hpp"
+
+#ifndef NDEBUG
+#include <iostream>
+#endif
 namespace yannq
 {
 template<typename T>
@@ -9,6 +14,7 @@ class AdaMax
 	: public OptimizerGeometry<T>
 {
 public:
+	using RealScalarT = typename yannq::remove_complex<T>::type;
 	using Vector = typename OptimizerGeometry<T>::Vector;
 	using RealVector = typename OptimizerGeometry<T>::RealVector;
 
@@ -77,6 +83,8 @@ public:
 
 		u_ *= beta2_;
 		u_ = u_.cwiseMax(oloc.cwiseAbs());
+		u_ = u_.cwiseMax(std::numeric_limits<RealScalarT>::min());
+
 		return -(alpha_/(1-pow(beta1_,t_)))*m_.cwiseQuotient(u_);
 	}
 
