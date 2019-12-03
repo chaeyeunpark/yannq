@@ -1,5 +1,7 @@
 /release
 /debug
+/release_clang
+/debug_clang
 /docs
 /.vscode
 .ycm_extra_conf.py

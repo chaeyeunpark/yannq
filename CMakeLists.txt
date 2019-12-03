@@ -13,20 +13,24 @@ endif()
 
 set (CMAKE_CXX_STANDARD 14)
 
-set(CMAKE_CXX_FLAGS "-Wall -Wextra -Wno-int-in-bool-context")
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
-
-find_package(OpenMP)
-if (OPENMP_FOUND)
-	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-	set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	set (OpenMP_C_FLAGS "-fopenmp=libiomp5")
+	set (OpenMP_CXX_FLAGS "-fopenmp=libiomp5")
+	set (OpenMP_EXE_LINKER_FLAGS "-fopenmp=libiomp5 -liomp5")
+	link_directories("/usr/lib/x86_64-linux-gnu")
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	find_package(OpenMP REQUIRED)
+	include_directories("${OPENMP_INCLUDES}")
+	link_directories("${OPENMP_LIBRARIES}")
 endif()
 
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 
-#set (CMAKE_CXX_FLAGS_RELEASE "-fopenmp")
-
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
 add_executable(TestRBMState "Tests/TestRBMState.cpp")
 add_executable(TestRatio "Tests/TestRatio.cpp")
