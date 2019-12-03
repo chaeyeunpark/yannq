@@ -11,6 +11,8 @@ if(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release)
 endif()
 
+enable_testing()
+
 set (CMAKE_CXX_STANDARD 14)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -20,7 +22,6 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 	link_directories("/usr/lib/x86_64-linux-gnu")
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	find_package(OpenMP REQUIRED)
-	include_directories("${OPENMP_INCLUDES}")
 	link_directories("${OPENMP_LIBRARIES}")
 endif()
 
@@ -33,10 +34,31 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
 add_executable(TestRBMState "Tests/TestRBMState.cpp")
+add_test(
+	NAME TestRBMState
+	COMMAND TestRBMState
+)
+
 add_executable(TestRatio "Tests/TestRatio.cpp")
+add_test(
+	NAME TestRatio
+	COMMAND TestRatio
+)
+
 add_executable(TestHamTFI "Tests/TestHamTFI.cpp")
-add_executable(TestHamKitaev "Tests/TestHamKitaev.cpp")
+add_test(
+	NAME TestHamTFI
+	COMMAND TestHamTFI
+)
+#add_executable(TestHamKitaev "Tests/TestHamKitaev.cpp")
 add_executable(TestUtility "Tests/TestUtility.cpp")
+add_test(
+	NAME TestUtility
+	COMMAND TestUtility
+)
+
+add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND}
+                  DEPENDS TestRBMState TestRatio TestHamTFI TestUtility)
 
 add_executable(RBMTFI "Examples/RBMTFI.cpp")
 target_link_libraries(RBMTFI boost_serialization boost_filesystem boost_system boost_regex)
