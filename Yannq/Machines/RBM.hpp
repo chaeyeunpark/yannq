@@ -671,6 +671,7 @@ typename RBM<T, useBias>::Vector getPsi(const RBM<T, useBias>& qs, bool normaliz
 {
 	const int n = qs.getN();
 	typename RBM<T>::Vector psi(1<<n);
+#pragma omp parallel for schedule(static,8)
 	for(uint64_t i = 0; i < (1u<<n); i++)
 	{
 		auto s = toSigma(n, i);
