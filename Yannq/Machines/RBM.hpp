@@ -96,6 +96,19 @@ public:
 		W_.resize(m,n);
 	}
 
+	void conservativeResize(int newM)
+	{
+		Vector newB = Vector::Zero(newM);
+		newB.head(m_) = b_;
+
+		Matrix newW = Matrix::Zero(newM, n_);
+		newW.topLeftCorner(m_, n_) = W_;
+
+		m_ = newM;
+		b_ = std::move(newB);
+		W_ = std::move(newW);
+	}
+
 	template<typename U>
 	RBM(const RBM<U, true>& rhs)
 		: n_(rhs.n_), m_(rhs.m_), W_(rhs.W_), a_(rhs.a_), b_(rhs.b_)
@@ -570,6 +583,14 @@ public:
 		W_.resize(m,n);
 	}
 
+	void conservativeResize(int newM)
+	{
+		Matrix newW = Matrix::Zero(newM, n_);
+		newW.topLeftCorner(m_, n_) = W_;
+
+		m_ = newM;
+		W_ = std::move(newW);
+	}
 
 	
 
