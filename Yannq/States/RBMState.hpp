@@ -29,7 +29,7 @@ protected:
 public:
 	using T = typename Machine::Scalar;
 
-	RBMStateObj(const Machine& qs)
+	RBMStateObj(const Machine& qs) noexcept
 		: qs_(qs)
 	{
 	}
@@ -137,22 +137,22 @@ public:
 	using Vector=typename Machine::Vector;
 	using T = typename Machine::Scalar;
 
-	RBMStateValue(const Machine& qs, Eigen::VectorXi&& sigma)
+	RBMStateValue(const Machine& qs, Eigen::VectorXi&& sigma) noexcept
 		: RBMStateObj<Machine, RBMStateValue<Machine> >(qs), sigma_(std::move(sigma))
 	{
 		theta_ = this->qs_.calcTheta(sigma_);
 	}
 
-	RBMStateValue(const Machine& qs, const Eigen::VectorXi& sigma)
+	RBMStateValue(const Machine& qs, const Eigen::VectorXi& sigma) noexcept
 		: RBMStateObj<Machine, RBMStateValue<Machine> >(qs), sigma_(sigma)
 	{
 		theta_ = this->qs_.calcTheta(sigma_);
 	}
 
-	RBMStateValue(const RBMStateValue<Machine>& rhs) = default;
-	RBMStateValue(RBMStateValue<Machine>&& rhs) = default;
+	RBMStateValue(const RBMStateValue<Machine>& rhs) noexcept = default;
+	RBMStateValue(RBMStateValue<Machine>&& rhs) noexcept = default;
 
-	RBMStateValue& operator=(const RBMStateValue<Machine>& rhs)
+	RBMStateValue& operator=(const RBMStateValue<Machine>& rhs) noexcept
 	{
 		assert(rhs.qs_ == this->qs_);
 		sigma_ = rhs.sigma_;
@@ -160,7 +160,7 @@ public:
 		return *this;
 	}
 
-	RBMStateValue& operator=(RBMStateValue<Machine>&& rhs)
+	RBMStateValue& operator=(RBMStateValue<Machine>&& rhs) noexcept
 	{
 		assert(rhs.qs_ == this->qs_);
 		sigma_ = std::move(rhs.sigma_);
@@ -265,7 +265,7 @@ public:
 	
 	using T = typename Machine::Scalar;
 
-	RBMStateRef(const Machine& qs, SigmaType& sigma, ThetaType& theta)
+	RBMStateRef(const Machine& qs, SigmaType& sigma, ThetaType& theta) noexcept
 		: RBMStateObj<Machine, RBMStateRef<Machine, is_const> >(qs), sigma_(sigma), theta_(theta)
 	{
 	}
