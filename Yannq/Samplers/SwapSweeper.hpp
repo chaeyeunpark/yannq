@@ -11,13 +11,13 @@ private:
 	const int nSweep_;
 
 public:
-	SwapSweeper(int n, int nSweep = 1)
+	SwapSweeper(int n, int nSweep = 1) noexcept
 		: n_(n), nSweep_(nSweep)
 	{
 	}
 
 	template<class StateValue, class RandomEngine>
-	void localSweep(StateValue& sv, double beta, RandomEngine& re)
+	void localSweep(StateValue& sv, double beta, RandomEngine& re) noexcept
 	{
 		std::uniform_real_distribution<> urd(0.0,1.0);
 		std::uniform_int_distribution<> uid(0,n_-1);
