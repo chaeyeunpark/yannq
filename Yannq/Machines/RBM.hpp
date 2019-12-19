@@ -703,7 +703,7 @@ typename RBM<T, useBias>::Vector getPsi(const RBM<T, useBias>& qs, bool normaliz
 		return psi;
 }
 template<typename T, bool useBias>
-typename RBM<T, useBias>::Vector getPsi(const RBM<T, useBias>& qs, const std::vector<T>& basis, bool normalize)
+typename RBM<T, useBias>::Vector getPsi(const RBM<T, useBias>& qs, const std::vector<uint32_t>& basis, bool normalize)
 {
 	const int n = qs.getN();
 	typename RBM<T>::Vector psi(basis.size());

@@ -7,13 +7,15 @@
 
 using cx_double = std::complex<double>;
 
+
 TEMPLATE_TEST_CASE( "Test coeffs ratio in RBM", "[RBM][types]", (yannq::RBM<double,true>), (yannq::RBM<double,false>), (yannq::RBM<cx_double,true>), (yannq::RBM<cx_double,false>) )
 {
 	using namespace yannq;
 	using Machine = TestType;
 	using Catch::Matchers::Floating::WithinRelMatcher;
 
-	const int N = 10;
+	constexpr int N = 10;
+	constexpr double eps = 1e-8;
 	Machine rbm(N,N);
 	std::random_device rd;
 	std::default_random_engine re{0};
@@ -35,8 +37,8 @@ TEMPLATE_TEST_CASE( "Test coeffs ratio in RBM", "[RBM][types]", (yannq::RBM<doub
 				for(int m = 0; m < 5; m++)
 				{
 					int toFlip = uid(re);
-					auto rat = psi(v ^ (1<<toFlip))/psi(v);
-					REQUIRE( std::norm(st.ratio(toFlip) - rat) <  1e-5);
+					auto rat = std::log(psi(v ^ (1<<toFlip)))-std::log(psi(v));
+					REQUIRE( std::norm(std::exp(st.logRatio(toFlip) - rat)-1.0) <  eps);
 				}
 			}
 		}
@@ -60,8 +62,10 @@ TEMPLATE_TEST_CASE( "Test coeffs ratio in RBM", "[RBM][types]", (yannq::RBM<doub
 					int toFlip2 = uid(re);
 					if(toFlip == toFlip2)
 						continue;
-					auto rat = psi(v ^ (1<<toFlip))/psi(v);
-					REQUIRE( std::norm(st.ratio(toFlip) - rat) <  1e-5);
+					auto rat = std::log(psi(v ^ (1<<toFlip) ^ (1<<toFlip2)))
+						- std::log(psi(v));
+					auto rat2 = st.logRatio(toFlip,toFlip2);
+					REQUIRE( std::norm(std::exp(rat2 - rat)-1.0) <  eps);
 				}
 			}
 		}

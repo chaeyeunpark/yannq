@@ -50,7 +50,19 @@ add_test(
 	NAME TestHamTFI
 	COMMAND TestHamTFI
 )
-#add_executable(TestHamKitaev "Tests/TestHamKitaev.cpp")
+
+add_executable(TestHamKitaev "Tests/TestHamKitaev.cpp")
+add_test(
+	NAME TestHamKitaev
+	COMMAND TestHamKitaev
+)
+
+add_executable(TestHamKitaevC24 "Tests/TestHamKitaevC24.cpp")
+add_test(
+	NAME TestHamKitaevC24
+	COMMAND TestHamKitaevC24
+)
+
 add_executable(TestUtility "Tests/TestUtility.cpp")
 add_test(
 	NAME TestUtility
