@@ -124,7 +124,7 @@ public:
 
 		for(int i = 0; i < n_*m_; ++i)
 		{
-			s += h_*smp.sigmaAt(i); //hz
+			//s += h_*smp.sigmaAt(i); //hz
 			s += h_*smp.ratio(i); //hx
 		}
 
@@ -152,7 +152,7 @@ public:
 		for(int i = 0; i < n_*m_; ++i)
 		{
 			double k = (1-2*int((col >> i) & 1));
-			m[col] += h_*k; //hz
+			//m[col] += h_*k; //hz
 			m[col ^ (1<<i)] += h_; //hx
 		}
 

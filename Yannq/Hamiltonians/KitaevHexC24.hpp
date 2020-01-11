@@ -1,25 +1,31 @@
-#ifndef HAMILTONIANS_KITAEVHEX_HPP
-#define HAMILTONIANS_KITAEVHEX_HPP
+#ifndef HAMILTONIANS_KITAEVHEXC24_HPP
+#define HAMILTONIANS_KITAEVHEXC24_HPP
 #include <Eigen/Eigen>
 #include <nlohmann/json.hpp>
 
 class KitaevHexC24
 {
 private:
-	const int N = 24;
+	static constexpr int N = 24;
 	const double Jx_;
 	const double Jy_;
 	const double Jz_;
 
+	const double hx_;
+
 public:
 
 	KitaevHexC24(double J)
-		: Jx_(J), Jy_(J), Jz_(J)
+		: Jx_(J), Jy_(J), Jz_(J), hx_{}
 	{
 	}
 
 	KitaevHexC24(double Jx, double Jy, double Jz)
-		: Jx_(Jx), Jy_(Jy), Jz_(Jz)
+		: Jx_(Jx), Jy_(Jy), Jz_(Jz), hx_{}
+	{
+	}
+	KitaevHexC24(double J, double hx)
+		: Jx_(J), Jy_(J), Jz_(J), hx_(hx)
 	{
 	}
 	std::vector<std::pair<int,int> > xLinks() const
@@ -41,8 +47,8 @@ public:
 		res.emplace_back(20,23);
 
 		//between
-		res.emplace_back(21,2);
-		res.emplace_back(15,8);
+		res.emplace_back(15,2);
+		res.emplace_back(21,8);
 		return res;
 	}
 
@@ -65,8 +71,8 @@ public:
 		res.emplace_back(21,23);
 		
 		//between
-		res.emplace_back(4,19);
-		res.emplace_back(11,12);
+		res.emplace_back(4,12);
+		res.emplace_back(11,19);
 		return res;
 	}
 
@@ -87,8 +93,8 @@ public:
 		res.emplace_back(18,21);
 		res.emplace_back(11,15);
 
-		res.emplace_back(0,23);
-		res.emplace_back(1,22);
+		res.emplace_back(0,22);
+		res.emplace_back(1,23);
 		return res;
 	}
 
@@ -100,6 +106,7 @@ public:
 			{"Jx", Jx_},
 			{"Jy", Jy_},
 			{"Jz", Jz_},
+			{"hx", hx_},
 		};
 	}
 	
@@ -122,6 +129,10 @@ public:
 		{
 			int zzval = smp.sigmaAt(zz.first)*smp.sigmaAt(zz.second);
 			s += Jz_*zzval; //yy
+		}
+		for(int n = 0; n < N; n++)
+		{
+			s += hx_*smp.ratio(n);
 		}
 		return s;
 	}
@@ -146,8 +157,12 @@ public:
 			int zzval = (1-2*int((col >> zz.first) & 1))*(1-2*int((col >> zz.second) & 1));
 			m[col] += Jz_*zzval; //zz
 		}
+		for(int n = 0; n < N; n++)
+		{
+			m[col ^ (1<<n)] += hx_;
+		}
 
 		return m;
 	}
 };
-#endif//HAMILTONIANS_KITAEVHEX_HPP
+#endif//HAMILTONIANS_KITAEVHEXC24_HPP

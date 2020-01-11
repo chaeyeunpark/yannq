@@ -15,13 +15,13 @@ private:
 
 public:
 
-	LocalSweeper(int n, int nSweep = 1)
+	LocalSweeper(int n, int nSweep = 1) noexcept
 		: n_(n), nSweep_(nSweep)
 	{
 	}
 
 	template<class StateValue, class RandomEngine>
-	void localSweep(StateValue& sv, double beta, RandomEngine& re)
+	void localSweep(StateValue& sv, double beta, RandomEngine& re) noexcept
 	{
 		std::uniform_real_distribution<double> urd(0.0, 1.0);
 		std::uniform_int_distribution<int> uid_(0,n_-1);
