@@ -74,3 +74,9 @@ add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND}
 
 add_executable(RBMTFI "Examples/RBMTFI.cpp")
 target_link_libraries(RBMTFI boost_serialization boost_filesystem boost_system boost_regex)
+
+add_executable(TestConvLayer "Tests/TestConvLayer.cpp")
+
+add_executable(TestActivations "Tests/TestActivations.cpp")
+
+add_executable(TestFullyConnected "Tests/TestFullyConnected.cpp")

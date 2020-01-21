@@ -1,5 +1,5 @@
-#ifndef CY_NNQS_RBM_HPP
-#define CY_NNQS_RBM_HPP
+#ifndef YANNQ_MACHINES_RBM_HPP
+#define YANNQ_MACHINES_RBM_HPP
 #include <random>
 #include <bitset>
 #include <fstream>
@@ -733,4 +733,4 @@ typename RBM<T, useBias>::RealScalar getNorm(const RBM<T, useBias>& qs, BasisIte
 }
 /** @} */
 }//NNQS
-#endif//CY_NNQS_RBM_HPP
+#endif//YANNQ_MACHINES_RBM_HPP

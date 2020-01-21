@@ -2,6 +2,7 @@
 #define CY_NNQS_TYPE_TRAITS_HPP
 
 #include <type_traits>
+#include <complex>
 namespace yannq
 {
 template<typename T>
