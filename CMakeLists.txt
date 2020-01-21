@@ -80,3 +80,5 @@ add_executable(TestConvLayer "Tests/TestConvLayer.cpp")
 add_executable(TestActivations "Tests/TestActivations.cpp")
 
 add_executable(TestFullyConnected "Tests/TestFullyConnected.cpp")
+
+add_executable(TestSerializeRBM "Tests/TestSerializeRBM.cpp")

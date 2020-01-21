@@ -7,9 +7,14 @@
 #include <string>
 #include <Eigen/Eigen>
 
+#include <cereal/access.hpp> 
+#include <cereal/types/memory.hpp>
+
 #include <nlohmann/json.hpp>
+
 #include "Utilities/type_traits.hpp"
 #include "Utilities/Utility.hpp"
+#include "Serializers/SerializeEigen.hpp"
 
 namespace yannq
 {
@@ -111,21 +116,19 @@ public:
 
 	template<typename U>
 	RBM(const RBM<U, true>& rhs)
-		: n_(rhs.n_), m_(rhs.m_), W_(rhs.W_), a_(rhs.a_), b_(rhs.b_)
+		: n_(rhs.getN()), m_(rhs.getM()), W_(rhs.getW()), a_(rhs.getA()), b_(rhs.getB())
 	{
 		static_assert(std::is_convertible<U,T>::value, "U should be convertible to T");
 	}
 	
-	template<typename U>
-	RBM(RBM<U, true>&& rhs)
+	RBM(RBM<T, true>&& rhs)
 		: n_(rhs.n_), m_(rhs.m_), W_(std::move(rhs.W_)), a_(std::move(rhs.a_)), b_(std::move(rhs.b_))
 	{
-		static_assert(std::is_convertible<U,T>::value, "U should be convertible to T");
 	}
 
 	template<typename U>
 	RBM(const RBM<U, false>& rhs)
-		: n_(rhs.n_), m_(rhs.m_), W_(rhs.W_)
+		: n_(rhs.getN()), m_(rhs.getM()), W_(rhs.getW())
 	{
 		a_.resize(n_);
 		b_.resize(m_);
@@ -133,15 +136,13 @@ public:
 		b_.setZero();
 		static_assert(std::is_convertible<U,T>::value, "U should be convertible to T");
 	}
-	template<typename U>
-	RBM(RBM<U, false>&& rhs)
+	RBM(RBM<T, false>&& rhs)
 		: n_(rhs.n_), m_(rhs.m_), W_(std::move(rhs.W_))
 	{
 		a_.resize(n_);
 		b_.resize(m_);
 		a_.setZero();
 		b_.setZero();
-		static_assert(std::is_convertible<U,T>::value, "U should be convertible to T");
 	}
 
 	void setW(Matrix m)
@@ -388,7 +389,7 @@ public:
 	}
 
 
-	bool operator==(const RBM<T>& rhs) const
+	bool operator==(const RBM<T,useBias>& rhs) const
 	{
 		if(n_ != rhs.n_ || m_ != rhs.m_)
 			return false;
@@ -439,6 +440,16 @@ public:
 	{
 		return i*m_ + j;
 	}
+
+
+	/* Serialization using cereal */
+	template<class Archive>
+	void serialize(Archive& ar)
+	{
+		ar(n_,m_);
+		ar(a_, b_, W_);
+	}
+
 };
 
 template<typename T>
@@ -683,6 +694,14 @@ public:
 		}
 		return res;
 	}
+
+	/* Serialization using cereal */
+	template<class Archive>
+	void serialize(Archive& ar)
+	{
+		ar(n_,m_);
+		ar(W_);
+	}
 };
 
 
@@ -731,6 +750,41 @@ typename RBM<T, useBias>::RealScalar getNorm(const RBM<T, useBias>& qs, BasisIte
 	return psi.squaredNorm();
 
 }
-/** @} */
-}//NNQS
+}//namespace yannq
+
+namespace cereal
+{
+	template <typename T>
+	struct LoadAndConstruct<yannq::RBM<T, false> >
+	{
+		template<class Archive>
+		static void load_and_construct(Archive& ar, cereal::construct<yannq::RBM<T,false>>& construct)
+		{
+			int n,m;
+			ar(n,m);
+			construct(n,m);
+			Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> W;
+			ar(W);
+			construct->setW(W);
+		}
+	};
+	template <typename T>
+	struct LoadAndConstruct<yannq::RBM<T, true> >
+	{
+		template<class Archive>
+		static void load_and_construct(Archive& ar, cereal::construct<yannq::RBM<T,true> >& construct)
+		{
+			int n,m;
+			ar(n,m);
+			construct(n,m);
+			Eigen::Matrix<T, Eigen::Dynamic, 1> A;
+			Eigen::Matrix<T, Eigen::Dynamic, 1> B;
+			Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> W;
+			ar(A,B,W);
+			construct->setA(A);
+			construct->setB(B);
+			construct->setW(W);
+		}
+	};
+}//namespace cereal
 #endif//YANNQ_MACHINES_RBM_HPP
