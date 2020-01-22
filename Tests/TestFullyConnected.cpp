@@ -15,22 +15,26 @@ TEST_CASE("Test backprop of FullyConnected layer", "[layer,fully_connected]")
 {
 	using namespace Eigen;
 	using Catch::Matchers::Floating::WithinAbsMatcher;
+	using dtype = std::complex<double>;
+
+	using VectorType = Matrix<dtype, Eigen::Dynamic, 1>;
+	using MatrixType = Matrix<dtype, Eigen::Dynamic, Eigen::Dynamic>;
+
 	std::random_device rd;
 	std::default_random_engine re{rd()};
-
 	const int inSize = 20;
 
 	for(int outSize = 1; outSize <= 512; outSize *=2)
 	{
-		auto fc = FullyConnected<double>(inSize, outSize);
+		auto fc = FullyConnected<dtype>(inSize, outSize, true);
 		fc.randomizeParams(re, 0.01);
 
 		for(int i = 0; i < 10; i++)
 		{
-			VectorXd input = VectorXd::Random(inSize);
-			VectorXd dout = VectorXd::Random(outSize);
-			VectorXd din(inSize);
-			VectorXd der(fc.paramDim());
+			VectorType input = VectorXd::Random(inSize);
+			VectorType dout = VectorXd::Random(outSize);
+			VectorType din(inSize);
+			VectorType der(fc.paramDim());
 
 			fc.backprop(input, VectorXd(), dout, din, der);
 

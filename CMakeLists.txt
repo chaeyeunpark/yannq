@@ -82,3 +82,5 @@ add_executable(TestActivations "Tests/TestActivations.cpp")
 add_executable(TestFullyConnected "Tests/TestFullyConnected.cpp")
 
 add_executable(TestSerializeRBM "Tests/TestSerializeRBM.cpp")
+
+add_executable(TestFeedForward "Tests/TestFeedForward.cpp")

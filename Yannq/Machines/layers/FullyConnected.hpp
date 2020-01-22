@@ -58,16 +58,14 @@ public:
 		: useBias_(useBias), inputDim_(input_size), outputDim_(output_size) 
 	{
 		weight_.resize(inputDim_, outputDim_);
-		bias_.resize(outputDim_);
 
 		npar_ = inputDim_ * outputDim_;
 
 		if (useBias_) {
 			npar_ += outputDim_;
-		} else {
-			bias_.setZero();
+			bias_.resize(outputDim_);
 		}
-
+		bias_.setZero();
 	}
 
 	std::string name() const override { return name_; }
@@ -127,7 +125,10 @@ public:
 	// Feedforward
 	void forward(const VectorType &input, VectorType &output) override 
 	{
-		output = bias_;
+		if(useBias_)
+			output = bias_;
+		else
+			output.setZero();
 		output.noalias() += weight_.transpose() * input;
 	}
 
@@ -142,9 +143,7 @@ public:
 		int k = 0;
 
 		if (useBias_) {
-			Eigen::Map<VectorType> der_b{der.data() + k, outputDim_};
-
-			der_b.noalias() = dout;
+			der.segment(0, outputDim_) = dout;
 			k += outputDim_;
 		}
 

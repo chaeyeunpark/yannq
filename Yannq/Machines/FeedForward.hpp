@@ -2,6 +2,8 @@
 #define YANNQ_MACHINES_FEEDFORWARD_HPP
 #include "Machines/layers/AbstractLayer.hpp"
 #include "Utilities/Utility.hpp"
+#include <iostream>
+#include <sstream>
 namespace yannq
 {
 template<typename T>
@@ -24,9 +26,10 @@ public:
 	}
 
 	template<typename RandomEngine>
-	void initializeRandom(RandomEngine& re, T sigma)
+	void initializeRandom(RandomEngine& re, typename remove_complex<T>::type sigma)
 	{
-		setParams(randomVector<T>(std::forward<RandomEngine>(re), sigma, npar_));
+		auto randVec = randomVector<T>(std::forward<RandomEngine>(re), sigma, npar_);
+		setParams(randVec);
 	}
 	
 	template<template<typename> class Layer, typename ...Ts>
@@ -41,42 +44,59 @@ public:
 	{
 		uint32_t k = 0;
 		VectorType par(npar_);
-		for(auto layer: layers_)
+		for(auto& layer: layers_)
 		{
-			layer->getParams(par.segment(k, layer->paramDim()));
+			par.segment(k, layer->paramDim()) = layer->getParams();
+			k += layer->paramDim();
 		}
 		return par;
+	}
+
+	std::string summary() const
+	{
+		std::ostringstream ss;
+		ss << "Layer name\tNumber of params" << std::endl;
+		for(const auto& layer: layers_)
+		{
+			ss << layer->name() << "\t" << layer->paramDim() << std::endl;
+		}
+		return ss.str();
 	}
 
 	void setParams(VectorConstRefType pars)
 	{
 		assert(pars.size() == npar_);
 		uint32_t k = 0;
-		for(auto layer: layers_)
+		for(auto& layer: layers_)
 		{
 			layer->setParams(pars.segment(k, layer->paramDim()));
+			k += layer->paramDim();
 		}
 	}
 	
+	void clearLayers()
+	{
+		layers_.clear();
+	}
 
 	std::vector<VectorType> forward(const Eigen::VectorXi& sigma) const
 	{
 		using std::cosh;
 		std::vector<VectorType> res;
 		VectorType input = sigma.template cast<T>();
+		res.push_back(input);
 		for(auto& layer: layers_)
 		{
-			res.push_back(input);
 			VectorType output(layer->outputDim(input.size()));
 			layer->forward(input, output);
+			res.push_back(output);
 			input = std::move(output);
 		}
-		res.push_back(input);
 		assert(input.size() == 1);
 		return res;
 	}
 
-	VectorType deriv(const std::vector<VectorType>& outs) const
+	VectorType backward(const std::vector<VectorType>& outs) const
 	{
 		assert(outs.size() == layers_.size() + 1);
 
@@ -84,15 +104,15 @@ public:
 		VectorType dout(1);
 		dout[0] = 1.;
 		uint32_t k = npar_;
-		for(auto idx = layers_.size()-1; idx >= 0; --idx)
+		for(int32_t idx = layers_.size() - 1; idx >= 0; --idx)
 		{
-			VectorType din(outs[idx].size);
+			VectorType din(outs[idx].size());
 			VectorType der(layers_[idx]->paramDim());
-			layers_[idx]->backward(outs[idx], outs[idx+1], dout, din, der);
+			layers_[idx]->backprop(outs[idx], outs[idx+1], dout, din, der);
 
 			dout = std::move(din);
-			dw.segment(k - layers_[idx].paramDim(),layers_[idx].paramDim()) = std::move(der);
-			k -= layers_[idx].paramDim();
+			dw.segment(k - layers_[idx]->paramDim(),layers_[idx]->paramDim()) = std::move(der);
+			k -= layers_[idx]->paramDim();
 		}
 		return dw;
 	}

@@ -39,7 +39,6 @@ class Conv1D : public AbstractLayer<T> {
 	
 	const uint32_t npar_;          // number of parameters in layer
 
-
 	MatrixType kernel_;  // Weight parameters, W((inChannels_ * kernelSize)x(outChannels))
 	VectorType bias_;     // Bias parameters, b(outChannels)
 
@@ -58,7 +57,7 @@ public:
 	/// Constructor
 	Conv1D(	const uint32_t inChannels, const uint32_t outChannels,
 			const uint32_t kernelSize, const uint32_t stride = 1,
-			const bool useBias = true)
+			const bool useBias = false)
 		: useBias_(useBias), inChannels_(inChannels), outChannels_(outChannels),
 		kernelSize_(kernelSize), stride_(stride),
 		npar_(numParams(useBias, inChannels, outChannels, kernelSize)),
@@ -75,20 +74,34 @@ public:
 	}
 
 	uint32_t paramDim() const override { return npar_; }
-	uint32_t outputDim(uint32_t inputDim) const override { return (inputDim / stride_) * outChannels_; };
+	uint32_t outputDim(uint32_t inputDim) const override { return (inputDim / stride_ / inChannels_) * outChannels_; };
 
 	VectorType getParams() const override 
 	{
 		VectorType pars(npar_);
-		pars.head(outChannels_) = bias_;
-		pars.segment(outChannels_, kernel_.size()) = Eigen::Map<const VectorType>(kernel_.data(), kernel_.rows()*kernel_.cols());
+		if(useBias_)
+		{
+			pars.head(outChannels_) = bias_;
+			pars.segment(outChannels_, kernel_.size()) = Eigen::Map<const VectorType>(kernel_.data(), kernel_.rows()*kernel_.cols());
+		}
+		else
+		{
+			pars = Eigen::Map<const VectorType>(kernel_.data(), kernel_.rows()*kernel_.cols());
+		}
 		return pars;
 	}
 
 	void setParams(VectorConstRefType pars) override 
 	{
-		bias_ = pars.head(outChannels_);
-		kernel_ = Eigen::Map<const MatrixType>(pars.data() + outChannels_, kernel_.rows(), kernel_.cols());
+		if(useBias_)
+		{
+			bias_ = pars.head(outChannels_);
+			kernel_ = Eigen::Map<const MatrixType>(pars.data() + outChannels_, kernel_.rows(), kernel_.cols());
+		}
+		else
+		{
+			kernel_ = Eigen::Map<const MatrixType>(pars.data(), kernel_.rows(), kernel_.cols());
+		}
 	}
 
 	/**
@@ -103,8 +116,6 @@ public:
 		uint32_t outSize = inSize / stride_;
 
 		output.setZero();
-
-
 
 		// y = Wx+b
 		for (uint32_t oc = 0; oc < outChannels_; oc++)
@@ -125,8 +136,7 @@ public:
 					output(i + oc*outSize) += bias_(oc);
 				}
 			}
-		};
-
+		}
 	}
 
 	void backprop(const VectorType &prev_layer_output,
@@ -150,7 +160,8 @@ public:
 			din(((r*stride_+ki-kernelSize_/2+inSize)%inSize) + ic*inSize) 
 				+= kernel_(ki + ic*kernelSize_, oc)*dout[r + oc*outSize];
 		}
-
+		
+		uint32_t k = 0;
 		if(useBias_)// accumulate bias difference
 		{
 			for (uint32_t oc = 0; oc < outChannels_; oc++)
@@ -158,6 +169,7 @@ public:
 			{
 				der(oc) += dout(r + oc*outSize);
 			}
+			k += outChannels_;
 		}
 
 		MatrixType dw(inChannels_*kernelSize_, outChannels_);
@@ -176,7 +188,7 @@ public:
 			}
 		}
 		dw.resize(dw.rows()*dw.cols(),1);
-		der.segment(outChannels_, kernel_.rows()*kernel_.cols()) = std::move(dw);
+		der.segment(k, kernel_.rows()*kernel_.cols()) = std::move(dw);
 	}
 
 	nlohmann::json to_json() const override {

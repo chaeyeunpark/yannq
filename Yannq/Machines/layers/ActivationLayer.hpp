@@ -27,8 +27,6 @@
 
 namespace yannq {
 
-
-
 template <typename T, class Activation>
 class ActivationLayer : public AbstractLayer<T> {
 	using VectorType = typename AbstractLayer<T>::VectorType;
@@ -36,14 +34,14 @@ class ActivationLayer : public AbstractLayer<T> {
 	using VectorRefType = typename AbstractLayer<T>::VectorRefType;
 	using VectorConstRefType = typename AbstractLayer<T>::VectorConstRefType;
 
-	Activation activation_;  // activation
+	Activation f_;  
 
 	static constexpr char name_[] = "Activation Layer";
 
 public:
 	template<typename ...Ts>
 	ActivationLayer(Ts&&... args)
-		: activation_(std::forward<Ts>(args)...)
+		: f_(std::forward<Ts>(args)...)
 	{
 	}
 
@@ -68,7 +66,7 @@ public:
 	// Feedforward
 	void forward(const VectorType &input, VectorType &output) override 
 	{
-		activation_->operator()(input, output);
+		f_.operator()(input, output);
 	}
 
 	// Computes derivative.
@@ -77,14 +75,14 @@ public:
 			VectorType &din, VectorRefType /*der*/) override 
 	{
 		din.resize(prev_layer_output.size());
-		activation_->ApplyJacobian(prev_layer_output, this_layer_output, dout, din);
+		f_.ApplyJacobian(prev_layer_output, this_layer_output, dout, din);
 	}
 
 	nlohmann::json to_json() const override
 	{
 		nlohmann::json layerpar;
 		layerpar["name"] = name_;
-		layerpar["activation"] = activation_->to_json();
+		layerpar["activation"] = Activation::name;
 		return layerpar;
 	}
 };
@@ -92,10 +90,19 @@ template <typename T, class Activation>
 constexpr char ActivationLayer<T, Activation>::name_[];
 
 template<typename T>
-using LayerReLU = ActivationLayer<T, ReLU<T> >;
+using Identity = ActivationLayer<T, activation::Identity<T> >;
 
 template<typename T>
-using LayerLnCosh = ActivationLayer<T, LnCosh<T> >;
+using LnCosh = ActivationLayer<T, activation::LnCosh<T> >;
+
+template<typename T>
+using Tanh = ActivationLayer<T, activation::Tanh<T> >;
+
+template<typename T>
+using ReLU = ActivationLayer<T, activation::ReLU<T> >;
+
+template<typename T>
+using LeakyReLU = ActivationLayer<T, activation::LeakyReLU<T> >;
 
 }  // namespace yannq
 

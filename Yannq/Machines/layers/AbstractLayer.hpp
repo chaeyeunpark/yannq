@@ -66,10 +66,9 @@ public:
 
 
 	/**
-	  Member function to feedforward through the layer. Writes the output into
-	  output
+	  Member function to feedforward through the layer.
 	  @param input a constant reference to the input to the layer
-	  @param output reference to the output vector.
+	  @param output reference to the output vector. Must have the size of outputDim. 
 	  */
 	virtual void forward(const VectorType &input, VectorType &output) = 0;
 
