@@ -27,70 +27,70 @@ class RBMStateObj
 protected:
 	const Machine& qs_;
 public:
-	using T = typename Machine::Scalar;
+	using ScalarType = typename Machine::ScalarType;
 
 	RBMStateObj(const Machine& qs) noexcept
 		: qs_(qs)
 	{
 	}
 
-	T logRatio(int k) const //calc psi(sigma ^ k) / psi(sigma)
+	ScalarType logRatio(int k) const //calc psi(sigma ^ k) / psi(sigma)
 	{
 		using std::exp;
 		using std::cosh;
 		using std::log;
 		
-		T res = -2.0*qs_.A(k)*T(sigmaAt(k));
+		ScalarType res = -2.0*qs_.A(k)*ScalarType(sigmaAt(k));
 
 		int m = qs_.getM();
 		for(int j = 0; j < m; j ++)
 		{
-			res += logCosh(thetaAt(j)-2.0*T(sigmaAt(k))*qs_.W(j,k))
+			res += logCosh(thetaAt(j)-2.0*ScalarType(sigmaAt(k))*qs_.W(j,k))
 				-logCosh(thetaAt(j));
 		}
 		return res;
 	}
 
-	inline T ratio(int k) const //calc psi(sigma ^ k) / psi(sigma)
+	inline ScalarType ratio(int k) const //calc psi(sigma ^ k) / psi(sigma)
 	{
 		return std::exp(logRatio(k));
 	}
 
-	T logRatio(int k, int l) const //calc psi(sigma ^ k ^ l)/psi(sigma)
+	ScalarType logRatio(int k, int l) const //calc psi(sigma ^ k ^ l)/psi(sigma)
 	{
 		using std::exp;
 		using std::cosh;
-		T res = -2.0*qs_.A(k)*T(sigmaAt(k))-2.0*qs_.A(l)*T(sigmaAt(l));
+		ScalarType res = -2.0*qs_.A(k)*ScalarType(sigmaAt(k))-2.0*qs_.A(l)*ScalarType(sigmaAt(l));
 		const int m = qs_.getM();
 
 		for(int j = 0; j < m; j ++)
 		{
-			T t = thetaAt(j)-2.0*T(sigmaAt(k))*qs_.W(j,k)-2.0*T(sigmaAt(l))*qs_.W(j,l);
+			ScalarType t = thetaAt(j)-2.0*ScalarType(sigmaAt(k))*qs_.W(j,k)-2.0*ScalarType(sigmaAt(l))*qs_.W(j,l);
 			res += logCosh(t)-logCosh(thetaAt(j));
 		}
 		return res;
 	}
 
-	T ratio(int k, int l) const
+	ScalarType ratio(int k, int l) const
 	{
 		return std::exp(logRatio(k,l));
 	}
 
 	template<std::size_t N>
-	T logRatio(const std::array<int, N>& v) const
+	ScalarType logRatio(const std::array<int, N>& v) const
 	{
-		T res{};
+		ScalarType res{};
 		const int m = qs_.getM();
 		for(int elt: v)
 		{
-			res -= 2.0*qs_.A(elt)*T(sigmaAt(elt));
+			res -= 2.0*qs_.A(elt)*ScalarType(sigmaAt(elt));
 		}
 		for(int j = 0; j < m; j++)
 		{
-			T t = thetaAt(j);
+			ScalarType t = thetaAt(j);
 			for(int elt: v)
 			{
-				t -= 2.0*T(sigmaAt(elt))*qs_.W(j,elt);
+				t -= 2.0*ScalarType(sigmaAt(elt))*qs_.W(j,elt);
 			}
 			res += logCosh(t)-logCosh(thetaAt(j));
 		}
@@ -102,7 +102,7 @@ public:
 		return static_cast<const Derived*>(this)->sigmaAt(i);
 	}
 
-	inline T thetaAt(int i) const
+	inline ScalarType thetaAt(int i) const
 	{
 		return static_cast<const Derived*>(this)->thetaAt(i);
 	}
@@ -111,11 +111,11 @@ public:
 	{
 		return qs_;
 	}
-	T logRatio(Eigen::VectorXi to) const
+	ScalarType logRatio(Eigen::VectorXi to) const
 	{
-		typename Machine::Vector thetaTo = qs_.calcTheta(to);
+		typename Machine::VectorType thetaTo = qs_.calcTheta(to);
 		to -= static_cast<const Derived*>(this)->getSigma();
-		T s = (qs_->getA().transpose())*(to.cast<T>());
+		ScalarType s = (qs_->getA().transpose())*(to.cast<ScalarType>());
 		for(int j = 0; j < qs_->getM(); j++)
 		{
 			s += logCosh(thetaTo(j)) - logCosh(thetaAt(j));
@@ -131,11 +131,11 @@ struct RBMStateValue
 {
 private:
 	Eigen::VectorXi sigma_;
-	typename Machine::Vector theta_;
+	typename Machine::VectorType theta_;
 
 public:
-	using Vector=typename Machine::Vector;
-	using T = typename Machine::Scalar;
+	using VectorType=typename Machine::VectorType;
+	using ScalarType = typename Machine::ScalarType;
 
 	RBMStateValue(const Machine& qs, Eigen::VectorXi&& sigma) noexcept
 		: RBMStateObj<Machine, RBMStateValue<Machine> >(qs), sigma_(std::move(sigma))
@@ -184,7 +184,7 @@ public:
 	{
 		return sigma_(i);
 	}
-	inline T thetaAt(int j) const
+	inline ScalarType thetaAt(int j) const
 	{
 		return theta_(j);
 	}
@@ -196,7 +196,7 @@ public:
 		{
 			for(int j = 0; j < theta_.size(); j++)
 			{
-				theta_(j) -= 2.0*T(sigma_(elt))*(this->qs_.W(j,elt));
+				theta_(j) -= 2.0*ScalarType(sigma_(elt))*(this->qs_.W(j,elt));
 			}
 		}
 		for(int elt: v)
@@ -209,8 +209,8 @@ public:
 	{
 		for(int j = 0; j < theta_.size(); j++)
 		{
-			theta_(j) += -2.0*T(sigma_(k))*(this->qs_.W(j,k))
-				-2.0*T(sigma_(l))*(this->qs_.W(j,l));
+			theta_(j) += -2.0*ScalarType(sigma_(k))*(this->qs_.W(j,k))
+				-2.0*ScalarType(sigma_(l))*(this->qs_.W(j,l));
 		}
 		sigma_(k) *= -1;
 		sigma_(l) *= -1;
@@ -220,16 +220,16 @@ public:
 	{
 		for(int j = 0; j < theta_.size(); j++)
 		{
-			theta_(j) -= 2.0*T(sigma_(k))*(this->qs_.W(j,k));
+			theta_(j) -= 2.0*ScalarType(sigma_(k))*(this->qs_.W(j,k));
 		}
 		sigma_(k) *= -1;
 	}
 	
 	using RBMStateObj<Machine, RBMStateValue<Machine> >::logRatio;
-	T logRatio(const RBMStateValue& other)
+	ScalarType logRatio(const RBMStateValue& other)
 	{
-		T res = (this->qs_.getA().transpose())*
-			(other.getSigma() - sigma_).template cast<T>();
+		ScalarType res = (this->qs_.getA().transpose())*
+			(other.getSigma() - sigma_).template cast<ScalarType>();
 		for(int j = 0; j < theta_.size(); j++)
 		{
 			res += logCosh(other.theta_(j)) - logCosh(theta_(j));
@@ -240,10 +240,10 @@ public:
 	const Eigen::VectorXi& getSigma() const & { return sigma_; } 
 	Eigen::VectorXi getSigma() && { return std::move(sigma_); } 
 
-	const Vector& getTheta() const & { return theta_; } 
-	Vector getTheta() && { return std::move(theta_); } 
+	const VectorType& getTheta() const & { return theta_; } 
+	VectorType getTheta() && { return std::move(theta_); } 
 
-	std::tuple<Eigen::VectorXi, Vector> data() const
+	std::tuple<Eigen::VectorXi, VectorType> data() const
 	{
 		return std::make_tuple(sigma_, theta_);
 	}
@@ -255,15 +255,15 @@ class RBMStateRef
 	: public RBMStateObj<Machine, RBMStateRef<Machine> >
 {
 public:
-	using Vector = typename Machine::Vector;
+	using VectorType = typename Machine::VectorType;
 private:
 	typedef typename std::conditional<is_const, const Eigen::VectorXi, Eigen::VectorXi>::type SigmaType;
-	typedef typename std::conditional<is_const, const Vector, Vector>::type ThetaType;
+	typedef typename std::conditional<is_const, const VectorType, VectorType>::type ThetaType;
 	SigmaType& sigma_;
 	ThetaType& theta_;
 public:
 	
-	using T = typename Machine::Scalar;
+	using T = typename Machine::ScalarType;
 
 	RBMStateRef(const Machine& qs, SigmaType& sigma, ThetaType& theta) noexcept
 		: RBMStateObj<Machine, RBMStateRef<Machine, is_const> >(qs), sigma_(sigma), theta_(theta)
@@ -284,7 +284,7 @@ public:
 		return sigma_;
 	}
 
-	typename Machine::Vector getTheta() const
+	typename Machine::VectorType getTheta() const
 	{
 		return theta_;
 	}

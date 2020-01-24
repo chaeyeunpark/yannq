@@ -126,6 +126,32 @@ long long int toValue(const Eigen::VectorXi& sigma)
 	return res;
 }
 
+
+//if complex
+template<typename T, class RandomEngine, std::enable_if_t<is_complex_type<T>::value, int> = 0 >
+Eigen::Matrix<T, Eigen::Dynamic, 1> randomVector(RandomEngine&& re, double sigma, std::size_t nelt)
+{
+	Eigen::Matrix<T, Eigen::Dynamic, 1> res(nelt);
+	std::normal_distribution<typename remove_complex<T>::type> dist(0.0, sigma);
+	for(std::size_t i = 0; i < nelt; i++)
+	{
+		res(i) = T{dist(re),dist(re)};
+	}
+	return res;
+}
+template<typename T, class RandomEngine, std::enable_if_t<!is_complex_type<T>::value, int> = 0 >
+Eigen::Matrix<T, Eigen::Dynamic, 1> randomVector(RandomEngine&& re, double sigma, std::size_t nelt)
+{
+	Eigen::Matrix<T, Eigen::Dynamic, 1> res(nelt);
+	std::normal_distribution<T> dist(0.0, sigma);
+	for(std::size_t i = 0; i < nelt; i++)
+	{
+		res(i) = dist(re);
+	}
+	return res;
+}
+
+
 }//namespace yannq
 
 #endif//CY_NNQS_UTILITY_HPP

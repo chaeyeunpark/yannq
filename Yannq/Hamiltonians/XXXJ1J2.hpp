@@ -3,6 +3,7 @@
 #include <Eigen/Eigen>
 #include <nlohmann/json.hpp>
 
+template<int signrule = 1>
 class XXXJ1J2
 {
 private:
@@ -38,7 +39,7 @@ public:
 		{
 			double yysign = -smp.sigmaAt(i)*smp.sigmaAt((i+1)%n_);
 			s += -J1_*yysign; //zz
-			s += J1_*(1.0+yysign)*smp.ratio(i, (i+1)%n_); //xx+yy
+			s += J1_*signrule*(1.0+yysign)*smp.ratio(i, (i+1)%n_); //xx+yy
 		}
 		//Next-nearest-neighbor
 		for(int i = 0; i < n_; i++)
@@ -59,7 +60,7 @@ public:
 			int b2 = (col >> ((i+1)%n_)) & 1;
 			int sgn = (1-2*b1)*(1-2*b2);
 			long long int x = (1 << i) | (1 << ((i+1)%(n_)));
-			m[col ^ x] += J1_*(1.0 - sgn*1.0);
+			m[col ^ x] += J1_*signrule*(1.0 - sgn*1.0);
 			m[col] += J1_*sgn;
 		}
 		for(int i = 0; i < n_; i++)
