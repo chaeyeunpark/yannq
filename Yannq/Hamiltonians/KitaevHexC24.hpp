@@ -7,11 +7,11 @@ class KitaevHexC24
 {
 private:
 	static constexpr int N = 24;
-	const double Jx_;
-	const double Jy_;
-	const double Jz_;
+	double Jx_;
+	double Jy_;
+	double Jz_;
 
-	const double hx_;
+	double hx_;
 
 public:
 
@@ -24,10 +24,12 @@ public:
 		: Jx_(Jx), Jy_(Jy), Jz_(Jz), hx_{}
 	{
 	}
+
 	KitaevHexC24(double J, double hx)
 		: Jx_(J), Jy_(J), Jz_(J), hx_(hx)
 	{
 	}
+
 	std::vector<std::pair<int,int> > xLinks() const
 	{
 		std::vector<std::pair<int,int> > res;

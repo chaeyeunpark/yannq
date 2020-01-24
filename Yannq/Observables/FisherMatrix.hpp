@@ -86,6 +86,7 @@ public:
 	template<class Elt, class State>
 	inline void eachSample(int n, Elt&& elt, State&& state)
 	{
+		(void)state;
 		deltas_.row(n) = qs_.logDeriv(elt);
 	}
 

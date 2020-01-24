@@ -69,6 +69,12 @@ add_test(
 	COMMAND TestUtility
 )
 
+add_executable(TestHamJ1J2 "Tests/TestHamJ1J2.cpp")
+add_test(
+	NAME TestHamJ1J2
+	COMMAND TestHamJ1J2
+)
+
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND}
                   DEPENDS TestRBMState TestRatio TestHamTFI TestUtility)
 

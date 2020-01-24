@@ -31,6 +31,7 @@ public:
 	template<class Elt, class State>
 	void eachSample(int n, Elt&& elt, State&& state)
 	{
+		(void)elt;
 		elocs_(n) = ham_(state);
 	}
 	void finIter()
