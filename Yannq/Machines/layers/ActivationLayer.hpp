@@ -29,10 +29,14 @@ namespace yannq {
 
 template <typename T, class Activation>
 class ActivationLayer : public AbstractLayer<T> {
+public:
+	using ScalarType = T;
 	using VectorType = typename AbstractLayer<T>::VectorType;
 	using MatrixType = typename AbstractLayer<T>::MatrixType;
 	using VectorRefType = typename AbstractLayer<T>::VectorRefType;
 	using VectorConstRefType = typename AbstractLayer<T>::VectorConstRefType;
+
+private:
 
 	Activation f_;  
 
@@ -99,10 +103,14 @@ template<typename T>
 using Tanh = ActivationLayer<T, activation::Tanh<T> >;
 
 template<typename T>
+using Sigmoid = ActivationLayer<T, activation::Sigmoid<T> >;
+
+template<typename T>
 using ReLU = ActivationLayer<T, activation::ReLU<T> >;
 
 template<typename T>
 using LeakyReLU = ActivationLayer<T, activation::LeakyReLU<T> >;
+
 
 }  // namespace yannq
 

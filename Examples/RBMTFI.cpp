@@ -3,7 +3,7 @@
 #include <chrono>
 #include <fstream>
 #include <ios>
-#include <boost/archive/binary_oarchive.hpp>
+#include <cereal/cereal.hpp>
 
 #include <nlohmann/json.hpp>
 
@@ -14,7 +14,6 @@
 #include "Samplers/LocalSweeper.hpp"
 
 #include "Optimizers/SGD.hpp"
-#include "Serializers/SerializeRBM.hpp"
 #include "Hamiltonians/TFIsing.hpp"
 
 #include "GroundState/SRMat.hpp"
@@ -91,7 +90,7 @@ int main(int argc, char** argv)
 	ss.initializeRandomEngine();
 
 	using std::sqrt;
-	using Vector = typename Machine::Vector;
+	using Vector = typename Machine::VectorType;
 
 	for(int ll = 0; ll <=  2000; ll++)
 	{
@@ -99,10 +98,11 @@ int main(int argc, char** argv)
 		{
 			char fileName[30];
 			sprintf(fileName, "w%04d.dat",ll);
-			std::fstream out(fileName, ios::binary|ios::out);
+			std::fstream out(fileName, ios::binary | ios::out);
 			{
-				boost::archive::binary_oarchive oa(out);
-				oa << qs;
+				cereal::BinaryOutputArchive oa(out);
+				auto qsToSave = std::make_unique<Machine>(qs);
+				oa(qsToSave);
 			}
 		}
 		ss.randomizeSigma();

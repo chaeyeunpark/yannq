@@ -12,18 +12,18 @@
 using namespace yannq;
 using namespace Eigen;
 
-TEMPLATE_PRODUCT_TEST_CASE("Test ActivationLayer by activations", "[layer][activations]", (Identity, LnCosh, Tanh, ReLU, LeakyReLU),(double))
+TEMPLATE_PRODUCT_TEST_CASE("Test ActivationLayer by activations", "[layer][activations]", (activation::Identity, activation::LnCosh, activation::Tanh, activation::ReLU, activation::LeakyReLU),(double))
 {
 	using std::abs;
 	using Catch::Matchers::Floating::WithinAbsMatcher;
-	using T = typename TestType::ScalarType;
+	using T = double;
 	using VectorType = typename AbstractLayer<T>::VectorType;
 	using MatrixType = typename AbstractLayer<T>::MatrixType;
 	using VectorRefType = typename AbstractLayer<T>::VectorRefType;
 	using VectorConstRefType = typename AbstractLayer<T>::VectorConstRefType;
 
 	auto inSize = 20u;
-	auto layer = ActivationLayer<typename TestType::ScalarType>(inSize, std::make_unique<TestType>());
+	auto layer = ActivationLayer<T, TestType>();
 
 	for(int i = 0; i < 100; i++)
 	{
@@ -42,18 +42,18 @@ TEMPLATE_PRODUCT_TEST_CASE("Test ActivationLayer by activations", "[layer][activ
 				WithinAbsMatcher(0.,1e-6));
 	}
 }
-TEMPLATE_PRODUCT_TEST_CASE("Test ActivationLayer by activations", "[layer][activations]", (Identity, LnCosh, Tanh, ReLU),(std::complex<double>))
+TEMPLATE_PRODUCT_TEST_CASE("Test ActivationLayer by activations", "[layer][activations]", (activation::Identity, activation::LnCosh, activation::Tanh, activation::ReLU),(std::complex<double>))
 {
 	using std::abs;
 	using Catch::Matchers::Floating::WithinAbsMatcher;
-	using T = typename TestType::ScalarType;
+	using T = std::complex<double>;
 	using VectorType = typename AbstractLayer<T>::VectorType;
 	using MatrixType = typename AbstractLayer<T>::MatrixType;
 	using VectorRefType = typename AbstractLayer<T>::VectorRefType;
 	using VectorConstRefType = typename AbstractLayer<T>::VectorConstRefType;
 
 	auto inSize = 20u;
-	auto layer = ActivationLayer<typename TestType::ScalarType>(inSize, std::make_unique<TestType>());
+	auto layer = ActivationLayer<T, TestType>();
 
 	for(int i = 0; i < 100; i++)
 	{

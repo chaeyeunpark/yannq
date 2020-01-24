@@ -34,20 +34,22 @@ template<typename T, bool useBias = true>
 class RBM
 {
 	static_assert(std::is_floating_point<T>::value || is_complex_type<T>::value, "T must be floating or complex");
-
 public:
-	using Scalar = T;
-	using RealScalar = typename yannq::remove_complex<T>::type;
-	typedef Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> Matrix;
-	typedef Eigen::Matrix<T, Eigen::Dynamic, 1>  Vector;
+	using ScalarType = T;
+	using RealScalarType = typename yannq::remove_complex<T>::type;
+
+	using MatrixType = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
+	using VectorType = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+	using VectorRefType = Eigen::Ref<VectorType>;
+	using VectorConstRefType = Eigen::Ref<const VectorType>;
 
 private:
 	int n_; //# of qubits
 	int m_; //# of hidden units
 
-	Matrix W_; //W should be m by n
-	Vector a_; //a is length n
-	Vector b_; //b is length m
+	MatrixType W_; //W should be m by n
+	VectorType a_; //a is length n
+	VectorType b_; //b is length m
 
 public:
 
@@ -75,14 +77,14 @@ public:
 		return n_*m_ + n_ + m_;
 	}
 
-	inline Vector calcTheta(const Eigen::VectorXi& sigma) const
+	inline VectorType calcTheta(const Eigen::VectorXi& sigma) const
 	{
-		Vector s = sigma.cast<T>();
+		VectorType s = sigma.cast<T>();
 		return W_*s + b_;
 	}
-	inline Vector calcGamma(const Eigen::VectorXi& hidden) const
+	inline VectorType calcGamma(const Eigen::VectorXi& hidden) const
 	{
-		Vector h = hidden.cast<T>();
+		VectorType h = hidden.cast<T>();
 		return W_.transpose()*h + a_;
 	}
 	
@@ -103,10 +105,10 @@ public:
 
 	void conservativeResize(int newM)
 	{
-		Vector newB = Vector::Zero(newM);
+		VectorType newB = VectorType::Zero(newM);
 		newB.head(m_) = b_;
 
-		Matrix newW = Matrix::Zero(newM, n_);
+		MatrixType newW = MatrixType::Zero(newM, n_);
 		newW.topLeftCorner(m_, n_) = W_;
 
 		m_ = newM;
@@ -119,6 +121,11 @@ public:
 		: n_(rhs.getN()), m_(rhs.getM()), W_(rhs.getW()), a_(rhs.getA()), b_(rhs.getB())
 	{
 		static_assert(std::is_convertible<U,T>::value, "U should be convertible to T");
+	}
+
+	RBM(const RBM& rhs)
+		: n_(rhs.getN()), m_(rhs.getM()), W_(rhs.getW()), a_(rhs.getA()), b_(rhs.getB())
+	{
 	}
 	
 	RBM(RBM<T, true>&& rhs)
@@ -145,19 +152,19 @@ public:
 		b_.setZero();
 	}
 
-	void setW(Matrix m)
+	void setW(MatrixType m)
 	{
 		assert(m.rows() == W_.rows() && m.cols() == W_.cols());
 		W_ = std::move(m);
 	}
 
-	void setA(Vector A)
+	void setA(VectorType A)
 	{
 		assert(A.size() == a_.size());
 		a_ = std::move(A);
 	}
 
-	void setB(Vector B)
+	void setB(VectorType B)
 	{
 		assert(B.size() == b_.size());
 		b_ = std::move(B);
@@ -206,8 +213,8 @@ public:
 		m_ = rhs.m_;
 
 		W_ = rhs.W_;
-		a_ = Vector::Zero(n_);
-		b_ = Vector::Zero(m_);
+		a_ = VectorType::Zero(n_);
+		b_ = VectorType::Zero(m_);
 
 		return *this;
 	}
@@ -221,8 +228,8 @@ public:
 		m_ = rhs.m_;
 
 		W_ = std::move(rhs.W_);
-		a_ = Vector::Zero(n_);
-		b_ = Vector::Zero(m_);
+		a_ = VectorType::Zero(n_);
+		b_ = VectorType::Zero(m_);
 
 		return *this;
 	}
@@ -242,50 +249,51 @@ public:
 		return b_.coeff(j);
 	}
 	
-	const Matrix& getW() const & { return W_; } 
-	Matrix getW() && { return std::move(W_); } 
+	const MatrixType& getW() const & { return W_; } 
+	MatrixType getW() && { return std::move(W_); } 
 
-	const Vector& getA() const & { return a_; } 
-	Vector getA() && { return std::move(a_); } 
+	const VectorType& getA() const & { return a_; } 
+	VectorType getA() && { return std::move(a_); } 
 
-	const Vector& getB() const & { return b_; } 
-	Vector getB() && { return std::move(b_); } 
+	const VectorType& getB() const & { return b_; } 
+	VectorType getB() && { return std::move(b_); } 
 
 
-	void updateA(const Vector& v)
+	void updateA(const VectorType& v)
 	{
 		a_ += v;
 	}
-	void updateB(const Vector& v)
+	void updateB(const VectorType& v)
 	{
 		b_ += v;
 	}
-	void updateW(const Matrix& m)
+	void updateW(const MatrixType& m)
 	{
 		W_ += m;
 	}
 
-	void updateParams(const Vector& m)
+	void updateParams(const VectorConstRefType& m)
 	{
 		assert(m.size() == getDim());
-		a_ += Eigen::Map<const Vector>(m.data()+0, n_);
-		b_ += Eigen::Map<const Vector>(m.data()+n_, m_);
-		W_ += Eigen::Map<const Matrix>(m.data()+n_+m_, m_,n_);
+		a_ += Eigen::Map<const VectorType>(m.data()+0, n_);
+		b_ += Eigen::Map<const VectorType>(m.data()+n_, m_);
+		W_ += Eigen::Map<const MatrixType>(m.data()+n_+m_, m_,n_);
 	}
 
-	Vector getParams() const
+	VectorType getParams() const
 	{
-		Vector res(getDim());
+		VectorType res(getDim());
 		res.head(n_) = a_;
 		res.segment(n_, m_) = b_;
-		res.segment(n_+m_, n_*m_) = Eigen::Map<const Vector>(W_.data(), W_.size());
+		res.segment(n_+m_, n_*m_) = Eigen::Map<const VectorType>(W_.data(), W_.size());
 		return res;
 	}
-	void setParams(const Vector& r)
+
+	void setParams(const VectorConstRefType& r)
 	{
 		a_ = r.head(n_);
 		b_ = r.segment(n_, m_);
-		Eigen::Map<Vector>(W_.data(), W_.size()) = r.segment(n_+m_, n_*m_);
+		Eigen::Map<VectorType>(W_.data(), W_.size()) = r.segment(n_+m_, n_*m_);
 	}
 
 	bool hasNaN() const
@@ -293,33 +301,9 @@ public:
 		return a_.hasNaN() || b_.hasNaN() || W_.hasNaN();
 	}
 
-	/* When T is real type
-	 * */
+	/* When T is real type */
 	template <typename RandomEngine, class U=T,
-               typename std::enable_if < !is_complex_type<U>::value, int >::type = 0 >
-	void initializeRandomUniform(RandomEngine& re, T weight = 1e-3)
-	{
-		std::uniform_real_distribution<T> nd{-0.5*weight,0.5*weight};
-		for(int i = 0; i < n_; i++)
-		{
-			a_.coeffRef(i) = nd(re);
-		}
-		for(int i = 0; i < m_; i++)
-		{
-			b_.coeffRef(i) = nd(re);
-		}
-		for(int j = 0; j < n_; j++)
-		{
-			for(int i = 0; i < m_; i++)
-			{
-				W_.coeffRef(i, j) = nd(re);
-			}
-		}
-	}
-
-
-	template <typename RandomEngine, class U=T,
-               typename std::enable_if < !is_complex_type<U>::value, int >::type = 0 >
+            	std::enable_if_t < !is_complex_type<U>::value, int > = 0 >
 	void initializeRandom(RandomEngine& re, T sigma = 1e-3)
 	{
 		std::normal_distribution<double> nd{0, sigma};
@@ -343,30 +327,7 @@ public:
 
 	/* When T is complex type */
 	template <typename RandomEngine, class U=T,
-               typename std::enable_if < is_complex_type<U>::value, int >::type = 0 >
-	void initializeRandomUniform(RandomEngine& re, typename remove_complex<T>::type weight = 1e-3)
-	{
-		std::uniform_real_distribution<typename remove_complex<T>::type> nd{-0.5*weight, 0.5*weight};
-		
-		for(int i = 0; i < n_; i++)
-		{
-			a_.coeffRef(i) = T{nd(re), nd(re)};
-		}
-		for(int i = 0; i < m_; i++)
-		{
-			b_.coeffRef(i) = T{nd(re), nd(re)};
-		}
-		for(int j = 0; j < n_; j++)
-		{
-			for(int i = 0; i < m_; i++)
-			{
-				W_.coeffRef(i, j) = T{nd(re), nd(re)};
-			}
-		}
-	}
-
-	template <typename RandomEngine, class U=T,
-               typename std::enable_if < is_complex_type<U>::value, int >::type = 0 >
+               std::enable_if_t < is_complex_type<U>::value, int > = 0 >
 	void initializeRandom(RandomEngine& re, typename remove_complex<T>::type sigma = 1e-3)
 	{
 		std::normal_distribution<typename remove_complex<T>::type> nd{0, sigma};
@@ -388,7 +349,6 @@ public:
 		}
 	}
 
-
 	bool operator==(const RBM<T,useBias>& rhs) const
 	{
 		if(n_ != rhs.n_ || m_ != rhs.m_)
@@ -396,16 +356,16 @@ public:
 		return (a_ == rhs.a_) || (b_ == rhs.b_) || (W_ == rhs.W_);
 	}
 
-	std::tuple<Eigen::VectorXi, Vector> makeData(const Eigen::VectorXi& sigma) const
+	std::tuple<Eigen::VectorXi, VectorType> makeData(const Eigen::VectorXi& sigma) const
 	{
 		return std::make_tuple(sigma, calcTheta(sigma));
 	}
 
-	T coeff(const std::tuple<Eigen::VectorXi, Vector>& t) const
+	T coeff(const std::tuple<Eigen::VectorXi, VectorType>& t) const
 	{
 		using std::cosh;
 
-		Vector ss = std::get<0>(t).template cast<T>();
+		VectorType ss = std::get<0>(t).template cast<T>();
 		T s = a_.transpose()*ss;
 		T p = exp(s);
 		for(int j = 0; j < m_; j++)
@@ -415,9 +375,9 @@ public:
 		return p;
 	}
 
-	Vector logDeriv(const std::tuple<Eigen::VectorXi, Vector>& t) const
+	VectorType logDeriv(const std::tuple<Eigen::VectorXi, VectorType>& t) const
 	{
-		Vector res(getDim());
+		VectorType res(getDim());
 		for(int i = 0; i < n_; i++)
 		{
 			res(i) = std::get<0>(t)(i);
@@ -458,17 +418,19 @@ class RBM<T, false>
 	static_assert(std::is_floating_point<T>::value || is_complex_type<T>::value, "T must be floating or complex");
 
 public:
-	using Scalar=T;
+	using ScalarType = T;
+	using RealScalarType = typename yannq::remove_complex<T>::type;
 
-	typedef Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> Matrix;
-	typedef Eigen::Matrix<T, Eigen::Dynamic, 1>  Vector;
-
+	using MatrixType = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
+	using VectorType = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+	using VectorRefType = Eigen::Ref<VectorType>;
+	using VectorConstRefType = Eigen::Ref<const VectorType>;
 
 private:
 	int n_; //# of qubits
 	int m_; //# of hidden units
 
-	Matrix W_; //W should be m by n
+	MatrixType W_; //W should be m by n
 
 public:
 	inline int getN() const
@@ -485,14 +447,14 @@ public:
 		return n_*m_;
 	}
 
-	inline Vector calcTheta(const Eigen::VectorXi& sigma) const
+	inline VectorType calcTheta(const Eigen::VectorXi& sigma) const
 	{
-		Vector s = sigma.cast<T>();
+		VectorType s = sigma.cast<T>();
 		return W_*s;
 	}
-	inline Vector calcGamma(const Eigen::VectorXi& hidden) const
+	inline VectorType calcGamma(const Eigen::VectorXi& hidden) const
 	{
-		Vector h = hidden.cast<T>();
+		VectorType h = hidden.cast<T>();
 		return W_.transpose()*h;
 	}
 	
@@ -526,12 +488,12 @@ public:
 		static_assert(std::is_convertible<U,T>::value, "U should be convertible to T");
 	}
 
-	Vector getA() const
+	VectorType getA() const
 	{
-		return Vector::Zero(n_); 
+		return VectorType::Zero(n_); 
 	}
 
-	void setW(Matrix m)
+	void setW(MatrixType m)
 	{
 		assert(m.rows() == W_.rows() && m.cols() == W_.cols());
 		W_ = std::move(m);
@@ -585,7 +547,6 @@ public:
 		return 0.0;
 	}
 
-
 	void resize(int n, int m)
 	{
 		n_ = n;
@@ -596,64 +557,70 @@ public:
 
 	void conservativeResize(int newM)
 	{
-		Matrix newW = Matrix::Zero(newM, n_);
+		MatrixType newW = MatrixType::Zero(newM, n_);
 		newW.topLeftCorner(m_, n_) = W_;
 
 		m_ = newM;
 		W_ = std::move(newW);
 	}
 
-	
+	const MatrixType& getW() const & { return W_; } 
+	MatrixType getW() && { return std::move(W_); } 
 
-	const Matrix& getW() const & { return W_; } 
-	Matrix getW() && { return std::move(W_); } 
-
-	void updateW(const Matrix& m)
+	void updateW(const MatrixType& m)
 	{
 		W_ += m;
 	}
 	
-	void updateParams(const Vector& m)
+	void updateParams(const VectorConstRefType& m)
 	{
 		assert(m.size() == getDim());
-		W_ += Eigen::Map<const Matrix>(m.data(), m_,n_);
+		W_ += Eigen::Map<const MatrixType>(m.data(), m_,n_);
 	}
 
-	Vector getParams() const
+	VectorType getParams() const
 	{
-		return Eigen::Map<Vector>(W_.data(), W_.size());
+		return Eigen::Map<VectorType>(W_.data(), W_.size());
 	}
+
+	void setParams(const VectorConstRefType& r)
+	{
+		Eigen::Map<VectorType>(W_.data(), W_.size()) = r;
+	}
+
 
 	bool hasNaN() const
 	{
 		return W_.hasNaN();
 	}
 
+	/* When T is real type */
 	template <typename RandomEngine, class U=T,
-               typename std::enable_if < !is_complex_type<U>::value, int >::type = 0 >
-	void initializeRandom(RandomEngine& re, T weight = 0.001)
+               std::enable_if_t < !is_complex_type<U>::value, int > = 0 >
+	void initializeRandom(RandomEngine& re, T sigma = 0.001)
 	{
-		std::normal_distribution<double> nd{};
-		//std::uniform_real_distribution<T> nd{-0.5,0.5};
+		std::normal_distribution<double> nd{0, sigma};
 		for(int j = 0; j < n_; j++)
 		{
 			for(int i = 0; i < m_; i++)
 			{
-				W_.coeffRef(i, j) = weight*nd(re);
+				W_.coeffRef(i, j) = nd(re);
 			}
 		}
 	}
+
+	/* When T is complex type */
 	template <typename RandomEngine, class U=T,
-               typename std::enable_if < is_complex_type<U>::value, int >::type = 0 >
-	void initializeRandom(RandomEngine& re, typename remove_complex<T>::type weight = 0.001)
+               std::enable_if_t < is_complex_type<U>::value, int > = 0 >
+	void initializeRandom(RandomEngine& re, typename remove_complex<T>::type weight = 1e-3)
 	{
-		std::uniform_real_distribution<typename remove_complex<T>::type> nd{-0.5,0.5};
+		std::uniform_real_distribution<typename remove_complex<T>::type> nd{-0.5*weight,0.5*weight};
 		
 		for(int j = 0; j < n_; j++)
 		{
 			for(int i = 0; i < m_; i++)
 			{
-				W_.coeffRef(i, j) = weight*T{nd(re), nd(re)};
+				W_.coeffRef(i, j) = T{nd(re), nd(re)};
 			}
 		}
 	}
@@ -665,12 +632,12 @@ public:
 		return (W_ == rhs.W_);
 	}
 	
-	std::tuple<Eigen::VectorXi, Vector> makeData(const Eigen::VectorXi& sigma) const
+	std::tuple<Eigen::VectorXi, VectorType> makeData(const Eigen::VectorXi& sigma) const
 	{
 		return std::make_tuple(sigma, calcTheta(sigma));
 	}
 
-	T coeff(const std::tuple<Eigen::VectorXi, Vector>& t) const
+	T coeff(const std::tuple<Eigen::VectorXi, VectorType>& t) const
 	{
 		using std::cosh;
 
@@ -682,9 +649,9 @@ public:
 		return p;
 	}
 
-	Vector logDeriv(const std::tuple<Eigen::VectorXi, Vector>& t) const
+	VectorType logDeriv(const std::tuple<Eigen::VectorXi, VectorType>& t) const
 	{
-		Vector res(getDim());
+		VectorType res(getDim());
 		for(int i = 0; i < n_; i++)
 		{
 			for(int j = 0; j < m_; j++)
@@ -704,13 +671,11 @@ public:
 	}
 };
 
-
-
 template<typename T, bool useBias>
-typename RBM<T, useBias>::Vector getPsi(const RBM<T, useBias>& qs, bool normalize)
+typename RBM<T, useBias>::VectorType getPsi(const RBM<T, useBias>& qs, bool normalize)
 {
 	const int n = qs.getN();
-	typename RBM<T>::Vector psi(1<<n);
+	typename RBM<T>::VectorType psi(1<<n);
 #pragma omp parallel for schedule(static,8)
 	for(uint64_t i = 0; i < (1u<<n); i++)
 	{
@@ -722,11 +687,12 @@ typename RBM<T, useBias>::Vector getPsi(const RBM<T, useBias>& qs, bool normaliz
 	else
 		return psi;
 }
+
 template<typename T, bool useBias>
-typename RBM<T, useBias>::Vector getPsi(const RBM<T, useBias>& qs, const std::vector<uint32_t>& basis, bool normalize)
+typename RBM<T, useBias>::VectorType getPsi(const RBM<T, useBias>& qs, const std::vector<uint32_t>& basis, bool normalize)
 {
 	const int n = qs.getN();
-	typename RBM<T>::Vector psi(basis.size());
+	typename RBM<T>::VectorType psi(basis.size());
 	for(uint64_t i = 0; i < basis.size(); i++)
 	{
 		auto s = toSigma(n, basis[i]);
@@ -737,11 +703,12 @@ typename RBM<T, useBias>::Vector getPsi(const RBM<T, useBias>& qs, const std::ve
 	else
 		return psi;
 }
+
 template<typename T, bool useBias, class BasisIter>
-typename RBM<T, useBias>::RealScalar getNorm(const RBM<T, useBias>& qs, BasisIter&& basis)
+typename RBM<T, useBias>::RealScalarType getNorm(const RBM<T, useBias>& qs, BasisIter&& basis)
 {
 	const int n = qs.getN();
-	typename RBM<T>::Vector psi(basis.size());
+	typename RBM<T>::VectorType psi(basis.size());
 	for(auto sigma: basis)
 	{
 		auto s = toSigma(n, sigma);

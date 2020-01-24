@@ -31,7 +31,7 @@ set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS
 
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -DEIGEN_USE_MKL_ALL")
 
 add_executable(TestRBMState "Tests/TestRBMState.cpp")
 add_test(
@@ -69,18 +69,42 @@ add_test(
 	COMMAND TestUtility
 )
 
+add_executable(TestConvLayer "Tests/TestConvLayer.cpp")
+add_test(
+	NAME TestConvLayer
+	COMMAND TestConvLayer
+)
+
+add_executable(TestActivations "Tests/TestActivations.cpp")
+add_test(
+	NAME TestActivations
+	COMMAND TestActivations
+)
+
+add_executable(TestFullyConnected "Tests/TestFullyConnected.cpp")
+add_test(
+	NAME TestFullyConnected
+	COMMAND TestFullyConnected
+)
+
+add_executable(TestSerializeRBM "Tests/TestSerializeRBM.cpp")
+add_test(
+	NAME TestSerializeRBM
+	COMMAND TestSerializeRBM
+)
+
+add_executable(TestFeedForward "Tests/TestFeedForward.cpp")
+add_test(
+	NAME TestFeedForward
+	COMMAND TestFeedForward
+)
+
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND}
                   DEPENDS TestRBMState TestRatio TestHamTFI TestUtility)
 
 add_executable(RBMTFI "Examples/RBMTFI.cpp")
 target_link_libraries(RBMTFI boost_serialization boost_filesystem boost_system boost_regex)
 
-add_executable(TestConvLayer "Tests/TestConvLayer.cpp")
 
-add_executable(TestActivations "Tests/TestActivations.cpp")
-
-add_executable(TestFullyConnected "Tests/TestFullyConnected.cpp")
-
-add_executable(TestSerializeRBM "Tests/TestSerializeRBM.cpp")
-
-add_executable(TestFeedForward "Tests/TestFeedForward.cpp")
+add_executable(TestAmplitudePhase "Tests/TestAmplitudePhase.cpp")
+target_link_libraries(TestAmplitudePhase mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl)

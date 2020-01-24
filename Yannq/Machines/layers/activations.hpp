@@ -116,11 +116,46 @@ public:
 	inline void ApplyJacobian(VectorConstRefType /*Z*/, VectorConstRefType A,
 			VectorConstRefType F,
 			VectorRefType G) const  {
-		G.array() = F.array() * (1 - A.array() * A.array());
+		G.array() = F.array() * (1. - A.array() * A.array());
 	}
 };
 template<typename T>
 constexpr char Tanh<T>::name[];
+
+
+template<typename T>
+class Sigmoid
+{
+	static_assert(!is_complex_type<T>::value, "Sigmoid now only supports real parameters");
+
+	using ScalarType = T;
+	using VectorType = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+	using VectorRefType = Eigen::Ref<VectorType>;
+	using VectorConstRefType = Eigen::Ref<const VectorType>;
+
+public:
+	static constexpr char name[] = "Sigmoid";
+	// A = Sigmoid(Z)
+	inline void operator()(VectorConstRefType Z, VectorRefType A) const  {
+		A.array() = Z.array().exp();
+		A.array().inverse();
+		A.array() += 1.;
+		A.array().inverse();
+	}
+
+	// Apply the (derivative of activation function) matrix J to a vector F
+	// A = Sigmoid(Z)
+	// J = dA / dZ
+	// G = J * F
+	inline void ApplyJacobian(VectorConstRefType /*Z*/, VectorConstRefType A,
+			VectorConstRefType F,
+			VectorRefType G) const  {
+		G.array() = (1. - A.array() ) * A.array();
+	}
+};
+template<typename T>
+constexpr char Sigmoid<T>::name[];
+
 
 template<typename T, typename Enable = void>
 class ReLU;
@@ -282,7 +317,6 @@ public:
 			G(i) = Z(i)>0?F(i):T{negativeSlope_*F(i)};
 		}
 	}
-
 };
 template<typename T>
 constexpr char LeakyReLU<T, std::enable_if_t<!is_complex_type<T>::value>>::name[];

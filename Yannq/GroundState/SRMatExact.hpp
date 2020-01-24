@@ -2,6 +2,8 @@
 #define YANNQ_GROUNDSTATE_SRMATEACT_HPP
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
+#include <Eigen/Eigenvalues> 
+
 
 #include "ED/ConstructSparseMat.hpp"
 #include "Utilities/Utility.hpp"
@@ -9,48 +11,45 @@
 namespace yannq
 {
 
-template<typename Machine>
+template<typename Machine, typename ScalarType = typename Machine::ScalarType>
 class SRMatExact
 {
 public:
-	using Scalar = typename Machine::Scalar;
-	using RealScalar = typename remove_complex<Scalar>::type;
+	using RealScalarType = typename remove_complex<ScalarType>::type;
 
-	using Matrix = typename Machine::Matrix;
-	using Vector = typename Machine::Vector;
+	using MatrixType = typename Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>;
+	using VectorType = typename Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
+
 private:
 	const int n_;
 	const Machine& qs_;
 	std::vector<uint32_t> basis_;
 
-	Eigen::SparseMatrix<RealScalar> ham_;
+	Eigen::SparseMatrix<RealScalarType> ham_;
 
-	Matrix deltas_;
-	Matrix deltasPsis_;
-	Vector grad_;
+	MatrixType deltas_;
+	MatrixType deltasPsis_;
+	VectorType grad_;
 
-	RealScalar energy_;
+	RealScalarType energy_;
 
 public:
 
-	RealScalar getEnergy() const
+	RealScalarType getEnergy() const
 	{
 		return energy_;
 	}
 
 	void constructExact()
 	{
-		Vector st = getPsi(qs_, basis_, true);
+		VectorType st = getPsi(qs_, basis_, true);
 		deltas_.setZero(basis_.size(),qs_.getDim());
 
-		Vector k = ham_*st;
+		VectorType k = ham_*st;
 
 		std::complex<double> t = st.adjoint()*k;
 		energy_ = std::real(t);
 		
-		Vector eloc = k.cwiseQuotient(st);
-
-
 #pragma omp parallel for schedule(static,8)
 		for(uint32_t k = 0; k < basis_.size(); k++)
 		{
@@ -62,25 +61,26 @@ public:
 		grad_ -= t*deltasPsis_.colwise().sum().conjugate();
 	}
 
-	Vector oloc() const
+	VectorType oloc() const
 	{
 		return deltasPsis_.colwise().sum();
 	}
 
-	Matrix corrMat() const
+	MatrixType corrMat() const
 	{
-		Matrix res = deltas_.adjoint()*deltasPsis_;
+		MatrixType res = deltas_.adjoint()*deltasPsis_;
 		auto t = deltasPsis_.colwise().sum();
 		res -= t.adjoint()*t;
 		return res;
 	}
 
-	Vector getF() const
+	VectorType getF() const
 	{
 		return grad_;
 	}
 
-	template<class ColFunc, class Iterable>
+
+	template<class Iterable, class ColFunc>
 	SRMatExact(const Machine& qs, Iterable&& basis, ColFunc&& col)
 	  : n_{qs.getN()}, qs_(qs)
 	{

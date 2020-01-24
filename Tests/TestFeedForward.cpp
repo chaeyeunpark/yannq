@@ -32,7 +32,7 @@ numerical_grad(yannq::FeedForward<T>& ff, const VectorXi& sigma)
 		auto res2 = ff.forward(sigma);
 
 		par(i) = val;
-		grad(i) = (res1.back()(0) - res2.back()(0))/(2*h);
+		grad(i) = (res1 - res2)/(2*h);
 	}
 	return grad;
 }
@@ -69,27 +69,9 @@ TEMPLATE_TEST_CASE("test backward of FeedForward", "[feed_forward][backward]", d
 		for(int i = 0; i < 10; i++)
 		{
 			VectorXi input = randomSigma(inputSize, re);
-			auto res = ff.forward(input);
-			auto grad1 = ff.backward(res);
+			auto data = ff.makeData(input);
+			auto grad1 = ff.backward(data);
 			auto grad2 = numerical_grad(ff, input);
-			/*
-			if((grad1 - grad2).norm() > 1e-6)
-			{
-				std::cout << "input:\n" << input.transpose() << std::endl;
-				std::cout << "weight: \n" << ff.getParams().transpose() << std::endl;
-				std::cout << "res: \n";
-				for(int i = 0; i < res.size(); ++i)
-				{
-					std::cout << "layer" << i << ": " << res[i].transpose() << std::endl;
-				}
-				auto diff = (grad1 - grad2).eval();
-				for(int i = 0; i < diff.size(); i++)
-				{
-					if(abs(diff(i)) > 1e-4)
-						std::cout << i << "\t" << grad1(i) << "\t" << grad2(i) << std::endl;
-				}
-			}
-			*/
 			REQUIRE( (grad1 - grad2).norm()/grad1.size() < 1e-5);
 		}
 	}

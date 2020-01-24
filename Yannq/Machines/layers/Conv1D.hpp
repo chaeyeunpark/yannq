@@ -104,6 +104,19 @@ public:
 		}
 	}
 
+	void updateParams(VectorConstRefType ups) override
+	{
+		if(useBias_)
+		{
+			bias_ += ups.head(outChannels_);
+			kernel_ += Eigen::Map<const MatrixType>(ups.data() + outChannels_, kernel_.rows(), kernel_.cols());
+		}
+		else
+		{
+			kernel_ += Eigen::Map<const MatrixType>(ups.data(), kernel_.rows(), kernel_.cols());
+		}
+	}
+
 	/**
 	 * Feedforward
 	 * @input: inChannels*size
@@ -189,6 +202,15 @@ public:
 		}
 		dw.resize(dw.rows()*dw.cols(),1);
 		der.segment(k, kernel_.rows()*kernel_.cols()) = std::move(dw);
+	}
+
+	uint32_t fanIn() override
+	{
+		return inChannels_*kernelSize_;
+	}
+	uint32_t fanOut() override
+	{
+		return outChannels_*kernelSize_;
 	}
 
 	nlohmann::json to_json() const override {

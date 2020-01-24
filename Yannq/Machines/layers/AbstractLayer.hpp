@@ -31,6 +31,7 @@ namespace yannq {
 template<typename T>
 class AbstractLayer {
 public:
+	using ScalarType = T;
 	using VectorType = Eigen::Matrix<T, Eigen::Dynamic, 1>;
 	using MatrixType = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
 	using VectorRefType = Eigen::Ref<VectorType>;
@@ -47,6 +48,9 @@ public:
 	  @return Number of variational parameters in the Layer.
 	  */
 	virtual uint32_t paramDim() const = 0;
+
+	virtual uint32_t fanIn() { return 0; }
+	virtual uint32_t fanOut() { return 0; }
 	
 	virtual uint32_t outputDim(uint32_t inputDim) const = 0;
 
@@ -63,6 +67,8 @@ public:
 	  @param start_idx is the index of the vector pars to start reading from.
 	  */
 	virtual void setParams(VectorConstRefType pars) = 0;
+
+	virtual void updateParams(VectorConstRefType pars) { return ; }
 
 
 	/**

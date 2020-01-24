@@ -122,6 +122,19 @@ public:
 		}
 	}
 
+	void updateParams(VectorConstRefType ups) override
+	{
+		if (useBias_)
+		{
+			bias_ += ups.head(outputDim_);
+			weight_ += Eigen::Map<const MatrixType>(ups.data()+outputDim_, inputDim_, outputDim_);
+		}
+		else
+		{
+			weight_ += Eigen::Map<const MatrixType>(ups.data(), inputDim_, outputDim_);
+		}
+	}
+
 	// Feedforward
 	void forward(const VectorType &input, VectorType &output) override 
 	{
@@ -154,6 +167,15 @@ public:
 
 		// Compute d(L) / d_in = W * [d(L) / d(z)]
 		din.noalias() = weight_ * dout;
+	}
+
+	uint32_t fanIn() override
+	{
+		return inputDim_;
+	}
+	uint32_t fanOut() override
+	{
+		return outputDim_;
 	}
 };
 template<typename T>

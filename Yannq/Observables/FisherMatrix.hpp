@@ -18,7 +18,7 @@ class FisherMatrix;
 namespace Eigen {
 namespace internal {
 	template<typename Machine>
-	struct traits<yannq::FisherMatrix<Machine> > :  public Eigen::internal::traits<Eigen::SparseMatrix<typename Machine::Scalar> > {};
+	struct traits<yannq::FisherMatrix<Machine> > :  public Eigen::internal::traits<Eigen::SparseMatrix<typename Machine::ScalarType> > {};
 }
 } //namespace Eigen
 
@@ -33,7 +33,7 @@ class FisherMatrix
 	public Eigen::EigenBase<FisherMatrix<Machine> >
 {
 public:
-	using Scalar = typename Machine::Scalar;
+	using Scalar = typename Machine::ScalarType;
 	using RealScalar = typename remove_complex<Scalar>::type;
 
 	using Matrix = typename Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
@@ -135,12 +135,12 @@ public:
 	}
 
 	template<class Rhs>
-	typename Machine::Vector apply(const Rhs& rhs) const
+	typename Machine::VectorType apply(const Rhs& rhs) const
 	{
 		assert(rhs.size() == qs_.getDim());
-		typename Machine::Vector r = deltas_*rhs;
+		typename Machine::VectorType r = deltas_*rhs;
 
-		typename Machine::Vector res = deltas_.adjoint()*r/r.rows();
+		typename Machine::VectorType res = deltas_.adjoint()*r/r.rows();
 
 		return res + Scalar(shift_)*rhs;
 	}

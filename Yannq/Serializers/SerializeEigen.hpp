@@ -1,5 +1,5 @@
-#ifndef NNQS_SERIALIZERS_SERIALIZEEIGEN_HPP
-#define NNQS_SERIALIZERS_SERIALIZEEIGEN_HPP
+#ifndef YANNQ_SERIALIZERS_SERIALIZEEIGEN_HPP
+#define YANNQ_SERIALIZERS_SERIALIZEEIGEN_HPP
 #include <Eigen/Dense>
 #include <cereal/archives/binary.hpp>
 namespace cereal
@@ -40,4 +40,4 @@ namespace cereal
 	}
 
 } // namespace cereal
-#endif//NNQS_SERIALIZERS_SERIALIZEEIGEN_HPP
+#endif//YANNQ_SERIALIZERS_SERIALIZEEIGEN_HPP

@@ -17,13 +17,13 @@ template<typename Machine, typename Hamiltonian>
 class SRMat
 {
 public:
-	using Scalar = typename Machine::Scalar;
-	using RealScalar = typename remove_complex<Scalar>::type;
+	using ScalarType = typename Machine::ScalarType;
+	using RealScalarType = typename remove_complex<ScalarType>::type;
 
-	using Matrix = typename Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
-	using Vector = typename Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
-	using RealMatrix = typename Eigen::Matrix<RealScalar, Eigen::Dynamic, Eigen::Dynamic>;
-	using RealVector = typename Eigen::Matrix<RealScalar, Eigen::Dynamic, 1>;
+	using MatrixType = typename Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>;
+	using VectorType = typename Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
+	using RealMatrixType = typename Eigen::Matrix<RealScalarType, Eigen::Dynamic, Eigen::Dynamic>;
+	using RealVectorType = typename Eigen::Matrix<RealScalarType, Eigen::Dynamic, 1>;
 private:
 	int n_;
 
@@ -31,9 +31,9 @@ private:
 	const Hamiltonian& ham_;
 	
 	FisherMatrix<Machine> fisher_;
-	Energy<Scalar, Hamiltonian> energy_;
+	Energy<ScalarType, Hamiltonian> energy_;
 
-	Vector energyGrad_;
+	VectorType energyGrad_;
 
 public:
 	SRMat(const Machine& qs, const Hamiltonian& ham)
@@ -66,47 +66,47 @@ public:
 		energyGrad_ =  derv * energy_.elocs();
 		energyGrad_ /= nsmp;
 	}
-	const Vector& oloc() const&
+	const VectorType& oloc() const&
 	{
 		return fisher_.oloc();
 	}
-	Vector&& oloc() &&
+	VectorType&& oloc() &&
 	{
 		return fisher_.oloc();
 	}
 
-	Matrix corrMat() 
+	MatrixType corrMat() 
 	{
 		return fisher_.corrMat();
 	}
 
-	RealScalar eloc() const
+	RealScalarType eloc() const
 	{
 		return std::real(energy_.eloc());
 	}
 
-	Scalar elocVar() const
+	ScalarType elocVar() const
 	{
 		return std::real(energy_.elocVar());
 	}
 	
-	const Vector& energyGrad() const&
+	const VectorType& energyGrad() const&
 	{
 		return energyGrad_;
 	}
-	Vector energyGrad() &&
+	VectorType energyGrad() &&
 	{
 		return energyGrad_;
 	}
 
-	Vector apply(const Vector& v) const
+	VectorType apply(const VectorType& v) const
 	{
 		return fisher_.apply(v);
 	}
 	/**
 	 * If useCG is set, we use the CG solver with given tol
 	 */
-	Vector solveCG(double shift, double tol = 1e-4)
+	VectorType solveCG(double shift, double tol = 1e-4)
 	{
 		fisher_.setShift(shift);
 		Eigen::ConjugateGradient<FisherMatrix<Machine>, Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
@@ -114,11 +114,11 @@ public:
 		cg.setTolerance(tol);
 		return cg.solve(energyGrad_);
 	}
-	Vector solveExact(double shift)
+	VectorType solveExact(double shift)
 	{
-		Matrix mat = fisher_.corrMat();
-		mat += shift*Matrix::Identity(mat.rows(),mat.cols());
-		Eigen::LLT<Matrix> llt{mat};
+		MatrixType mat = fisher_.corrMat();
+		mat += shift*MatrixType::Identity(mat.rows(),mat.cols());
+		Eigen::LLT<MatrixType> llt{mat};
 		return llt.solve(energyGrad_);
 	}
 
