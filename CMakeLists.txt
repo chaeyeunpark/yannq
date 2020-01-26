@@ -105,6 +105,8 @@ add_test(
 	COMMAND TestFeedForward
 )
 
+add_executable(TestHamXYZSto "Tests/TestHamXYZSto.cpp")
+
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND}
                   DEPENDS TestRBMState TestRatio TestHamTFI TestUtility)
 
