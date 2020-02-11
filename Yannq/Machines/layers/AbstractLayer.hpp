@@ -68,7 +68,7 @@ public:
 	  */
 	virtual void setParams(VectorConstRefType pars) = 0;
 
-	virtual void updateParams(VectorConstRefType pars) { return ; }
+	virtual void updateParams(VectorConstRefType pars) { (void)pars; return ; }
 
 
 	/**

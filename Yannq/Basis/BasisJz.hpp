@@ -1,7 +1,8 @@
 #ifndef YANNQ_BASIS_BASJSJZ_HPP
 #define YANNQ_BASIS_BASJSJZ_HPP
 #include <boost/math/special_functions/binomial.hpp>
-
+//! \ingroup Basis
+//! Basis for U(1) symmetric subspace.
 class BasisJz
 {
 private:
@@ -42,6 +43,10 @@ public:
 			return n_ != rhs.n_;
 		}
 	};
+
+	//! Construct a basis for the subspace. The dimension is \f$N \choose nup\f$.
+	//! \param N number of total spins
+	//! \param nup number of spin ups(\f$|\uparrow \rangle\f$)
 	BasisJz(int N, int nup)
 		: N_(N), nup_(nup)
 	{

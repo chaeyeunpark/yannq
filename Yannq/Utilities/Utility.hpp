@@ -9,6 +9,13 @@
 
 namespace yannq
 {
+//!
+//! \addtogroup Utilities
+//! @{
+//! \defgroup Utility Utility functions
+//! @{
+
+//! stable implementation of log(cosh(x)) for real x
 template<typename T>
 inline typename std::enable_if<!is_complex_type<T>::value, T>::type logCosh(T x)
 {
@@ -20,6 +27,7 @@ inline typename std::enable_if<!is_complex_type<T>::value, T>::type logCosh(T x)
         return xp - log2v;
     }   
 }
+//! stable implementation of log(cosh(x)) for complex x
 template<typename T>
 inline typename std::enable_if<is_complex_type<T>::value, T>::type logCosh(T x)
 {
@@ -82,6 +90,7 @@ auto calcObs(const AuxData& ad, const Container& sr, Observable& obs)
 }
 */
 
+//! generate random vector in the computational basis
 template <typename RandomEngine>
 Eigen::VectorXi randomSigma(int n, RandomEngine& re)
 {
@@ -94,6 +103,8 @@ Eigen::VectorXi randomSigma(int n, RandomEngine& re)
 	}
 	return sigma;
 }
+//! generate random vector in the computational basis with the constraint that
+//! the number of spin ups is nup.
 template <typename RandomEngine>
 Eigen::VectorXi randomSigma(int n, int nup, RandomEngine& re)
 {
@@ -106,6 +117,7 @@ Eigen::VectorXi randomSigma(int n, int nup, RandomEngine& re)
 	std::shuffle(sigma.begin(), sigma.end(), re);
 	return Eigen::Map<Eigen::VectorXi>(sigma.data(), n);
 }
+//! generate a vector that the binary representation is val.
 Eigen::VectorXi toSigma(int length, unsigned long long int val)
 {
 	Eigen::VectorXi res(length);
@@ -116,6 +128,7 @@ Eigen::VectorXi toSigma(int length, unsigned long long int val)
 	return res;
 }
 
+//! returns the binary representation of sigma.
 long long int toValue(const Eigen::VectorXi& sigma)
 {
 	long long int res = 0;
@@ -127,7 +140,7 @@ long long int toValue(const Eigen::VectorXi& sigma)
 }
 
 
-//if complex
+//! for complex type T, generate a vector filled with samples from normal distribution.
 template<typename T, class RandomEngine, std::enable_if_t<is_complex_type<T>::value, int> = 0 >
 Eigen::Matrix<T, Eigen::Dynamic, 1> randomVector(RandomEngine&& re, double sigma, std::size_t nelt)
 {
@@ -139,6 +152,7 @@ Eigen::Matrix<T, Eigen::Dynamic, 1> randomVector(RandomEngine&& re, double sigma
 	}
 	return res;
 }
+//! for real type T, generate a vector filled with samples from normal distribution.
 template<typename T, class RandomEngine, std::enable_if_t<!is_complex_type<T>::value, int> = 0 >
 Eigen::Matrix<T, Eigen::Dynamic, 1> randomVector(RandomEngine&& re, double sigma, std::size_t nelt)
 {
@@ -150,7 +164,8 @@ Eigen::Matrix<T, Eigen::Dynamic, 1> randomVector(RandomEngine&& re, double sigma
 	}
 	return res;
 }
-
+//! @} 
+//! @}
 
 }//namespace yannq
 

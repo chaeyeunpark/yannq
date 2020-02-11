@@ -1,6 +1,8 @@
 #ifndef YANNQ_BASIS_BASISFULL_HPP
 #define YANNQ_BASIS_BASISFULL_HPP
 #include <cstdint>
+//! \ingroup Basis
+//! Basis set for the full Hilbert space in the computational basis.
 class BasisFull
 {
 private:

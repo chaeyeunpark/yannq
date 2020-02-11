@@ -67,7 +67,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Test ActivationLayer by activations", "[layer][activ
 		layer.backprop(input, output, dout, din, t);
 
 		T diff = input.adjoint()*din;
-		diff -= T(input.adjoint()*ndiff_in(layer, input, inSize)*dout);
+		diff -= (input.adjoint()*ndiff_in(layer, input, inSize)*dout).value();
 		REQUIRE_THAT(abs(diff)/inSize,
 				WithinAbsMatcher(0.,1e-6));
 	}

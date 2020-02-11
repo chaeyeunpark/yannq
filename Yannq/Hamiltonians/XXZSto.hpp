@@ -4,6 +4,7 @@
 #include <nlohmann/json.hpp>
 
 /* H = XX - \Delta YY - ZZ
+ * H = -\Delta XX - YY + ZZ ?
  * */
 class XXZSto
 {
@@ -38,8 +39,8 @@ public:
 		for(int i = 0; i < n_; i++)
 		{
 			int zz = smp.sigmaAt(i)*smp.sigmaAt((i+1)%n_);
-			s += -J_*zz; //zz
-			s += J_*(1+Delta_*zz)*smp.ratio(i, (i+1)%n_); //xx+yy
+			s += J_*zz; //zz
+			s += J_*(-Delta_+zz)*smp.ratio(i, (i+1)%n_); //xx+yy
 		}
 		return s;
 	}
@@ -53,8 +54,8 @@ public:
 			int b2 = (col >> ((i+1)%n_)) & 1;
 			int zz = (1-2*b1)*(1-2*b2);
 			long long int x = (1 << i) | (1 << ((i+1)%(n_)));
-			m[col] += -J_*zz;
-			m[col ^ x] += J_*(1 + Delta_*zz);
+			m[col] += J_*zz;
+			m[col ^ x] += J_*(-Delta_ + zz);
 		}
 		return m;
 	}

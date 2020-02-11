@@ -18,18 +18,8 @@
 
 namespace yannq
 {
-/** @addtogroup RBM
- * \ingroup Machines
- * @{
- * RBM class represents restricted Boltzmann machine for quantum states.
- *
- * Two parameters n and m are the numbers of hidden and visible units.
- * The RBM is defined by \f$\{A, B, W\} \f$. \f$A\f$ and \f$B\f$ are bias vertors of size n and m,
- * repectively, and \f$W\f$ is a weight matrix of size m by n. 
- * Wave function in computational basis is given by
- * \f$ \langle \sigma | \psi \rangle = e^{a \cdot \sigma} \prod_j 2 \cosh[\theta_j] \f$
- * where \f$ \theta_j = \sum_i W_{j,i} \sigma_i + b_j \f$.
- */
+//! \ingroup Machines
+//! RBM machine that uses biases
 template<typename T, bool useBias = true>
 class RBM
 {
@@ -158,13 +148,13 @@ public:
 		W_ = std::move(m);
 	}
 
-	void setA(VectorType A)
+	void setA(const VectorConstRefType& A)
 	{
 		assert(A.size() == a_.size());
 		a_ = std::move(A);
 	}
 
-	void setB(VectorType B)
+	void setB(const VectorConstRefType& B)
 	{
 		assert(B.size() == b_.size());
 		b_ = std::move(B);
@@ -259,19 +249,23 @@ public:
 	VectorType getB() && { return std::move(b_); } 
 
 
-	void updateA(const VectorType& v)
+	//! update Bias A by adding v
+	void updateA(const VectorConstRefType& v)
 	{
 		a_ += v;
 	}
-	void updateB(const VectorType& v)
+	//! update Bias B by adding v
+	void updateB(const VectorConstRefType& v)
 	{
 		b_ += v;
 	}
-	void updateW(const MatrixType& m)
+	//! update the weight W by adding m
+	void updateW(const Eigen::Ref<const Eigen::MatrixXd>& m)
 	{
 		W_ += m;
 	}
 
+	//! update all parameters.
 	void updateParams(const VectorConstRefType& m)
 	{
 		assert(m.size() == getDim());
@@ -567,11 +561,13 @@ public:
 	const MatrixType& getW() const & { return W_; } 
 	MatrixType getW() && { return std::move(W_); } 
 
-	void updateW(const MatrixType& m)
+	//! update the weight W by adding m
+	void updateW(const Eigen::Ref<const Eigen::MatrixXd>& m)
 	{
 		W_ += m;
 	}
 	
+	//! update the weight
 	void updateParams(const VectorConstRefType& m)
 	{
 		assert(m.size() == getDim());

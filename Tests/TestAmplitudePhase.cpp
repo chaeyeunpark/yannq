@@ -16,7 +16,7 @@ int main()
 	using namespace yannq;
 	using namespace Eigen;
 	const int N = 12;
-	const int M = 2*N;
+	const int M = 4*N;
 
 	std::random_device rd;
 	std::default_random_engine re{rd()};
@@ -37,12 +37,14 @@ int main()
 	ff.template addLayer<LeakyReLU>();
 	ff.template addLayer<FullyConnected>(2*N, 1, false);
 	ff.template addLayer<Tanh>();
-	ff.initializeRandom(re, InitializationMode::He);
+	ff.initializeRandom(re, InitializationMode::LeCun);
+
+	std::cout << ff.summary() << std::endl;
 
 	AmplitudePhase qs(N,M,std::move(ff));
 	qs.initializeAmplitudeRandom(re, 0.01);
 
-    auto opt = SGD<double>(0.012, 0.0);
+    auto opt = SGD<double>(0.02, 0.0);
 
 	XXXJ1J2<-1> ham(N, 1.0, 0.44);
 	constexpr double lambda = 0.001;

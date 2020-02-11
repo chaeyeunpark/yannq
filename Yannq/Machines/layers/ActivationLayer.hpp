@@ -51,19 +51,20 @@ public:
 
 	std::string name() const override { return name_; }
 
-	uint32_t paramDim() const { return 0; }
+	uint32_t paramDim() const override { return 0; }
 
-	VectorType getParams() const
+	VectorType getParams() const override
 	{
 		return VectorType{};
 	}
 
-	void setParams(VectorConstRefType pars)
+	void setParams(VectorConstRefType pars) override
 	{
 		(void)pars;
 	}
 
-	uint32_t outputDim(uint32_t inputDim) const override {
+	uint32_t outputDim(uint32_t inputDim) const override 
+	{
 		return inputDim; 
 	}
 

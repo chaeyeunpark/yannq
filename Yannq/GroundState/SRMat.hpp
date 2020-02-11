@@ -10,9 +10,10 @@
 
 namespace yannq
 {
-/** 
- * Construct the fisher information metric for quantum states
- * */
+//! \addtogroup GroundState
+
+//! \ingroup GroundState
+//! This class that generates the quantum Fisher matrix for the stochastic reconfiguration (SR) method.
 template<typename Machine, typename Hamiltonian>
 class SRMat
 {
@@ -36,12 +37,15 @@ private:
 	VectorType energyGrad_;
 
 public:
+	//! \param qs Machine that describes quantum states
+	//! \param ham Hamiltonian for SR
 	SRMat(const Machine& qs, const Hamiltonian& ham)
 	  : n_{qs.getN()}, qs_(qs), ham_(ham),
 		fisher_(qs), energy_(ham)
 	{
 	}
 
+	//! \param rs Sampling results obtained from samplers.
 	template<class SamplingResult>
 	void constructFromSampling(SamplingResult&& rs)
 	{
@@ -66,6 +70,8 @@ public:
 		energyGrad_ =  derv * energy_.elocs();
 		energyGrad_ /= nsmp;
 	}
+
+	//! return \f$\langle \nabla_{\theta} \psi_\theta(\sigma) \rangle\f$ 
 	const VectorType& oloc() const&
 	{
 		return fisher_.oloc();
@@ -103,8 +109,11 @@ public:
 	{
 		return fisher_.apply(v);
 	}
-	/**
-	 * If useCG is set, we use the CG solver with given tol
+	/*! \brief Use conjugate gradient solover to solve the optimizing vector.
+	 *
+	 * We solve \f$ (S + \epsilon \mathbb{1})v = f \f$ where \f$ f \f$ is the gradient of the energy expectation values. 
+	 * \param shift \f$ \epsilon \f$ that controls regularization
+	 * \param tol tolerance for CG solver
 	 */
 	VectorType solveCG(double shift, double tol = 1e-4)
 	{

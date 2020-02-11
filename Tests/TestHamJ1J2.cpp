@@ -8,7 +8,7 @@ TEST_CASE("Test Hamiltonian XXXJ1J2", "[XXXJ1J2]")
 {
 	constexpr int N = 12;
 	constexpr double J2 = 0.316;
-	XXXJ1J2 ham(N, 1.0, J2);
+	XXXJ1J2<1> ham(N, 1.0, J2);
 	
 	for(uint32_t col = 0; col < (1<<N); col++)
 	{

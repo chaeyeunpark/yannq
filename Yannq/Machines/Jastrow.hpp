@@ -6,12 +6,6 @@
 #include <nlohmann/json.hpp>
 namespace yannq
 {
-/** @addtogroup Jastrow
- * \ingroup Machines
- * Jastrow wave function
- * @{
- */
-
 template<typename T>
 class Jastrow
 {
@@ -173,6 +167,5 @@ public:
 
 
 };
-/** @} */
 }
 #endif//CY_NNQS_JASTROW_HPP

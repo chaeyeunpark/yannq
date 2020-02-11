@@ -21,7 +21,7 @@ public:
 	using VectorType = typename Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
 
 private:
-	const int n_;
+	const uint32_t n_;
 	const Machine& qs_;
 	std::vector<uint32_t> basis_;
 
