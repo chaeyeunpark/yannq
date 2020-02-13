@@ -35,7 +35,7 @@ public:
 			return n_ != rhs.n_;
 		}
 	};
-	BasisFull(int N)
+	explicit BasisFull(int N)
 		: N_(N)
 	{
 	}

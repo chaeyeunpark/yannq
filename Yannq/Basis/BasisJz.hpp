@@ -47,7 +47,7 @@ public:
 	//! Construct a basis for the subspace. The dimension is \f$N \choose nup\f$.
 	//! \param N number of total spins
 	//! \param nup number of spin ups(\f$|\uparrow \rangle\f$)
-	BasisJz(int N, int nup)
+	explicit BasisJz(int N, int nup)
 		: N_(N), nup_(nup)
 	{
 	}
@@ -71,7 +71,7 @@ public:
 	  
 		// Calculate value of  
 		// [n * (n-1) *---* (n-k+1)] / [k * (k-1) *----* 1]  
-		for (int i = 0; i < k; ++i)  
+		for (uint32_t i = 0u; i < k; ++i)  
 		{  
 			res *= (N_ - i);  
 			res /= (i + 1);  

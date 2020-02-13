@@ -32,12 +32,18 @@ private:
 	VectorType grad_;
 
 	RealScalarType energy_;
+	RealScalarType energyVar_;
 
 public:
 
-	RealScalarType getEnergy() const
+	RealScalarType eloc() const
 	{
 		return energy_;
+	}
+
+	RealScalarType elocVar() const
+	{
+		return energyVar_;
 	}
 
 	void constructExact()
@@ -49,6 +55,8 @@ public:
 
 		std::complex<double> t = st.adjoint()*k;
 		energy_ = std::real(t);
+		energyVar_ = static_cast<std::complex<double> >(k.adjoint()*k).real();
+		energyVar_ -= energy_*energy_;
 		
 #pragma omp parallel for schedule(static,8)
 		for(uint32_t k = 0; k < basis_.size(); k++)
@@ -74,11 +82,22 @@ public:
 		return res;
 	}
 
-	VectorType getF() const
+	const VectorType& energyGrad() const&
+	{
+		return grad_;
+	}
+	VectorType erengyGrad() &&
 	{
 		return grad_;
 	}
 
+	VectorType apply(const VectorType& rhs)
+	{
+		VectorType res = deltas_.adjoint()*(deltasPsis_*rhs);
+		auto t = deltasPsis_.colwise().sum();
+		res -= t.adjoint()*(t*rhs);
+		return res;
+	}
 
 	template<class Iterable, class ColFunc>
 	SRMatExact(const Machine& qs, Iterable&& basis, ColFunc&& col)

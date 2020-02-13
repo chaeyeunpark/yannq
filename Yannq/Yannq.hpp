@@ -13,9 +13,12 @@
 //Include ED
 #include "ED/ConstructSparseMat.hpp"
 
+//Include Basis
+#include "Basis/Basis.hpp"
+
 //Include GroundState
 #include  "GroundState/SRMat.hpp"
 #include  "GroundState/SRMatExact.hpp"
-#include  "GroundState/NGDExact.hpp"
+//#include  "GroundState/NGDExact.hpp"
 
 #endif//YANNQ_YANNQ_HPP
