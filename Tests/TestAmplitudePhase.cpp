@@ -46,7 +46,7 @@ int main()
 
     auto opt = SGD<double>(0.02, 0.0);
 
-	XXXJ1J2<-1> ham(N, 1.0, 0.44);
+	XXXJ1J2 ham(N, 1.0, 0.44, true);
 	constexpr double lambda = 0.001;
 	const int dim = qs.getDim();
 
@@ -56,14 +56,14 @@ int main()
 	{
 		srex.constructExact();
 
-		double energy = srex.getEnergy();
+		double energy = srex.eloc();
 		Eigen::MatrixXd corrMat = srex.corrMat().real();
 
 		corrMat += lambda*MatrixXd::Identity(dim, dim);
 
 		Eigen::LLT<Eigen::MatrixXd> llt(corrMat);
 
-		VectorXd grad = srex.getF().real();
+		VectorXd grad = srex.energyGrad().real();
 		//std::cout << grad.transpose() << std::endl;
 		VectorXd s = llt.solve(grad);
 

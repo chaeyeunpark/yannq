@@ -1,5 +1,5 @@
-#ifndef NNQS_STATES_RBMSTATEMT_HPP
-#define NNQS_STATES_RBMSTATEMT_HPP
+#ifndef YANNQ_STATES_RBMSTATEMT_HPP
+#define YANNQ_STATES_RBMSTATEMT_HPP
 
 #include "Machines/RBM.hpp"
 #include "Utilities/type_traits.hpp"
@@ -26,9 +26,9 @@ class RBMStateObjMT
 protected:
 	const Machine& qs_;
 public:
-	using T = typename Machine::Scalar;
+	using T = typename Machine::ScalarType;
 
-	RBMStateObjMT(const Machine& qs)
+	RBMStateObjMT(const Machine& qs) noexcept
 		: qs_(qs)
 	{
 	}
@@ -156,19 +156,19 @@ struct RBMStateValueMT
 {
 private:
 	Eigen::VectorXi sigma_;
-	typename Machine::Vector theta_;
+	typename Machine::VectorType theta_;
 
 public:
-	using Vector=typename Machine::Vector;
-	using T = typename Machine::Scalar;
+	using Vector=typename Machine::VectorType;
+	using T = typename Machine::ScalarType;
 
-	RBMStateValueMT(const Machine& qs, Eigen::VectorXi&& sigma)
+	RBMStateValueMT(const Machine& qs, Eigen::VectorXi&& sigma) noexcept
 		: RBMStateObjMT<Machine, RBMStateValueMT<Machine> >(qs), sigma_(std::move(sigma))
 	{
 		theta_ = this->qs_.calcTheta(sigma_);
 	}
 
-	RBMStateValueMT(const Machine& qs, const Eigen::VectorXi& sigma)
+	RBMStateValueMT(const Machine& qs, const Eigen::VectorXi& sigma) noexcept
 		: RBMStateObjMT<Machine, RBMStateValueMT<Machine> >(qs), sigma_(sigma)
 	{
 		theta_ = this->qs_.calcTheta(sigma_);
@@ -177,7 +177,7 @@ public:
 	RBMStateValueMT(const RBMStateValueMT<Machine>& rhs) = default;
 	RBMStateValueMT(RBMStateValueMT<Machine>&& rhs) = default;
 
-	RBMStateValueMT& operator=(const RBMStateValueMT<Machine>& rhs)
+	RBMStateValueMT& operator=(const RBMStateValueMT<Machine>& rhs) noexcept
 	{
 		assert(rhs.qs_ == this->qs_);
 		sigma_ = rhs.sigma_;
@@ -185,7 +185,7 @@ public:
 		return *this;
 	}
 
-	RBMStateValueMT& operator=(RBMStateValueMT<Machine>&& rhs)
+	RBMStateValueMT& operator=(RBMStateValueMT<Machine>&& rhs) noexcept
 	{
 		assert(rhs.qs_ == this->qs_);
 		sigma_ = std::move(rhs.sigma_);
@@ -219,6 +219,7 @@ public:
 	{
 		for(int elt: v)
 		{
+#pragma omp parallel for schedule(static,4)
 			for(int j = 0; j < theta_.size(); j++)
 			{
 				theta_(j) -= 2.0*T(sigma_(elt))*(this->qs_.W(j,elt));
@@ -277,4 +278,4 @@ public:
 };
 
 } //namespace yannq
-#endif//NNQS_STATES_RBMSTATEMT_HPP
+#endif//YANNQ_STATES_RBMSTATEMT_HPP

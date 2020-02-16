@@ -1,5 +1,5 @@
-#ifndef CY_SAMPLER_SIMPLESAMPLER_HPP
-#define CY_SAMPLER_SIMPLESAMPLER_HPP
+#ifndef YANNQ_SAMPLER_SAMPLER_HPP
+#define YANNQ_SAMPLER_SAMPLER_HPP
 #include <random>
 #include <memory>
 #include <complex>
@@ -32,11 +32,11 @@ public:
 	
 	void randomizeSigma()
 	{
-		sv_ = make_unique<StateValue>(qs_, randomSigma(n_, re_));
+		sv_ = std::make_unique<StateValue>(qs_, randomSigma(n_, re_));
 	}
 	void randomizeSigma(int nup)
 	{
-		sv_ = make_unique<StateValue>(qs_, randomSigma(n_, nup, re_));
+		sv_ = std::make_unique<StateValue>(qs_, randomSigma(n_, nup, re_));
 	}
 
 	
@@ -71,5 +71,5 @@ public:
 		return res;
 	}
 };
-} //NNQS
-#endif//CY_SAMPLER_SIMPLESAMPLER_HPP
+} //yannq
+#endif//YANNQ_SAMPLER_SAMPLER_HPP

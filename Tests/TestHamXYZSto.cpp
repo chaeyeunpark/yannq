@@ -38,7 +38,7 @@ double sumPositive(const std::map<uint32_t, double>& m, uint32_t col)
 	}
 	return res;
 }
-TEST_CASE("Test Stoquasity of XYZSto", "[XYSto][Sto]")
+TEST_CASE("Test Stoquasity of XYZSto", "[XYZSto][Sto]")
 {
 	using std::abs;
 	std::random_device rd;

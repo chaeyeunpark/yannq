@@ -8,13 +8,19 @@
 
 //Include states
 #include "States/RBMState.hpp"
-//#include <States/RBMStateMT.hpp>
+#include "States/RBMStateMT.hpp"
 
 //Include ED
 #include "ED/ConstructSparseMat.hpp"
 
 //Include Basis
 #include "Basis/Basis.hpp"
+
+//include Sampler
+#include "Samplers/Sampler.hpp"
+#include "Samplers/SamplerPT.hpp"
+#include "Samplers/LocalSweeper.hpp"
+#include "Samplers/SwapSweeper.hpp"
 
 //Include GroundState
 #include  "GroundState/SRMat.hpp"

@@ -4,17 +4,52 @@
 #include "HamiltonianHelper.hpp"
 #include "Hamiltonians/XXXJ1J2.hpp"
 
-TEST_CASE("Test Hamiltonian XXXJ1J2", "[XXXJ1J2]")
+TEST_CASE("Test Hamiltonian XXXJ1J2 with SignRule", "[XXXJ1J2]")
 {
 	constexpr int N = 12;
-	constexpr double J2 = 0.316;
-	XXXJ1J2<1> ham(N, 1.0, J2);
+	const double deltas[] = {-1.0, 0.0, 1.0, 2.0};
+	const bool signs[] = {true, false};
+
+	for(auto delta: deltas)
+	for(auto sign: signs)
+	{
+		XXXJ1J2 ham(N, 1.0, delta, sign);
+		
+		for(uint32_t col = 0; col < (1<<N); col++)
+		{
+			auto colSt = getColFromStates(ham, col);
+			auto colHam = ham(col);
+
+			REQUIRE(diffMap(colSt, colHam) < 1e-6);
+		}
+	}
+}
+double sumPositive(const std::map<uint32_t, double>& m, uint32_t col)
+{
+	double res = 0.;
+	for(const auto& elt: m)
+	{
+		if(elt.first != col && elt.second > 0)
+		{
+			res += elt.second;
+		}
+	}
+	return res;
+}
+TEST_CASE("Test Stoquasity of XXX with SignRule", "[XXZJ1J2][Sto]")
+{
+	using std::abs;
+	std::random_device rd;
+	std::default_random_engine re{rd()};
+	constexpr int N = 12;
+
+	XXXJ1J2 ham(N, 1.0, 0.0, true);
 	
+	double s = 0;
 	for(uint32_t col = 0; col < (1<<N); col++)
 	{
-		auto colSt = getColFromStates(ham, col);
 		auto colHam = ham(col);
-
-		REQUIRE(diffMap(colSt, colHam) < 1e-6);
+		s += abs(sumPositive(colHam, col));
 	}
+	REQUIRE(s < 1e-6);
 }

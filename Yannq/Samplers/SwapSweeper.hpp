@@ -27,7 +27,7 @@ public:
 			int swap2 = uid(re);
 			if(sv.sigmaAt(swap1) == sv.sigmaAt(swap2))
 			{
-				return ;
+				continue ;
 			}
 			double p = std::min(1.0,exp(beta*2.0*real(sv.logRatio(swap1, swap2))));
 			double u = urd(re);

@@ -4,7 +4,7 @@
 #include "HamiltonianHelper.hpp"
 #include "Hamiltonians/XXXJ1J2.hpp"
 
-TEST_CASE("Test Hamiltonian TFI", "[TFI]")
+TEST_CASE("Test Hamiltonian J1J2", "[TFI]")
 {
 	constexpr int N = 12;
 	constexpr double J2 = 0.2;

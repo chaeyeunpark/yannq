@@ -72,7 +72,7 @@ public:
 		{
 			int tid = omp_get_thread_num();
 			std::uniform_real_distribution<> urd(0.0,1.0);
-#pragma omp for schedule(static,2)
+#pragma omp for
 			for(int idx = 0; idx < numChain_; idx+=2)
 			{
 				double p = exp((betas_[idx+1]-betas_[idx])*2.0*
@@ -83,7 +83,7 @@ public:
 					std::swap(sv_[idx+1],sv_[idx]);
 				}
 			}
-#pragma omp for schedule(static,2)
+#pragma omp for 
 			for(int idx = 1; idx < numChain_-1; idx+=2)
 			{
 				double p = exp((betas_[idx+1]-betas_[idx])*2.0*
@@ -103,7 +103,7 @@ public:
 #pragma omp parallel
 		{
 			int tid = omp_get_thread_num();
-#pragma omp for schedule(static, 4)
+#pragma omp for schedule(static, 2)
 			for(int cidx = 0; cidx < numChain_; cidx++)
 			{
 				sweeper_.localSweep(sv_[cidx], betas_[cidx], re_[tid]);

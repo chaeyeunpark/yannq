@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.9)
 
 project(Yannq)
+
 include_directories(${CMAKE_SOURCE_DIR}/Yannq)
 include_directories(${CMAKE_SOURCE_DIR}/externals)
 
@@ -108,7 +109,9 @@ add_test(
 add_executable(TestHamXYZSto "Tests/TestHamXYZSto.cpp")
 
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND}
-                  DEPENDS TestRBMState TestRatio TestHamTFI TestUtility)
+	DEPENDS TestRBMState TestRatio TestHamTFI TestHamKitaev
+	TestHamKitaevC24 TestUtility TestHamJ1J2 TestConvLayer TestActivations
+	TestFullyConnected TestSerializeRBM TestFeedForward TestHamXYZSto)
 
 add_executable(RBMTFI "Examples/RBMTFI.cpp")
 target_link_libraries(RBMTFI boost_serialization boost_filesystem boost_system boost_regex)

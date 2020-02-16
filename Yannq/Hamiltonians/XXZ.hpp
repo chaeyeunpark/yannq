@@ -17,9 +17,9 @@ public:
 		: n_(n), J_(J), Delta_(Delta)
 	{
 		if(signRule)
-			sign_ = 1.0;
-		else
 			sign_ = -1.0;
+		else
+			sign_ = 1.0;
 	}
 
 	nlohmann::json params() const
