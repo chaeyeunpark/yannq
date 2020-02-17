@@ -6,6 +6,7 @@
 #include "Utilities/Utility.hpp"
 
 #include <tbb/parallel_reduce.h>
+#include <tbb/parallel_for.h>
 #include <tbb/blocked_range.h>
 #include "States/RBMState.hpp"
 namespace yannq
@@ -14,29 +15,24 @@ namespace yannq
 template<typename Machine>
 struct RBMStateValueTBB;
 
-template<typename T, bool useBias>
-class MachineStateTypesTBB<RBM<T, useBias> >
-{
-public:
-	using StateValue = RBMStateValueTBB<RBM<T, useBias> >;
-	using StateRef = RBMStateRef<RBM<T, useBias> >;
-};
-
 template<typename ValueType, class Func>
 struct Sum
 {
 	ValueType value;
 	Func f;
-	Sum(): value{}
+	
+	template<class Func1>
+	Sum(Func1&& fn): value{}, f{std::forward<Func1>(fn)}
 	{
 	}
 	Sum(Sum& s, tbb::split )
+		: f{s.f}
 	{
 		value = ValueType{};
 	}
-	void operator()(const blocked_range<int>& r)
+	void operator()(const tbb::blocked_range<int>& r)
 	{
-		float temp = value;
+		ValueType temp = value;
 		for(int idx = r.begin(); idx != r.end(); ++idx)
 		{
 			temp += f(idx);
@@ -78,8 +74,8 @@ public:
 					-logCosh(thetaAt(idx));
 		};
 
-		Sum<T, decltype(f)> sum;
-		tbb::parallel_reduce(tbb::blocked_range<int>(0, m), f);
+		Sum<T, decltype(f)> sum{f};
+		tbb::parallel_reduce(tbb::blocked_range<int>(0, m), sum);
 
 		res += sum.value;
 		return res;
@@ -103,8 +99,8 @@ public:
 			return logCosh(t)-logCosh(thetaAt(idx));
 		};
 
-		Sum<T, decltype(f)> sum;
-		tbb::parallel_reduce(tbb::blocked_range<int>(0, m), f);
+		Sum<T, decltype(f)> sum{f};
+		tbb::parallel_reduce(tbb::blocked_range<int>(0, m), sum);
 
 		res += sum.value;
 		return res;
@@ -136,7 +132,7 @@ public:
 		};
 
 		Sum<T, decltype(f)> sum;
-		tbb::parallel_reduce(tbb::blocked_range<int>(0, m), f);
+		tbb::parallel_reduce(tbb::blocked_range<int>(0, m), sum);
 
 		res += sum.value;
 		return res;
@@ -157,19 +153,19 @@ public:
 		return qs_;
 	}
 	
-	template<class Derived>
-	T logRatio(const RBMStateObjTBB<Machine, Derived<Machine> >& other)
+	T logRatio(const RBMStateObjTBB<Machine, Derived >& other)
 	{
 		T res = (qs_.getA().transpose())*
 			(other.getSigma() - getSigma()).template cast<T>();
 
+		const int m = qs_.getM();
 		auto f = [&](int idx)
 		{
 			return logCosh(other.thetaAt(idx)) - logCosh(thetaAt(idx));
-		}
+		};
 
 		Sum<T, decltype(f)> sum;
-		tbb::parallel_reduce(tbb::blocked_range<int>(0, m), f);
+		tbb::parallel_reduce(tbb::blocked_range<int>(0, m), sum);
 		res += sum.value;
 		return res;
 	}
@@ -250,7 +246,7 @@ public:
 	{
 		for(int elt: v)
 		{
-			tbb::parallel_for(0u, theta_.size(), [&](std::size_t idx)
+			tbb::parallel_for(0, int(theta_.size()), [&](int idx)
 			{
 				theta_(idx) -= 2.0*T(sigma_(elt))*(this->qs_.W(idx,elt));
 			});
@@ -263,7 +259,7 @@ public:
 
 	void flip(int k, int l)
 	{
-		tbb::parallel_for(0u, theta_.size(), [&](std::size_t idx)
+		tbb::parallel_for(0, int(theta_.size()), [&](int idx)
 		{
 			theta_(idx) += -2.0*T(sigma_(k))*(this->qs_.W(idx,k))
 				-2.0*T(sigma_(l))*(this->qs_.W(idx,l));
@@ -274,9 +270,9 @@ public:
 
 	void flip(int k)
 	{
-		tbb::parallel_for(0u, theta_.size(), [&](std::size_t idx)
+		tbb::parallel_for(0, int(theta_.size()), [&](int idx)
 		{
-			theta_(j) -= 2.0*T(sigma_(k))*(this->qs_.W(j,k));
+			theta_(idx) -= 2.0*T(sigma_(k))*(this->qs_.W(idx,k));
 		});
 		sigma_(k) *= -1;
 	}

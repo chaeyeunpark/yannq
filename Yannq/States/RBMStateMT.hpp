@@ -27,6 +27,7 @@ protected:
 	const Machine& qs_;
 public:
 	using T = typename Machine::ScalarType;
+	using RealT = typename remove_complex<T>::type;
 
 	RBMStateObjMT(const Machine& qs) noexcept
 		: qs_(qs)
@@ -42,20 +43,19 @@ public:
 		T res = -2.0*qs_.A(k)*T(sigmaAt(k));
 
 		int m = qs_.getM();
-#pragma omp parallel 
+
+		RealT re{};
+		RealT im{};
+
+#pragma omp parallel for schedule(static, 4) reduction(+:re,im)
+		for(int j = 0; j < m; j ++)
 		{
-			T resLoc{};
-#pragma omp for schedule(dynamic,8)
-			for(int j = 0; j < m; j ++)
-			{
-				resLoc += logCosh(thetaAt(j)-2.0*T(sigmaAt(k))*qs_.W(j,k))
-					-logCosh(thetaAt(j));
-			}
-#pragma omp critical
-			{
-				res += resLoc;
-			}
+			T r = logCosh(thetaAt(j)-2.0*T(sigmaAt(k))*qs_.W(j,k))
+				-logCosh(thetaAt(j));
+			re += std::real(r);
+			im += std::imag(r);
 		}
+		res += T{re, im};
 		return res;
 	}
 
@@ -70,20 +70,18 @@ public:
 		using std::cosh;
 		T res = -2.0*qs_.A(k)*T(sigmaAt(k))-2.0*qs_.A(l)*T(sigmaAt(l));
 		const int m = qs_.getM();
-#pragma omp parallel
+
+		RealT re{};
+		RealT im{};
+#pragma omp parallel for schedule(static, 4) reduction(+:re,im)
+		for(int j = 0; j < m; j ++)
 		{
-			T resLoc{};
-#pragma omp for schedule(dynamic, 8)
-			for(int j = 0; j < m; j ++)
-			{
-				T t = thetaAt(j)-2.0*T(sigmaAt(k))*qs_.W(j,k)-2.0*T(sigmaAt(l))*qs_.W(j,l);
-				resLoc += logCosh(t)-logCosh(thetaAt(j));
-			}
-#pragma omp critical
-			{
-				res += resLoc;
-			}
+			T t = thetaAt(j)-2.0*T(sigmaAt(k))*qs_.W(j,k)-2.0*T(sigmaAt(l))*qs_.W(j,l);
+			T r = logCosh(t)-logCosh(thetaAt(j));
+			re += std::real(r);
+			im += std::imag(r);
 		}
+		res += T{re,im};
 		return res;
 	}
 
@@ -101,25 +99,50 @@ public:
 		{
 			res -= 2.0*qs_.A(elt)*T(sigmaAt(elt));
 		}
-#pragma omp parallel
+
+		RealT re{};
+		RealT im{};
+
+#pragma omp parallel for schedule(static,4) reduction(+:re, im)
+		for(int j = 0; j < m; j++)
 		{
-			T resLoc{};
-#pragma omp for schedule(dynamic,8)
-			for(int j = 0; j < m; j++)
+			T t = thetaAt(j);
+			for(int elt: v)
 			{
-				T t = thetaAt(j);
-				for(int elt: v)
-				{
-					t -= 2.0*T(sigmaAt(elt))*qs_.W(j,elt);
-				}
-				resLoc += logCosh(t)-logCosh(thetaAt(j));
+				t -= 2.0*T(sigmaAt(elt))*qs_.W(j,elt);
 			}
-#pragma omp critical
-			{
-				res += resLoc;
-			}
+			T r = logCosh(t)-logCosh(thetaAt(j));
+			re += std::real(r);
+			im += std::imag(r);
 		}
+		res += T{re,im};
 		return res;
+	}
+
+	T logRatio(const RBMStateObjMT<Machine, Derived >& other)
+	{
+		T res = (qs_.getA().transpose())*
+			(other.getSigma() - getSigma()).template cast<T>();
+
+		const int m = qs_.getM();
+		RealT re{};
+		RealT im{};
+
+#pragma omp parallel for schedule(static, 4) reduction(+:re, im)
+		for(int j = 0; j < m; j++)
+		{
+			T r = logCosh(other.thetaAt(j)) - logCosh(thetaAt(j));
+			re += std::real(r);
+			im += std::imag(r);
+		};
+
+		res += T{re,im};
+		return res;
+	}
+
+	inline Eigen::VectorXi getSigma()
+	{
+		return static_cast<const Derived*>(this)->getSigma();
 	}
 
 	inline int sigmaAt(int i) const
@@ -241,19 +264,6 @@ public:
 		sigma_(k) *= -1;
 	}
 	
-	using RBMStateObjMT<Machine, RBMStateValueMT<Machine> >::logRatio;
-	T logRatio(const RBMStateValueMT& other)
-	{
-		T res = (this->qs_.getA().transpose())*
-			(other.getSigma() - sigma_).template cast<T>();
-#pragma omp parallel for schedule(static,4)
-		for(int j = 0; j < theta_.size(); j++)
-		{
-			res += logCosh(other.theta_(j)) - logCosh(theta_(j));
-		}
-		return res;
-	}
-
 	const Eigen::VectorXi& getSigma() const & { return sigma_; } 
 	Eigen::VectorXi getSigma() && { return std::move(sigma_); } 
 
