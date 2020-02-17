@@ -111,18 +111,6 @@ public:
 	{
 		return qs_;
 	}
-	ScalarType logRatio(Eigen::VectorXi to) const
-	{
-		typename Machine::VectorType thetaTo = qs_.calcTheta(to);
-		to -= static_cast<const Derived*>(this)->getSigma();
-		ScalarType s = (qs_->getA().transpose())*(to.cast<ScalarType>());
-		for(int j = 0; j < qs_->getM(); j++)
-		{
-			s += logCosh(thetaTo(j)) - logCosh(thetaAt(j));
-		}
-		return s;
-	}
-
 };
 
 template<typename Machine>

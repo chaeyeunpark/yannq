@@ -136,18 +136,6 @@ public:
 	{
 		return qs_;
 	}
-	T logRatio(Eigen::VectorXi to) const
-	{
-		typename Machine::Vector thetaTo = qs_.calcTheta(to);
-		to -= static_cast<const Derived*>(this)->getSigma();
-		T s = (qs_->getA().transpose())*(to.cast<T>());
-		for(int j = 0; j < qs_->getM(); j++)
-		{
-			s += logCosh(thetaTo(j)) - logCosh(thetaAt(j));
-		}
-		return s;
-	}
-
 };
 
 template<typename Machine>
@@ -258,6 +246,7 @@ public:
 	{
 		T res = (this->qs_.getA().transpose())*
 			(other.getSigma() - sigma_).template cast<T>();
+#pragma omp parallel for schedule(static,4)
 		for(int j = 0; j < theta_.size(); j++)
 		{
 			res += logCosh(other.theta_(j)) - logCosh(theta_(j));

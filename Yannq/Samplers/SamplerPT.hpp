@@ -103,7 +103,7 @@ public:
 #pragma omp parallel
 		{
 			int tid = omp_get_thread_num();
-#pragma omp for schedule(static, 2)
+#pragma omp for 
 			for(int cidx = 0; cidx < numChain_; cidx++)
 			{
 				sweeper_.localSweep(sv_[cidx], betas_[cidx], re_[tid]);
