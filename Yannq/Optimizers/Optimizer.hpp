@@ -36,7 +36,7 @@ public:
 	
 	virtual Vector getUpdate(const Vector& grad, const Vector& oloc) = 0;
 
-	virtual Vector getUpdate(const Vector& grad)
+	virtual Vector getUpdate(const Vector& grad) override
 	{
 		return this->getUpdate(grad, grad);
 	}
@@ -57,7 +57,7 @@ public:
 	
 	virtual Vector getUpdate(const Vector& grad, const Vector& oloc) = 0;
 
-	virtual Vector getUpdate(const Vector& grad)
+	Vector getUpdate(const Vector& grad) override
 	{
 		return this->getUpdate(grad, grad);
 	}

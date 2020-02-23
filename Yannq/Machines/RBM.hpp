@@ -679,9 +679,8 @@ typename RBM<T, useBias>::VectorType getPsi(const RBM<T, useBias>& qs, bool norm
 		psi(i) = qs.coeff(std::make_tuple(s, qs.calcTheta(s)));
 	}
 	if(normalize)
-		return psi.normalized();
-	else
-		return psi;
+		psi.normalize();
+	return psi;
 }
 
 template<typename T, bool useBias>
@@ -696,9 +695,8 @@ typename RBM<T, useBias>::VectorType getPsi(const RBM<T, useBias>& qs, const std
 		psi(i) = qs.coeff(std::make_tuple(s, qs.calcTheta(s)));
 	}
 	if(normalize)
-		return psi.normalized();
-	else
-		return psi;
+		psi.normalize();
+	return psi;
 }
 
 template<typename T, bool useBias, class BasisIter>
