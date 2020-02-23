@@ -21,7 +21,7 @@ public:
 	}
 
 	template<class StateValue, class RandomEngine>
-	void localSweep(StateValue& sv, double beta, RandomEngine& re) noexcept
+	void localSweep(StateValue& sv, double beta, RandomEngine& re) const noexcept
 	{
 		std::uniform_real_distribution<double> urd(0.0, 1.0);
 		std::uniform_int_distribution<int> uid_(0,n_-1);

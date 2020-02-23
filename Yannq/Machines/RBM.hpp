@@ -355,40 +355,44 @@ public:
 		return std::make_tuple(sigma, calcTheta(sigma));
 	}
 
+	T logCoeff(const std::tuple<Eigen::VectorXi, VectorType>& t) const
+	{
+		using std::cosh;
+
+		VectorType ss = std::get<0>(t).template cast<T>();
+		T s = a_.transpose()*ss;
+		for(int j = 0; j < m_; j++)
+		{
+			s += logCosh(std::get<1>(t).coeff(j));
+		}
+		return s;
+	}
+
 	T coeff(const std::tuple<Eigen::VectorXi, VectorType>& t) const
 	{
 		using std::cosh;
 
 		VectorType ss = std::get<0>(t).template cast<T>();
 		T s = a_.transpose()*ss;
-		T p = exp(s);
-		for(int j = 0; j < m_; j++)
-		{
-			p *= 2.0*cosh(std::get<1>(t).coeff(j));
-		}
+		T p = exp(s) * std::get<1>(t).array().cosh().prod();
 		return p;
 	}
 
-	VectorType logDeriv(const std::tuple<Eigen::VectorXi, VectorType>& t) const
-	{
-		VectorType res(getDim());
-		for(int i = 0; i < n_; i++)
-		{
-			res(i) = std::get<0>(t)(i);
+	VectorType logDeriv(const std::tuple<Eigen::VectorXi, VectorType>& t) const 
+	{ 
+		VectorType res(getDim()); 
+
+		VectorType tanhs = std::get<1>(t).array().tanh(); 
+
+		res.head(n_) = std::get<0>(t).template cast<ScalarType>(); 
+		res.segment(n_, m_) = tanhs; 
+
+		for(int i = 0; i < n_; i++) 
+		{ 
+			res.segment(n_+ m_ + i*m_, m_) = res(i)*tanhs; 
 		}
-		for(int j = 0; j < m_; j++)
-		{
-			res(n_ + j) = tanh(std::get<1>(t)(j));
-		}
-		for(int i = 0; i < n_; i++)
-		{
-			for(int j = 0; j < m_; j++)
-			{
-				res(n_+ m_ + i*m_+j) = T(std::get<0>(t)(i))*tanh(std::get<1>(t)(j));
-			}
-		}
-		return res;
-	}
+		return res; 
+	} 
 
 	uint32_t widx(int i, int j) const
 	{
@@ -633,18 +637,25 @@ public:
 		return std::make_tuple(sigma, calcTheta(sigma));
 	}
 
+	T logCoeff(const std::tuple<Eigen::VectorXi, VectorType>& t) const
+	{
+		using std::cosh;
+		T s{};
+		for(int j = 0; j < m_; j++)
+		{
+			s += logCosh(std::get<1>(t).coeff(j));
+		}
+		return s;
+	}
+
 	T coeff(const std::tuple<Eigen::VectorXi, VectorType>& t) const
 	{
 		using std::cosh;
 
-		T p = 1.0;
-		for(int j = 0; j < m_; j++)
-		{
-			p *= 2.0*cosh(std::get<1>(t).coeff(j));
-		}
-		return p;
+		return std::get<1>(t).array().cosh().prod();
 	}
-
+	
+	/*
 	VectorType logDeriv(const std::tuple<Eigen::VectorXi, VectorType>& t) const
 	{
 		VectorType res(getDim());
@@ -657,6 +668,19 @@ public:
 		}
 		return res;
 	}
+	*/
+	VectorType logDeriv(const std::tuple<Eigen::VectorXi, VectorType>& t) const 
+	{ 
+		VectorType res(getDim()); 
+
+		VectorType tanhs = std::get<1>(t).array().tanh(); 
+
+		for(int i = 0; i < n_; i++) 
+		{ 
+			res.segment(i*m_, m_) = res(i)*tanhs; 
+		}
+		return res; 
+	} 
 
 	/* Serialization using cereal */
 	template<class Archive>

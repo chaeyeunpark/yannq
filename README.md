@@ -20,6 +20,8 @@ Especially, optimizers other than SGD, Adam, RMSProp are not tested.
 ## Compiler supports
 Currently, yannq compiles in gcc (version >= 5) and clang (only version 3.8 is tested) under c++14 support. 
 
+> It seems like gcc makes poor mutltithread optimization for Skylake Xeon CPUs. In that case, using intel C compiler improves the performance. 
+
 ## Contributions
 If you want to contribute or ask for implementing some features, please [email](mailto:chae.yeun.park@gmail.com) to me. Also, feel free to issue or make a pull request.
 

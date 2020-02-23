@@ -3,7 +3,9 @@
 #include <vector>
 #include <random>
 #include <complex>
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 namespace yannq
 {
 
@@ -36,10 +38,14 @@ public:
 	{
 		std::random_device rd;
 		int numThreads;
+#ifdef _OPENMP
 #pragma omp parallel
 		{
 			numThreads = omp_get_num_threads();
 		}
+#else
+		numThreads = 1;
+#endif
 		re_.resize(numThreads);
 		for(int i = 0; i < numThreads; i++)
 		{
@@ -70,7 +76,11 @@ public:
 		using std::real;
 #pragma omp parallel 
 		{
+#ifdef _OPENMP
 			int tid = omp_get_thread_num();
+#else
+			int tid = 0;
+#endif
 			std::uniform_real_distribution<> urd(0.0,1.0);
 #pragma omp for
 			for(int idx = 0; idx < numChain_; idx+=2)
@@ -102,8 +112,12 @@ public:
 		using std::real;
 #pragma omp parallel
 		{
+#ifdef _OPENMP
 			int tid = omp_get_thread_num();
-#pragma omp for schedule(static, 2)
+#else
+			int tid = 0;
+#endif
+#pragma omp for 
 			for(int cidx = 0; cidx < numChain_; cidx++)
 			{
 				sweeper_.localSweep(sv_[cidx], betas_[cidx], re_[tid]);
