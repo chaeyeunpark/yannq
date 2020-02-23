@@ -35,12 +35,14 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -DEIGEN_USE_MKL_ALL")
 
 add_executable(TestRBMState "Tests/TestRBMState.cpp")
+target_link_libraries(TestRBMState mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl)
 add_test(
 	NAME TestRBMState
 	COMMAND TestRBMState
 )
 
 add_executable(TestRatio "Tests/TestRatio.cpp")
+target_link_libraries(TestRatio mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl)
 add_test(
 	NAME TestRatio
 	COMMAND TestRatio
@@ -64,6 +66,7 @@ add_test(
 	COMMAND TestHamKitaevC24
 )
 
+
 add_executable(TestUtility "Tests/TestUtility.cpp")
 add_test(
 	NAME TestUtility
@@ -75,7 +78,13 @@ add_test(
 	NAME TestHamJ1J2
 	COMMAND TestHamJ1J2
 )
+add_executable(TestSerializeRBM "Tests/TestSerializeRBM.cpp")
+add_test(
+	NAME TestSerializeRBM
+	COMMAND TestSerializeRBM
+)
 
+#[[
 add_executable(TestConvLayer "Tests/TestConvLayer.cpp")
 add_test(
 	NAME TestConvLayer
@@ -94,24 +103,23 @@ add_test(
 	COMMAND TestFullyConnected
 )
 
-add_executable(TestSerializeRBM "Tests/TestSerializeRBM.cpp")
-add_test(
-	NAME TestSerializeRBM
-	COMMAND TestSerializeRBM
-)
-
 add_executable(TestFeedForward "Tests/TestFeedForward.cpp")
 add_test(
 	NAME TestFeedForward
 	COMMAND TestFeedForward
 )
+#]]
 
 add_executable(TestHamXYZSto "Tests/TestHamXYZSto.cpp")
+add_test(
+	NAME TestHamXYZSto
+	COMMAND TestHamXYZSto
+)
 
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND}
 	DEPENDS TestRBMState TestRatio TestHamTFI TestHamKitaev
-	TestHamKitaevC24 TestUtility TestHamJ1J2 TestConvLayer TestActivations
-	TestFullyConnected TestSerializeRBM TestFeedForward TestHamXYZSto)
+	TestHamKitaevC24 TestUtility TestHamJ1J2 TestSerializeRBM TestHamXYZSto )
+	#	TestConvLayer TestActivations TestFullyConnected  TestFeedForward )
 
 add_executable(RBMTFI "Examples/RBMTFI.cpp")
 target_link_libraries(RBMTFI boost_serialization boost_filesystem boost_system boost_regex)
@@ -119,3 +127,6 @@ target_link_libraries(RBMTFI boost_serialization boost_filesystem boost_system b
 
 add_executable(TestAmplitudePhase "Tests/TestAmplitudePhase.cpp")
 target_link_libraries(TestAmplitudePhase mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl)
+
+add_executable(TestLogDeriv "Tests/TestLogDeriv.cpp")
+target_link_libraries(TestLogDeriv mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl)
