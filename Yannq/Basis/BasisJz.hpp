@@ -47,7 +47,7 @@ public:
 	//! Construct a basis for the subspace. The dimension is \f$N \choose nup\f$.
 	//! \param N number of total spins
 	//! \param nup number of spin ups(\f$|\uparrow \rangle\f$)
-	explicit BasisJz(int N, int nup)
+	explicit BasisJz(unsigned int N, unsigned int nup)
 		: N_(N), nup_(nup)
 	{
 	}

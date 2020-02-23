@@ -130,5 +130,3 @@ target_link_libraries(RBMTFI boost_serialization boost_filesystem boost_system
 add_executable(TestAmplitudePhase "Tests/TestAmplitudePhase.cpp")
 target_link_libraries(TestAmplitudePhase mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl)
 
-add_executable(TestLogDeriv "Tests/TestLogDeriv.cpp")
-target_link_libraries(TestLogDeriv mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl)
