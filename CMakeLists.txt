@@ -26,13 +26,15 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	link_directories("${OPENMP_LIBRARIES}")
 endif()
 
+find_package(OpenMP REQUIRED)
+
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -DEIGEN_USE_MKL_ALL")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -DEIGEN_USE_MKL_ALL -march=native")
 
 add_executable(TestRBMState "Tests/TestRBMState.cpp")
 add_test(
@@ -114,8 +116,8 @@ add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND}
 	TestFullyConnected TestSerializeRBM TestFeedForward TestHamXYZSto)
 
 add_executable(RBMTFI "Examples/RBMTFI.cpp")
-target_link_libraries(RBMTFI boost_serialization boost_filesystem boost_system boost_regex)
-
+target_link_libraries(RBMTFI boost_serialization boost_filesystem boost_system
+	boost_regex mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl)
 
 add_executable(TestAmplitudePhase "Tests/TestAmplitudePhase.cpp")
 target_link_libraries(TestAmplitudePhase mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl)
