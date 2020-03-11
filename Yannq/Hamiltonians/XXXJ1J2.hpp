@@ -29,7 +29,8 @@ public:
 			{"name", "XXXXJ1J2"},
 			{"n", n_},
 			{"J1", J1_},
-			{"J2", J2_}
+			{"J2", J2_},
+			{"sign_rule", (sign_ == -1)}
 		};
 	}
 	

@@ -1,5 +1,5 @@
-#ifndef CY_RUNRBMEXACT_HPP
-#define CY_RUNRBMEXACT_HPP
+#ifndef YANNQ_RUNNERS_RUNRBMEXACT_HPP
+#define YANNQ_RUNNERS_RUNRBMEXACT_HPP
 #include <chrono>
 
 #include <boost/filesystem.hpp>
@@ -125,6 +125,7 @@ public:
 
 		for(int ll = 0; ll <= maxIter_; ll++)
 		{
+			logger_ << "Epochs: " << ll << std::endl;
 			if((saveWfPer_ != 0) && (ll % saveWfPer_ == 0))
 			{
 				char fileName[30];
@@ -161,4 +162,4 @@ public:
 	}
 };
 } //namespace yannq
-#endif//CY_RUNRBMEXACT_HPP
+#endif//YANNQ_RUNNERS_RUNRBMEXACT_HPP

@@ -16,23 +16,9 @@ enable_testing()
 
 set (CMAKE_CXX_STANDARD 14)
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-	set (OpenMP_C_FLAGS "-fopenmp=libiomp5")
-	set (OpenMP_CXX_FLAGS "-fopenmp=libiomp5")
-	set (OpenMP_EXE_LINKER_FLAGS "-fopenmp=libiomp5 -liomp5")
-	link_directories("/usr/lib/x86_64-linux-gnu")
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	find_package(OpenMP REQUIRED)
-	link_directories("${OPENMP_LIBRARIES}")
-endif()
-
 find_package(OpenMP REQUIRED)
 
-set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPENMP_CXX_FLAGS} -Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -DEIGEN_USE_MKL_ALL -march=native")
 
@@ -124,7 +110,7 @@ add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND}
 	#	TestConvLayer TestActivations TestFullyConnected  TestFeedForward )
 
 add_executable(RBMTFI "Examples/RBMTFI.cpp")
-target_link_libraries(RBMTFI boost_serialization boost_filesystem boost_system
+target_link_libraries(RBMTFI OpenMP::OpenMP_CXX boost_filesystem boost_system
 	boost_regex mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl)
 
 add_executable(TestAmplitudePhase "Tests/TestAmplitudePhase.cpp")

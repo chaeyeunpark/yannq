@@ -1,5 +1,5 @@
-#ifndef CY_RUNRBM_HPP
-#define CY_RUNRBM_HPP
+#ifndef YANNQ_RUNNERS_RUNRBM_HPP
+#define YANNQ_RUNNERS_RUNRBM_HPP
 #include <chrono>
 
 #include <boost/filesystem.hpp>
@@ -75,6 +75,7 @@ public:
 		std::random_device rd;
 		re_.seed(rd());
 	}
+
 	void setLambda(double lambdaIni, double lambdaDecay, double lambdaMin)
 	{
 		lambdaIni_ = lambdaIni;
@@ -128,9 +129,15 @@ public:
 	{
 		return qs_;
 	}
+
 	MachineT getQs() && 
 	{
 		return qs_;
+	}
+
+	unsigned int getDim() const
+	{
+		return qs_.getDim();
 	}
 
 	json getParams() const
@@ -199,6 +206,8 @@ public:
 
 		for(int ll = 0; ll <= maxIter_; ll++)
 		{
+			logger_ << "Epochs: " << ll << "\t# of samples:" << nSamples << 
+				"\t# of discard samples: " << nSamplesDiscard << std::endl;
 			if((saveWfPer_ != 0) && (ll % saveWfPer_ == 0))
 			{
 				char fileName[30];
@@ -255,4 +264,4 @@ public:
 	}
 };
 } //namespace yannq
-#endif//CY_RUNRBM_HPP
+#endif//YANNQ_RUNNERS_RUNRBM_HPP

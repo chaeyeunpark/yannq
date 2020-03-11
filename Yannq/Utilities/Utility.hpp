@@ -9,11 +9,6 @@
 
 namespace yannq
 {
-//!
-//! \addtogroup Utilities
-//! @{
-//! \defgroup Utility Utility functions
-//! @{
 
 //! stable implementation of log(cosh(x)) for real x
 template<typename T>
