@@ -16,7 +16,7 @@ public:
 private:
 	const uint32_t N_;
 
-	RBM<ScalarType, true> amplitude_;
+	RBM<ScalarType, false> amplitude_;
 	std::shared_ptr<PhaseNet> phaseNet_;
 
 	torch::TensorOptions opts_;
@@ -49,9 +49,7 @@ public:
 		}
 
 		phaseNet_->to(device_type, torch::kFloat64);
-		
 		opts_ = torch::TensorOptions().dtype(torch::kFloat64).device(device_type);
-
 	}
 
 	/*!
@@ -163,7 +161,7 @@ public:
 #pragma omp parallel for schedule(static, 8)
 		for(uint32_t idx = 0; idx < ampData.size(); idx++)
 		{
-			res[idx].real = amplitude_.logCoeff(ampData[idx])/2.0;
+			res[idx].real(amplitude_.logCoeff(ampData[idx])/2.0);
 		}
 
 		MatrixType sigmas(N_, ampData.size());
@@ -180,7 +178,7 @@ public:
 
 		for(int i = 0; i < phaseRes_a.size(0); i++) 
 		{
-			res[i].imag = M_PI*phaseRes_a[i][0];
+			res[i].imag(M_PI*phaseRes_a[i][0]);
 		}
 		return res;
 	}

@@ -20,7 +20,7 @@ namespace yannq
 {
 //! \ingroup Machines
 //! RBM machine that uses biases
-template<typename T, bool useBias = true>
+template<typename T>
 class RBM
 {
 	static_assert(std::is_floating_point<T>::value || is_complex_type<T>::value, "T must be floating or complex");
