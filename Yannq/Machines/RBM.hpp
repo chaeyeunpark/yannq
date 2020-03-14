@@ -677,7 +677,7 @@ public:
 
 		for(int i = 0; i < n_; i++) 
 		{ 
-			res.segment(i*m_, m_) = res(i)*tanhs; 
+			res.segment(i*m_, m_) = double(std::get<0>(t)(i))*tanhs; 
 		}
 		return res; 
 	} 

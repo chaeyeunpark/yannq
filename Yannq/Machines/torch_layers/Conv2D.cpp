@@ -31,8 +31,8 @@ struct Conv2D : torch::nn::Module
 
 		if(periodic_)
 		{
-			x = torch::cat({x.slice(dim1, -1), x, x.slice(dim1, 0, 1)}, dim1);
-			x = torch::cat({x.slice(dim2, -1), x, x.slice(dim2, 0, 1)}, dim2);
+			x = torch::cat({x.slice(dim1, -kernel_size_/2), x, x.slice(dim1, 0, kernel_size_/2)}, dim1);
+			x = torch::cat({x.slice(dim2, -kernel_size_/2), x, x.slice(dim2, 0, kernel_size_/2)}, dim2);
 		}
 		return torch::conv2d(x, weight_, bias);
 	}

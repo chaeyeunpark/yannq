@@ -8,6 +8,9 @@ include_directories(${CMAKE_SOURCE_DIR}/externals)
 link_directories(${CMAKE_PREFIX_PATH}/lib)
 include_directories(${CMAKE_PREFIX_PATH}/include/ ${EIGEN3_INCLUDE_DIR})
 
+find_package(Torch REQUIRED)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
+
 if(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release)
 endif()
@@ -84,6 +87,7 @@ add_test(
 	COMMAND TestSerializeRBM
 )
 
+
 #[[
 add_executable(TestConvLayer "Tests/TestConvLayer.cpp")
 add_test(
@@ -130,3 +134,9 @@ target_link_libraries(TestAmplitudePhase mkl_intel_lp64 mkl_intel_thread mkl_cor
 
 add_executable(TestLogDeriv "Tests/TestLogDeriv.cpp")
 target_link_libraries(TestLogDeriv mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl)
+
+add_executable(TestConvTorch "Tests/TestConvTorch.cpp")
+target_link_libraries(TestConvTorch "${TORCH_LIBRARIES}")
+
+add_executable(TestAmplitudePhaseTorch "Tests/TestAmplitudePhaseTorch.cpp")
+target_link_libraries(TestAmplitudePhaseTorch "${TORCH_LIBRARIES}")

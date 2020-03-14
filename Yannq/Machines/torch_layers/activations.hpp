@@ -2,30 +2,15 @@
 #define YANNQ_MACHINES_TORCHLAYERS_ACTIVATIONS_HPP
 #include <torch/torch.h>
 
-/// a custom activation function
-struct LeakyHardTanh : torch::nn::Module
-{
-	const double alpha_;
-	LeakyHardTanh(const double alpha)
-		: alpha_{alpha}
-	{
-	}
-	torch::Tensor forward(const torch::Tensor& x)
-	{
-		return alpha_*x + (1-alpha_)*torch::nn::functional::hardtanh(x);
-	}
-};
-struct LeakySoftShirink : torch::nn::Module
-{
-	const double alpha_;
-	LeakySoftShirink(const double alpha)
-		: alpha_{alpha}
-	{
-	}
-	torch::Tensor forward(const torch::Tensor& x)
-	{
-		return alpha_*x + (1-alpha_)*torch::nn::functional::softshrink(x, 1.0);
-	}
-};
+namespace F = torch::nn::functional;
 
+/// a custom activation function
+torch::Tensor leakyHardTanh(torch::Tensor input, const double alpha)
+{
+	return alpha*input + (1-alpha)*F::hardtanh(input);
+}
+torch::Tensor leakySoftShirink(torch::Tensor input, const double alpha)
+{
+	return alpha*input + (1-alpha)*softshrink(input, 1.0);
+}
 #endif//YANNQ_MACHINES_TORCHLAYERS_ACTIVATIONS_HPP
