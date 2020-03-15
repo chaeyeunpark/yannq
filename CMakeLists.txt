@@ -5,22 +5,18 @@ project(Yannq)
 include_directories(${CMAKE_SOURCE_DIR}/Yannq)
 include_directories(${CMAKE_SOURCE_DIR}/externals)
 
-link_directories(${CMAKE_PREFIX_PATH}/lib)
-include_directories(${CMAKE_PREFIX_PATH}/include/ ${EIGEN3_INCLUDE_DIR})
-
 if(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release)
 endif()
 
 enable_testing()
 
-set (CMAKE_CXX_STANDARD 14)
+set (CMAKE_CXX_STANDARD 17)
 
 find_package(OpenMP REQUIRED)
+find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPENMP_CXX_FLAGS} -Wall -Wextra")
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -DEIGEN_USE_MKL_ALL -march=native")
+link_libraries(Eigen3::Eigen)
 
 add_executable(TestRBMState "Tests/TestRBMState.cpp")
 target_link_libraries(TestRBMState mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl)
@@ -111,7 +107,7 @@ add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND}
 
 add_executable(RBMTFI "Examples/RBMTFI.cpp")
 target_link_libraries(RBMTFI OpenMP::OpenMP_CXX boost_filesystem boost_system
-	boost_regex mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl)
+	boost_regex mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl OpenMP::OpenMP_CXX)
 
 add_executable(TestAmplitudePhase "Tests/TestAmplitudePhase.cpp")
 target_link_libraries(TestAmplitudePhase mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl)

@@ -655,20 +655,6 @@ public:
 		return std::get<1>(t).array().cosh().prod();
 	}
 	
-	/*
-	VectorType logDeriv(const std::tuple<Eigen::VectorXi, VectorType>& t) const
-	{
-		VectorType res(getDim());
-		for(int i = 0; i < n_; i++)
-		{
-			for(int j = 0; j < m_; j++)
-			{
-				res(i*m_ + j) = T(std::get<0>(t)(i))*tanh(std::get<1>(t)(j));
-			}
-		}
-		return res;
-	}
-	*/
 	VectorType logDeriv(const std::tuple<Eigen::VectorXi, VectorType>& t) const 
 	{ 
 		VectorType res(getDim()); 
@@ -677,7 +663,7 @@ public:
 
 		for(int i = 0; i < n_; i++) 
 		{ 
-			res.segment(i*m_, m_) = res(i)*tanhs; 
+			res.segment(i*m_, m_) = double(std::get<0>(t)(i))*tanhs; 
 		}
 		return res; 
 	} 

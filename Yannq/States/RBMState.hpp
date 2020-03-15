@@ -9,8 +9,8 @@ namespace yannq
 {
 
 template<typename Machine>
-struct RBMStateValue;
-template<typename Machine, bool is_const = true>
+class RBMStateValue;
+template<typename Machine>
 class RBMStateRef;
 
 template<typename T, bool useBias>
@@ -71,7 +71,7 @@ public:
 		return res;
 	}
 
-	ScalarType ratio(int k, int l) const
+	inline ScalarType ratio(int k, int l) const
 	{
 		return std::exp(logRatio(k,l));
 	}
@@ -114,17 +114,18 @@ public:
 };
 
 template<typename Machine>
-struct RBMStateValue
+class RBMStateValue
 	: public RBMStateObj<Machine, RBMStateValue<Machine> >
 {
+public:
+	using VectorType=typename Machine::VectorType;
+	using ScalarType = typename Machine::ScalarType;
+
 private:
 	Eigen::VectorXi sigma_;
 	typename Machine::VectorType theta_;
 
 public:
-	using VectorType=typename Machine::VectorType;
-	using ScalarType = typename Machine::ScalarType;
-
 	RBMStateValue(const Machine& qs, Eigen::VectorXi&& sigma) noexcept
 		: RBMStateObj<Machine, RBMStateValue<Machine> >(qs), sigma_(std::move(sigma))
 	{
@@ -238,23 +239,28 @@ public:
 };
 
 
-template<typename Machine, bool is_const>
+template<typename Machine>
 class RBMStateRef
 	: public RBMStateObj<Machine, RBMStateRef<Machine> >
 {
 public:
 	using VectorType = typename Machine::VectorType;
+	using DataType = std::tuple<Eigen::VectorXi, VectorType>;
 private:
-	typedef typename std::conditional<is_const, const Eigen::VectorXi, Eigen::VectorXi>::type SigmaType;
-	typedef typename std::conditional<is_const, const VectorType, VectorType>::type ThetaType;
-	SigmaType& sigma_;
-	ThetaType& theta_;
+	const Eigen::VectorXi& sigma_;
+	const VectorType& theta_;
 public:
 	
 	using T = typename Machine::ScalarType;
 
-	RBMStateRef(const Machine& qs, SigmaType& sigma, ThetaType& theta) noexcept
-		: RBMStateObj<Machine, RBMStateRef<Machine, is_const> >(qs), sigma_(sigma), theta_(theta)
+	RBMStateRef(const Machine& qs, const Eigen::VectorXi& sigma, const VectorType& theta) noexcept
+		: RBMStateObj<Machine, RBMStateRef<Machine>>(qs), sigma_(sigma), theta_(theta)
+	{
+	}
+	
+	RBMStateRef(const Machine& qs, const DataType& data) noexcept
+		: RBMStateObj<Machine, RBMStateRef<Machine>>(qs),
+		sigma_(std::get<0>(data)), theta_(std::get<1>(data))
 	{
 	}
 
@@ -272,11 +278,10 @@ public:
 		return sigma_;
 	}
 
-	typename Machine::VectorType getTheta() const
+	const VectorType& getTheta() const
 	{
 		return theta_;
 	}
-
 };
 
 template<typename T>
