@@ -67,7 +67,10 @@ public:
 
 	inline int getDim() const
 	{
-		return n_*m_ + n_ + m_;
+		if(useBias_)
+			return n_*m_ + n_ + m_;
+		else
+			return n_*m_;
 	}
 
 	inline VectorType calcTheta(const Eigen::VectorXi& sigma) const
