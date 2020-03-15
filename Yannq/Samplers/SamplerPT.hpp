@@ -86,7 +86,7 @@ public:
 			for(int idx = 0; idx < numChain_; idx+=2)
 			{
 				double p = exp((betas_[idx+1]-betas_[idx])*2.0*
-						real(sv_[idx+1].logRatio(sv_[idx])));
+						sv_[idx+1].logRatioRe(sv_[idx]));
 				double u = urd(re_[tid]);
 				if(u < p)
 				{
@@ -97,7 +97,7 @@ public:
 			for(int idx = 1; idx < numChain_-1; idx+=2)
 			{
 				double p = exp((betas_[idx+1]-betas_[idx])*2.0*
-						real(sv_[idx+1].logRatio(sv_[idx])));
+						sv_[idx+1].logRatioRe(sv_[idx]));
 				double u = urd(re_[tid]);
 				if(u < p)
 				{
@@ -127,7 +127,6 @@ public:
 
 
 	auto sampling(int n_sweeps, int n_therm)
-		-> std::vector<typename std::result_of<decltype(&StateValue::data)(StateValue)>::type>
 	{
 		using std::norm;
 		using std::pow;

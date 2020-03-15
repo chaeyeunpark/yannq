@@ -150,7 +150,7 @@ public:
 		return input(0);
 	}
 
-	ScalarType forward(const std::vector<VectorType>& data)
+	ScalarType forward(const std::vector<VectorType>& data) const
 	{
 		return data.back()(0);
 	}

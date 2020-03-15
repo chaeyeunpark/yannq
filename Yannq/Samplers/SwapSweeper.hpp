@@ -29,7 +29,7 @@ public:
 			{
 				continue ;
 			}
-			double p = std::min(1.0,exp(beta*2.0*real(sv.logRatio(swap1, swap2))));
+			double p = std::min(1.0,exp(beta*2.0*sv.logRatioRe(swap1, swap2)));
 			double u = urd(re);
 			if(u < p)//accept
 			{

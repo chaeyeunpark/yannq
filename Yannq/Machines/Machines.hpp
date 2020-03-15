@@ -6,5 +6,5 @@
 
 #include "RBM.hpp"
 #include "FeedForward.hpp"
-#include "AmplitudePhase.cpp"
+//#include "AmplitudePhase.hpp"
 #endif//YANNQ_MACHINES_MACHINES_HPP

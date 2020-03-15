@@ -22,6 +22,7 @@ inline typename std::enable_if<!is_complex_type<T>::value, T>::type logCosh(T x)
         return xp - log2v;
     }   
 }
+
 //! stable implementation of log(cosh(x)) for complex x
 template<typename T>
 inline typename std::enable_if<is_complex_type<T>::value, T>::type logCosh(T x)
@@ -35,7 +36,11 @@ inline typename std::enable_if<is_complex_type<T>::value, T>::type logCosh(T x)
     return res;
 }
 
-
+template<typename T>
+std::enable_if_t<!is_complex_type<T>::value, T> real(const T& v)
+{
+	return v;
+}
 
 template<typename ...T, size_t... I>
 auto make_rtuple_helper(const std::tuple<T...>& t ,  std::index_sequence<I...>)
@@ -159,8 +164,6 @@ Eigen::Matrix<T, Eigen::Dynamic, 1> randomVector(RandomEngine&& re, double sigma
 	}
 	return res;
 }
-//! @} 
-//! @}
 
 }//namespace yannq
 

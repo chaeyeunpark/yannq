@@ -14,26 +14,23 @@ endif()
 
 enable_testing()
 
-set (CMAKE_CXX_STANDARD 14)
+set (CMAKE_CXX_STANDARD 17)
 
 find_package(OpenMP REQUIRED)
+find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPENMP_CXX_FLAGS} -Wall -Wextra")
+link_libraries(Eigen3::Eigen)
+link_libraries(OpenMP::OpenMP_CXX)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -DEIGEN_USE_MKL_ALL -march=native")
 
-add_executable(TestRBMState "Tests/TestRBMState.cpp")
-target_link_libraries(TestRBMState mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl)
+add_executable(TestRBMStates "Tests/TestRBMStates.cpp")
+target_link_libraries(TestRBMStates mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl)
 add_test(
-	NAME TestRBMState
-	COMMAND TestRBMState
-)
-
-add_executable(TestRatio "Tests/TestRatio.cpp")
-target_link_libraries(TestRatio mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl)
-add_test(
-	NAME TestRatio
-	COMMAND TestRatio
+	NAME TestRBMStates
+	COMMAND TestRBMStates
 )
 
 add_executable(TestHamTFI "Tests/TestHamTFI.cpp")
@@ -105,13 +102,15 @@ add_test(
 )
 
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND}
-	DEPENDS TestRBMState TestRatio TestHamTFI TestHamKitaev
+	DEPENDS TestRBMStates TestHamTFI TestHamKitaev
 	TestHamKitaevC24 TestUtility TestHamJ1J2 TestSerializeRBM TestHamXYZSto )
 	#	TestConvLayer TestActivations TestFullyConnected  TestFeedForward )
 
 add_executable(RBMTFI "Examples/RBMTFI.cpp")
-target_link_libraries(RBMTFI OpenMP::OpenMP_CXX boost_filesystem boost_system
-	boost_regex mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl)
+target_link_libraries(RBMTFI OpenMP::OpenMP_CXX mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl stdc++fs)
+
+add_executable(RBMTFIExact "Examples/RBMTFIExact.cpp")
+target_link_libraries(RBMTFIExact OpenMP::OpenMP_CXX mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl stdc++fs)
 
 add_executable(TestAmplitudePhase "Tests/TestAmplitudePhase.cpp")
 target_link_libraries(TestAmplitudePhase mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl)

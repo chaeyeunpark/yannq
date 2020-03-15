@@ -2,7 +2,7 @@
 #define YANNQ_RUNNERS_RUNRBMEXACT_HPP
 #include <chrono>
 
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <cereal/cereal.hpp>
 #include <cereal/archives/binary.hpp>
 #include <nlohmann/json.hpp>
@@ -12,11 +12,11 @@
 
 namespace yannq
 {
-template<typename T, bool useBias, class RandomEngine = std::default_random_engine>
+template<typename T, class RandomEngine = std::default_random_engine>
 class RunRBMExact
 {
 public:
-	using MachineT = yannq::RBM<T, useBias>;
+	using MachineT = yannq::RBM<T>;
 	using json = nlohmann::json;
 
 private:
@@ -36,8 +36,8 @@ private:
 	std::unique_ptr<yannq::Optimizer<T> > opt_;
 
 public:
-	RunRBMExact(const uint32_t N, const int alpha, std::ostream& logger)
-		: qs_(N, alpha*N), logger_{logger}
+	RunRBMExact(const uint32_t N, const int alpha, bool useBias, std::ostream& logger)
+		: qs_(N, alpha*N, useBias), logger_{logger}
 	{
 		std::random_device rd;
 		re_.seed(rd());
@@ -50,12 +50,12 @@ public:
 		lambdaMin_ = lambdaMin;
 	}
 
-	void initializeFrom(const boost::filesystem::path& path)
+	void initializeFrom(const std::filesystem::path& path)
 	{
 		using std::ios;
 		logger_ << "Loading initial weights from " << path << std::endl;
 
-		boost::filesystem::fstream in(path, ios::binary | ios::in);
+		std::fstream in(path, ios::binary | ios::in);
 		cereal::BinaryInputArchive ia(in);
 		std::unique_ptr<MachineT> qsLoad{nullptr};
 		ia(qsLoad);
@@ -149,7 +149,6 @@ public:
 
 			qs_.updateParams(optV);
 
-			//double cgErr = (corrMat*v-srex.energyGrad()).norm();
 			double nv = v.norm();
 
 			qs_.updateParams(optV);

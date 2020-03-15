@@ -109,6 +109,7 @@ public:
 	{
 		return fisher_.apply(v);
 	}
+
 	/*! \brief Use conjugate gradient solover to solve the optimizing vector.
 	 *
 	 * We solve \f$ (S + \epsilon \mathbb{1})v = f \f$ where \f$ f \f$ is the gradient of the energy expectation values. 
@@ -123,6 +124,7 @@ public:
 		cg.setTolerance(tol);
 		return cg.solve(energyGrad_);
 	}
+
 	VectorType solveExact(double shift)
 	{
 		MatrixType mat = fisher_.corrMat();

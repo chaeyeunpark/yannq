@@ -28,7 +28,7 @@ public:
 		for(int sidx = 0; sidx < n_*nSweep_; sidx++)
 		{
 			int toFlip = uid_(re);
-			double p = std::min(1.0,exp(beta*2.0*real(sv.logRatio(toFlip))));
+			double p = std::min(1.0,exp(beta*2.0*sv.logRatioRe(toFlip)));
 			double u = urd(re);
 			if(u < p)//accept
 			{
