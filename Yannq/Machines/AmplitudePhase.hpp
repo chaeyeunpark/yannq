@@ -15,13 +15,14 @@ private:
 	FeedForward<ScalarType> phase_;
 
 public:
+	using AmplitudeMachine = RBM<ScalarType, false>;
 	using CxScalarType = std::complex<double>;
 	using MatrixType = Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>;
 	using VectorType = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
 
 	using CxMatrixType = Eigen::Matrix<CxScalarType, Eigen::Dynamic, Eigen::Dynamic>;
 	using CxVectorType = Eigen::Matrix<CxScalarType, Eigen::Dynamic, 1>;
-	using AmpDataType = std::tuple<Eigen::VectorXi, VectorType>;
+	using AmplitudeDataType = std::tuple<Eigen::VectorXi, VectorType>;
 	using PhaseDataType = std::vector<VectorType>;
 
 	using VectorRefType = Eigen::Ref<VectorType>;
@@ -32,15 +33,17 @@ public:
 	{
 	}
 
-	VectorType logDerivAmp(const std::pair<AmpDataType,PhaseDataType>& data) const
+	VectorType logDerivAmp(const std::pair<AmplitudeDataType,PhaseDataType>& data) const
 	{
 		return amplitude_.logDeriv(data.first)/2.0;
 	}
-	VectorType logDerivPhase(const std::pair<AmpDataType,PhaseDataType>& data) const
+
+	VectorType logDerivPhase(const std::pair<AmplitudeDataType,PhaseDataType>& data) const
 	{
 		return (M_PI)*phase_.backward(data.second);
 	}
-	CxVectorType logDeriv(const std::pair<AmpDataType,PhaseDataType>& data) const
+
+	CxVectorType logDeriv(const std::pair<AmplitudeDataType,PhaseDataType>& data) const
 	{
 		constexpr CxScalarType I(0., 1.);
 		CxVectorType res(getDim());
@@ -48,7 +51,6 @@ public:
 		res.tail(phase_.getDim()) = I*logDerivPhase(data);
 		return res;
 	}
-
 
 	inline uint32_t getDimAmp() const
 	{
@@ -65,23 +67,43 @@ public:
 		return amplitude_.getDim() + phase_.getDim();
 	}
 
+	const AmplitudeMachine& amplitudeMachine() const
+	{
+		return amplitude_;
+	}
+
 	template<typename RandomEngine>
 	void initializeAmplitudeRandom(RandomEngine&& re, double sigma)
 	{
 		amplitude_.initializeRandom(re, sigma);
 	}
 
-	AmpDataType makeAmpData(const Eigen::VectorXi& sigma) const
+	AmplitudeDataType makeAmpData(const Eigen::VectorXi& sigma) const
 	{
 		return amplitude_.makeData(sigma);
 	}
+	
+	PhaseDataType makePhaseData(const Eigen::VectorXi& sigma) const
+	{
+		return phase_.makeData(sigma);
+	}
 
-	std::pair<AmpDataType,PhaseDataType> makeData(const Eigen::VectorXi& sigma) const
+	std::pair<AmplitudeDataType,PhaseDataType> makeData(const Eigen::VectorXi& sigma) const
 	{
 		return std::make_pair(amplitude_.makeData(sigma), phase_.makeData(sigma));
 	}
 
-	CxScalarType coeff(const AmpDataType& t) const
+	ScalarType phaseForward(const PhaseDataType& phaseData) const
+	{
+		return phase_.forward(phaseData);
+	}
+
+	ScalarType phaseForward(const Eigen::VectorXi& sigma) const
+	{
+		return phase_.forward(sigma);
+	}
+
+	CxScalarType coeff(const AmplitudeDataType& t) const
 	{
 		constexpr std::complex<double> I(0.,1.);
 		return std::sqrt(amplitude_.coeff(t))*std::exp(I*M_PI*phase_.forward(std::get<0>(t)));

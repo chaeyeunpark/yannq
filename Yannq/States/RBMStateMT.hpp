@@ -1,6 +1,8 @@
 #ifndef YANNQ_STATES_RBMSTATEMT_HPP
 #define YANNQ_STATES_RBMSTATEMT_HPP
 
+#include <vector>
+
 #include "Machines/RBM.hpp"
 #include "Utilities/type_traits.hpp"
 #include "Utilities/Utility.hpp"
@@ -9,74 +11,138 @@
 namespace yannq
 {
 
-template<typename Machine>
-struct RBMStateValueMT;
+template<typename T>
+class RBMStateValueMT;
 
-template<typename T, bool useBias>
-class MachineStateTypesMT<RBM<T, useBias> >
+template<typename T>
+class MachineStateTypesMT<RBM<T> >
 {
 public:
-	using StateValue = RBMStateValueMT<RBM<T, useBias> >;
-	using StateRef = RBMStateRef<RBM<T, useBias> >;
+	using StateValue = RBMStateValueMT<RBM<T> >;
+	using StateRef = RBMStateRef<RBM<T> >;
 };
 
-template<typename Machine, class Derived>
+template<typename ScalarType, class Derived>
 class RBMStateObjMT
 {
 protected:
-	const Machine& qs_;
+	const RBM<ScalarType>& qs_;
+
 public:
-	using T = typename Machine::ScalarType;
-	using RealT = typename remove_complex<T>::type;
+	using Machine = RBM<ScalarType>;
+	using RealScalarType = typename remove_complex<ScalarType>::type;
 
 	RBMStateObjMT(const Machine& qs) noexcept
 		: qs_(qs)
 	{
 	}
+	
+	/********************** logRatio for a single spin ************************/
 
-	T logRatio(int k) const //calc psi(sigma ^ k) / psi(sigma)
+	/// logRatio for complex ScalarType
+	/// returns log[psi(sigma ^ k)] - log[psi(sigma)]
+	template<typename T = ScalarType, std::enable_if_t<is_complex_type<T>::value, int> = 0>
+	ScalarType logRatio(int k) const //calc psi(sigma ^ k) / psi(sigma)
 	{
 		using std::exp;
 		using std::cosh;
 		using std::log;
 		
-		T res = -2.0*qs_.A(k)*T(sigmaAt(k));
+		ScalarType res = -2.0*qs_.A(k)*ScalarType(sigmaAt(k));
 
 		int m = qs_.getM();
 
-		RealT re{};
-		RealT im{};
+		RealScalarType re{};
+		RealScalarType im{};
 
 #pragma omp parallel for schedule(static, 4) reduction(+:re,im)
 		for(int j = 0; j < m; j ++)
 		{
-			T r = logCosh(thetaAt(j)-2.0*T(sigmaAt(k))*qs_.W(j,k))
+			ScalarType r = logCosh(thetaAt(j)-2.0*ScalarType(sigmaAt(k))*qs_.W(j,k))
 				-logCosh(thetaAt(j));
 			re += std::real(r);
 			im += std::imag(r);
 		}
-		res += T{re, im};
+		res += ScalarType{re, im};
 		return res;
 	}
 
-	inline T ratio(int k) const //calc psi(sigma ^ k) / psi(sigma)
+	/// logRatioRe for complex ScalarType
+	/// returns real part of log[psi(sigma ^ k)] - log[psi(sigma)]
+	template<typename T = ScalarType, std::enable_if_t<is_complex_type<T>::value, int> = 0>
+	RealScalarType logRatioRe(int k) const 
+	{
+		using std::exp;
+		using std::cosh;
+		using std::log;
+		
+		RealScalarType res = -2.0*qs_.A(k).real()*RealScalarType(sigmaAt(k));
+
+		int m = qs_.getM();
+
+#pragma omp parallel for schedule(static, 4) reduction(+:res)
+		for(int j = 0; j < m; j ++)
+		{
+			ScalarType r = logCosh(thetaAt(j)-2.0*ScalarType(sigmaAt(k))*qs_.W(j,k))
+				-logCosh(thetaAt(j));
+			res += std::real(r);
+		}
+		return res;
+	}
+
+	/// logRatio for real ScalarType
+	template<typename T = ScalarType, std::enable_if_t<!is_complex_type<T>::value, int> = 0>
+	inline ScalarType logRatioRe(int k) const
+	{
+		return logRatio(k);
+	}
+
+	/// logRatio for real ScalarType
+	template<typename T = ScalarType, std::enable_if_t<!is_complex_type<T>::value, int> = 0>
+	ScalarType logRatio(int k) const
+	{
+		using std::exp;
+		using std::cosh;
+		using std::log;
+		
+		ScalarType res = -2.0*qs_.A(k)*T(sigmaAt(k));
+
+		int m = qs_.getM();
+
+#pragma omp parallel for schedule(static, 4) reduction(+:res)
+		for(int j = 0; j < m; j ++)
+		{
+			res += logCosh(thetaAt(j)-2.0*RealScalarType(sigmaAt(k))*qs_.W(j,k))
+				-logCosh(thetaAt(j));
+		}
+		return res;
+	}
+
+	inline ScalarType ratio(int k) const //calc psi(sigma ^ k) / psi(sigma)
 	{
 		return std::exp(logRatio(k));
 	}
 
-	T logRatio(int k, int l) const //calc psi(sigma ^ k ^ l)/psi(sigma)
+	
+	/************************ logRatio for two spins **************************/
+
+	/// logRatio for complex ScalarType
+	template<typename T = ScalarType, std::enable_if_t<is_complex_type<T>::value, int> = 0>
+	ScalarType logRatio(int k, int l) const //calc psi(sigma ^ k ^ l)/psi(sigma)
 	{
 		using std::exp;
 		using std::cosh;
-		T res = -2.0*qs_.A(k)*T(sigmaAt(k))-2.0*qs_.A(l)*T(sigmaAt(l));
+		ScalarType res = -2.0*qs_.A(k)*RealScalarType(sigmaAt(k))
+			-2.0*qs_.A(l)*RealScalarType(sigmaAt(l));
 		const int m = qs_.getM();
 
-		RealT re{};
-		RealT im{};
+		RealScalarType re{};
+		RealScalarType im{};
 #pragma omp parallel for schedule(static, 4) reduction(+:re,im)
 		for(int j = 0; j < m; j ++)
 		{
-			T t = thetaAt(j)-2.0*T(sigmaAt(k))*qs_.W(j,k)-2.0*T(sigmaAt(l))*qs_.W(j,l);
+			T t = thetaAt(j)-2.0*RealScalarType(sigmaAt(k))*qs_.W(j,k)
+				-2.0*RealScalarType(sigmaAt(l))*qs_.W(j,l);
 			T r = logCosh(t)-logCosh(thetaAt(j));
 			re += std::real(r);
 			im += std::imag(r);
@@ -85,23 +151,74 @@ public:
 		return res;
 	}
 
-	T ratio(int k, int l) const
+	/// logRatioRe for complex ScalarType
+	template<typename T = ScalarType, std::enable_if_t<is_complex_type<T>::value, int> = 0>
+	RealScalarType logRatioRe(int k, int l) const
+	{
+		using std::exp;
+		using std::cosh;
+		RealScalarType res = -2.0*qs_.A(k).real()*RealScalarType(sigmaAt(k))
+			-2.0*qs_.A(l).real()*RealScalarType(sigmaAt(l));
+		const int m = qs_.getM();
+
+#pragma omp parallel for schedule(static, 4) reduction(+:res)
+		for(int j = 0; j < m; j ++)
+		{
+			T t = thetaAt(j)-2.0*RealScalarType(sigmaAt(k))*qs_.W(j,k)
+				-2.0*RealScalarType(sigmaAt(l))*qs_.W(j,l);
+			T r = logCosh(t)-logCosh(thetaAt(j));
+			res += std::real(r);
+		}
+		return res;
+	}
+	
+	/// logRatio for real ScalarType
+	template<typename T = ScalarType, std::enable_if_t<!is_complex_type<T>::value, int> = 0>
+	ScalarType logRatio(int k, int l) const 
+	{
+		using std::exp;
+		using std::cosh;
+		ScalarType res = -2.0*qs_.A(k)*RealScalarType(sigmaAt(k))
+			-2.0*qs_.A(l)*RealScalarType(sigmaAt(l));
+		const int m = qs_.getM();
+
+#pragma omp parallel for schedule(static, 4) reduction(+:res)
+		for(int j = 0; j < m; j ++)
+		{
+			T t = thetaAt(j)-2.0*T(sigmaAt(k))*qs_.W(j,k)-2.0*T(sigmaAt(l))*qs_.W(j,l);
+			res += logCosh(t)-logCosh(thetaAt(j));
+		}
+		return res;
+	}
+
+	/// logRatioRe for real ScalarType
+	template<typename T = ScalarType, std::enable_if_t<!is_complex_type<T>::value, int> = 0>
+	inline ScalarType logRatioRe(int k, int l) const
+	{
+		return logRatio(k, l);
+	}
+
+	ScalarType ratio(int k, int l) const
 	{
 		return std::exp(logRatio(k,l));
 	}
 
-	template<std::size_t N>
-	T logRatio(const std::array<int, N>& v) const
+
+	/************************ logRatio for vector ******************************/
+
+	//logRatio for complex ScalarType
+	template<typename T = ScalarType, std::enable_if_t<is_complex_type<T>::value, int> = 0>
+	ScalarType logRatio(const std::vector<int>& v) const
 	{
-		T res{};
+		ScalarType res{};
 		const int m = qs_.getM();
 		for(int elt: v)
 		{
-			res -= 2.0*qs_.A(elt)*T(sigmaAt(elt));
+			res -= 2.0*qs_.A(elt)*RealScalarType(sigmaAt(elt));
 		}
 
-		RealT re{};
-		RealT im{};
+		RealScalarType re{};
+		RealScalarType im{};
 
 #pragma omp parallel for schedule(static,4) reduction(+:re, im)
 		for(int j = 0; j < m; j++)
@@ -109,7 +226,7 @@ public:
 			T t = thetaAt(j);
 			for(int elt: v)
 			{
-				t -= 2.0*T(sigmaAt(elt))*qs_.W(j,elt);
+				t -= 2.0*RealScalarType(sigmaAt(elt))*qs_.W(j,elt);
 			}
 			T r = logCosh(t)-logCosh(thetaAt(j));
 			re += std::real(r);
@@ -119,28 +236,135 @@ public:
 		return res;
 	}
 
-	T logRatio(const RBMStateObjMT<Machine, Derived >& other)
+	/// logRatio for Real ScalarType
+	template<typename T = ScalarType, std::enable_if_t<!is_complex_type<T>::value, int> = 0>
+	ScalarType logRatio(const std::vector<int>& v) const
 	{
-		T res = (qs_.getA().transpose())*
-			(other.getSigma() - getSigma()).template cast<T>();
+		ScalarType res{};
+		const int m = qs_.getM();
+		for(int elt: v)
+		{
+			res -= 2.0*qs_.A(elt)*RealScalarType(sigmaAt(elt));
+		}
+
+
+#pragma omp parallel for schedule(static,4) reduction(+:res)
+		for(int j = 0; j < m; j++)
+		{
+			T t = thetaAt(j);
+			for(int elt: v)
+			{
+				t -= 2.0*RealScalarType(sigmaAt(elt))*qs_.W(j,elt);
+			}
+			T r = logCosh(t)-logCosh(thetaAt(j));
+			res += r;
+		}
+		return res;
+	}
+
+	/// logRatioRe for complex ScalarType
+	template<typename T = ScalarType, std::enable_if_t<is_complex_type<T>::value, int> = 0>
+	RealScalarType logRatioRe(const std::vector<int>& v) const
+	{
+		RealScalarType res{};
+		const int m = qs_.getM();
+		for(int elt: v)
+		{
+			res -= 2.0*qs_.A(elt).real()*RealScalarType(sigmaAt(elt));
+		}
+
+#pragma omp parallel for schedule(static,4) reduction(+:res)
+		for(int j = 0; j < m; j++)
+		{
+			T t = thetaAt(j);
+			for(int elt: v)
+			{
+				t -= 2.0*RealScalarType(sigmaAt(elt))*qs_.W(j,elt);
+			}
+			T r = logCosh(t)-logCosh(thetaAt(j));
+			res += std::real(r);
+		}
+		return res;
+	}
+	
+	//logRatioRe for real ScalarType
+	template<typename T = ScalarType, std::enable_if_t<!is_complex_type<T>::value, int> = 0>
+	inline ScalarType logRatioRe(const std::vector<int>& v) const
+	{
+		return logRatio(v);
+	}
+
+
+	/********************* logRatio with another StateObj *********************/
+
+	/// logRatio for complex ScalarType
+	template<std::size_t N, typename T = ScalarType, std::enable_if_t<is_complex_type<T>::value, int> = 0>
+	ScalarType logRatio(const RBMStateObjMT<ScalarType, Derived>& other)
+	{
+		ScalarType res = (qs_.getA().transpose())*
+			(other.getSigma() - getSigma()).template cast<RealScalarType>();
 
 		const int m = qs_.getM();
-		RealT re{};
-		RealT im{};
+		RealScalarType re{};
+		RealScalarType im{};
 
 #pragma omp parallel for schedule(static, 4) reduction(+:re, im)
 		for(int j = 0; j < m; j++)
 		{
-			T r = logCosh(other.thetaAt(j)) - logCosh(thetaAt(j));
+			ScalarType r = logCosh(other.thetaAt(j)) - logCosh(thetaAt(j));
 			re += std::real(r);
 			im += std::imag(r);
 		};
 
-		res += T{re,im};
+		res += ScalarType{re,im};
 		return res;
 	}
 
-	inline Eigen::VectorXi getSigma()
+	/// logRatio for real ScalarType
+	template<std::size_t N, typename T = ScalarType, std::enable_if_t<!is_complex_type<T>::value, int> = 0>
+	ScalarType logRatio(const RBMStateObjMT<ScalarType, Derived>& other)
+	{
+		ScalarType res = (qs_.getA().transpose())*
+			(other.getSigma() - getSigma()).template cast<RealScalarType>();
+
+		const int m = qs_.getM();
+
+#pragma omp parallel for schedule(static, 4) reduction(+:res)
+		for(int j = 0; j < m; j++)
+		{
+			res += logCosh(other.thetaAt(j)) - logCosh(thetaAt(j));
+		};
+		return res;
+	}
+
+	/// logRatioRe for complex ScalarType
+	template<std::size_t N, typename T = ScalarType, std::enable_if_t<is_complex_type<T>::value, int> = 0>
+	ScalarType logRatioRe(const RBMStateObjMT<ScalarType, Derived>& other)
+	{
+		RealScalarType res = (qs_.getA().transpose()).real()*
+			(other.getSigma() - getSigma()).template cast<RealScalarType>();
+
+		const int m = qs_.getM();
+
+#pragma omp parallel for schedule(static, 4) reduction(+:res)
+		for(int j = 0; j < m; j++)
+		{
+			ScalarType r = logCosh(other.thetaAt(j)) - logCosh(thetaAt(j));
+			res += std::real(r);
+		};
+		return res;
+	}
+
+	/// logRatioRe for real ScalarType
+	template<std::size_t N, typename T = ScalarType, std::enable_if_t<!is_complex_type<T>::value, int> = 0>
+	ScalarType logRatioRe(const RBMStateObjMT<ScalarType, Derived>& other)
+	{
+		return logRatio(other);
+	}
+
+
+
+	inline const Eigen::VectorXi& getSigma() const&
 	{
 		return static_cast<const Derived*>(this)->getSigma();
 	}
@@ -150,7 +374,7 @@ public:
 		return static_cast<const Derived*>(this)->sigmaAt(i);
 	}
 
-	inline T thetaAt(int i) const
+	inline ScalarType thetaAt(int i) const
 	{
 		return static_cast<const Derived*>(this)->thetaAt(i);
 	}
@@ -161,34 +385,37 @@ public:
 	}
 };
 
-template<typename Machine>
-struct RBMStateValueMT
-	: public RBMStateObjMT<Machine, RBMStateValueMT<Machine> >
+template<typename ScalarType>
+class RBMStateValueMT
+	: public RBMStateObjMT<ScalarType, RBMStateValueMT<ScalarType> >
 {
+public:
+	using VectorType = typename RBM<ScalarType>::VectorType;
+	using RealScalarType = typename remove_complex<ScalarType>::type;
+	using Machine = RBM<ScalarType>;
+
 private:
 	Eigen::VectorXi sigma_;
-	typename Machine::VectorType theta_;
+	VectorType theta_;
 
 public:
-	using Vector=typename Machine::VectorType;
-	using T = typename Machine::ScalarType;
 
 	RBMStateValueMT(const Machine& qs, Eigen::VectorXi&& sigma) noexcept
-		: RBMStateObjMT<Machine, RBMStateValueMT<Machine> >(qs), sigma_(std::move(sigma))
+		: RBMStateObjMT<ScalarType, RBMStateValueMT<ScalarType> >(qs), sigma_(std::move(sigma))
 	{
 		theta_ = this->qs_.calcTheta(sigma_);
 	}
 
 	RBMStateValueMT(const Machine& qs, const Eigen::VectorXi& sigma) noexcept
-		: RBMStateObjMT<Machine, RBMStateValueMT<Machine> >(qs), sigma_(sigma)
+		: RBMStateObjMT<ScalarType, RBMStateValueMT<ScalarType> >(qs), sigma_(sigma)
 	{
 		theta_ = this->qs_.calcTheta(sigma_);
 	}
 
-	RBMStateValueMT(const RBMStateValueMT<Machine>& rhs) = default;
-	RBMStateValueMT(RBMStateValueMT<Machine>&& rhs) = default;
+	RBMStateValueMT(const RBMStateValueMT<ScalarType>& rhs) = default;
+	RBMStateValueMT(RBMStateValueMT<ScalarType>&& rhs) = default;
 
-	RBMStateValueMT& operator=(const RBMStateValueMT<Machine>& rhs) noexcept
+	RBMStateValueMT& operator=(const RBMStateValueMT<ScalarType>& rhs) noexcept
 	{
 		assert(rhs.qs_ == this->qs_);
 		sigma_ = rhs.sigma_;
@@ -196,7 +423,7 @@ public:
 		return *this;
 	}
 
-	RBMStateValueMT& operator=(RBMStateValueMT<Machine>&& rhs) noexcept
+	RBMStateValueMT& operator=(RBMStateValueMT<ScalarType>&& rhs) noexcept
 	{
 		assert(rhs.qs_ == this->qs_);
 		sigma_ = std::move(rhs.sigma_);
@@ -220,11 +447,34 @@ public:
 	{
 		return sigma_(i);
 	}
-	inline T thetaAt(int j) const
+	inline ScalarType thetaAt(int j) const
 	{
 		return theta_(j);
 	}
 	
+
+	void flip(int k)
+	{
+#pragma omp parallel for schedule(static,4)
+		for(int j = 0; j < theta_.size(); j++)
+		{
+			theta_(j) -= 2.0*RealScalarType(sigma_(k))*(this->qs_.W(j,k));
+		}
+		sigma_(k) *= -1;
+	}
+
+	void flip(int k, int l)
+	{
+#pragma omp parallel for schedule(static,4)
+		for(int j = 0; j < theta_.size(); j++)
+		{
+			theta_(j) += -2.0*RealScalarType(sigma_(k))*(this->qs_.W(j,k))
+				-2.0*RealScalarType(sigma_(l))*(this->qs_.W(j,l));
+		}
+		sigma_(k) *= -1;
+		sigma_(l) *= -1;
+	}
+
 	template<std::size_t N>
 	void flip(const std::array<int, N>& v)
 	{
@@ -233,7 +483,7 @@ public:
 #pragma omp parallel for schedule(static,4)
 			for(int j = 0; j < theta_.size(); j++)
 			{
-				theta_(j) -= 2.0*T(sigma_(elt))*(this->qs_.W(j,elt));
+				theta_(j) -= 2.0*RealScalarType(sigma_(elt))*(this->qs_.W(j,elt));
 			}
 		}
 		for(int elt: v)
@@ -242,35 +492,14 @@ public:
 		}
 	}
 
-	void flip(int k, int l)
-	{
-#pragma omp parallel for schedule(static,4)
-		for(int j = 0; j < theta_.size(); j++)
-		{
-			theta_(j) += -2.0*T(sigma_(k))*(this->qs_.W(j,k))
-				-2.0*T(sigma_(l))*(this->qs_.W(j,l));
-		}
-		sigma_(k) *= -1;
-		sigma_(l) *= -1;
-	}
-
-	void flip(int k)
-	{
-#pragma omp parallel for schedule(static,4)
-		for(int j = 0; j < theta_.size(); j++)
-		{
-			theta_(j) -= 2.0*T(sigma_(k))*(this->qs_.W(j,k));
-		}
-		sigma_(k) *= -1;
-	}
 	
 	const Eigen::VectorXi& getSigma() const & { return sigma_; } 
 	Eigen::VectorXi getSigma() && { return std::move(sigma_); } 
 
-	const Vector& getTheta() const & { return theta_; } 
-	Vector getTheta() && { return std::move(theta_); } 
+	const VectorType& getTheta() const & { return theta_; } 
+	VectorType getTheta() && { return std::move(theta_); } 
 
-	std::tuple<Eigen::VectorXi, Vector> data() const
+	std::tuple<Eigen::VectorXi, VectorType> data() const
 	{
 		return std::make_tuple(sigma_, theta_);
 	}

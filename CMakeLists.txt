@@ -8,47 +8,29 @@ include_directories(${CMAKE_SOURCE_DIR}/externals)
 link_directories(${CMAKE_PREFIX_PATH}/lib)
 include_directories(${CMAKE_PREFIX_PATH}/include/ ${EIGEN3_INCLUDE_DIR})
 
-find_package(Torch REQUIRED)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
-
 if(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release)
 endif()
 
 enable_testing()
 
-set (CMAKE_CXX_STANDARD 14)
+set (CMAKE_CXX_STANDARD 17)
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-	set (OpenMP_C_FLAGS "-fopenmp=libiomp5")
-	set (OpenMP_CXX_FLAGS "-fopenmp=libiomp5")
-	set (OpenMP_EXE_LINKER_FLAGS "-fopenmp=libiomp5 -liomp5")
-	link_directories("/usr/lib/x86_64-linux-gnu")
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	find_package(OpenMP REQUIRED)
-	link_directories("${OPENMP_LIBRARIES}")
-endif()
+find_package(OpenMP REQUIRED)
+find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 
-set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+link_libraries(Eigen3::Eigen)
+link_libraries(OpenMP::OpenMP_CXX)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -DEIGEN_USE_MKL_ALL")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -DEIGEN_USE_MKL_ALL -march=native")
 
-add_executable(TestRBMState "Tests/TestRBMState.cpp")
-target_link_libraries(TestRBMState mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl)
+add_executable(TestRBMStates "Tests/TestRBMStates.cpp")
+target_link_libraries(TestRBMStates mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl)
 add_test(
-	NAME TestRBMState
-	COMMAND TestRBMState
-)
-
-add_executable(TestRatio "Tests/TestRatio.cpp")
-target_link_libraries(TestRatio mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl)
-add_test(
-	NAME TestRatio
-	COMMAND TestRatio
+	NAME TestRBMStates
+	COMMAND TestRBMStates
 )
 
 add_executable(TestHamTFI "Tests/TestHamTFI.cpp")
@@ -87,7 +69,6 @@ add_test(
 	COMMAND TestSerializeRBM
 )
 
-
 #[[
 add_executable(TestConvLayer "Tests/TestConvLayer.cpp")
 add_test(
@@ -121,22 +102,16 @@ add_test(
 )
 
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND}
-	DEPENDS TestRBMState TestRatio TestHamTFI TestHamKitaev
+	DEPENDS TestRBMStates TestHamTFI TestHamKitaev
 	TestHamKitaevC24 TestUtility TestHamJ1J2 TestSerializeRBM TestHamXYZSto )
 	#	TestConvLayer TestActivations TestFullyConnected  TestFeedForward )
 
 add_executable(RBMTFI "Examples/RBMTFI.cpp")
-target_link_libraries(RBMTFI boost_serialization boost_filesystem boost_system boost_regex)
+target_link_libraries(RBMTFI OpenMP::OpenMP_CXX mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl stdc++fs)
 
+add_executable(RBMTFIExact "Examples/RBMTFIExact.cpp")
+target_link_libraries(RBMTFIExact OpenMP::OpenMP_CXX mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl stdc++fs)
 
 add_executable(TestAmplitudePhase "Tests/TestAmplitudePhase.cpp")
 target_link_libraries(TestAmplitudePhase mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl)
 
-add_executable(TestLogDeriv "Tests/TestLogDeriv.cpp")
-target_link_libraries(TestLogDeriv mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread m dl)
-
-add_executable(TestConvTorch "Tests/TestConvTorch.cpp")
-target_link_libraries(TestConvTorch "${TORCH_LIBRARIES}")
-
-add_executable(TestAmplitudePhaseTorch "Tests/TestAmplitudePhaseTorch.cpp")
-target_link_libraries(TestAmplitudePhaseTorch "${TORCH_LIBRARIES}")

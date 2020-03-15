@@ -39,15 +39,12 @@ public:
 		sv_ = std::make_unique<StateValue>(qs_, randomSigma(n_, nup, re_));
 	}
 
-	
-
 	inline void sweep()
 	{
 		sweeper_.localSweep(*sv_, 1.0, re_);
 	}
 
 	auto sampling(int n_sweeps, int n_therm)
-		-> std::vector<typename std::result_of<decltype(&StateValue::data)(StateValue)>::type>
 	{
 		using std::norm;
 		using std::pow;

@@ -4,6 +4,7 @@
 #include <Eigen/Sparse>
 #include <Eigen/Eigenvalues> 
 
+#include <omp.h>
 
 #include "ED/ConstructSparseMat.hpp"
 #include "Utilities/Utility.hpp"
@@ -29,6 +30,7 @@ private:
 
 	MatrixType deltas_;
 	MatrixType deltasPsis_;
+	VectorType oloc_;
 	VectorType grad_;
 
 	RealScalarType energy_;
@@ -49,7 +51,6 @@ public:
 	void constructExact()
 	{
 		VectorType st = getPsi(qs_, basis_, true);
-		deltas_.setZero(basis_.size(),qs_.getDim());
 
 		VectorType k = ham_*st;
 
@@ -58,27 +59,36 @@ public:
 		energyVar_ = static_cast<std::complex<double> >(k.adjoint()*k).real();
 		energyVar_ -= energy_*energy_;
 		
-#pragma omp parallel for schedule(static,8)
-		for(uint32_t k = 0; k < basis_.size(); k++)
+		deltas_.setZero(basis_.size(),qs_.getDim());
+#pragma omp parallel
 		{
-			auto der = qs_.logDeriv(qs_.makeData(toSigma(n_, basis_[k])));
-			deltas_.row(k) = der;
+			MatrixType local(8, qs_.getDim());
+
+#pragma omp for schedule(dynamic)
+			for(uint32_t k = 0; k < basis_.size(); k+=8)
+			{
+				for(int l = 0; l < 8; ++l)
+				{
+					local.row(l) = qs_.logDeriv(qs_.makeData(toSigma(n_, basis_[k+l])));
+				}
+				deltas_.block(k, 0, 8, qs_.getDim()) = local;
+			}
 		}
 		deltasPsis_ = st.cwiseAbs2().asDiagonal()*deltas_; 
+		oloc_ = deltasPsis_.colwise().sum();
 		grad_ = (st.asDiagonal()*deltas_).adjoint()*k;
-		grad_ -= t*deltasPsis_.colwise().sum().conjugate();
+		grad_ -= t*oloc_.conjugate();
 	}
 
 	VectorType oloc() const
 	{
-		return deltasPsis_.colwise().sum();
+		return oloc_;
 	}
 
 	MatrixType corrMat() const
 	{
 		MatrixType res = deltas_.adjoint()*deltasPsis_;
-		auto t = deltasPsis_.colwise().sum();
-		res -= t.adjoint()*t;
+		res -= oloc_.conjugate()*oloc_.transpose();
 		return res;
 	}
 
@@ -94,8 +104,7 @@ public:
 	VectorType apply(const VectorType& rhs)
 	{
 		VectorType res = deltas_.adjoint()*(deltasPsis_*rhs);
-		auto t = deltasPsis_.colwise().sum();
-		res -= t.adjoint()*(t*rhs);
+		res -= oloc_.conjugate()*(oloc_.transpose()*rhs);
 		return res;
 	}
 

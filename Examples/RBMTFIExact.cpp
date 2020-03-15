@@ -7,8 +7,10 @@
 
 #include <nlohmann/json.hpp>
 
-#include <Runners/RunRBM.hpp>
+#include <Runners/RunRBMExact.hpp>
 #include <Hamiltonians/TFIsing.hpp>
+
+#include <Basis/BasisFull.hpp>
 
 using namespace yannq;
 using std::ios;
@@ -38,22 +40,19 @@ int main(int argc, char** argv)
 	const int N = paramIn.at("N").get<int>();
 	const int alpha = paramIn.at("alpha").get<int>();
 	const double h = paramIn.at("h").get<double>();
-	const bool useCG = paramIn.value("useCG", false);
 
 	std::cout << "#h: " << h << std::endl;
 
 	TFIsing ham(N, -1.0, -h);
-	auto callback = [](int ll, double currE, double nv, double cgErr, auto smp_dur, auto slv_dur)
+	auto callback = [](int ll, double currE, double nv)
 	{
-		std::cout << ll << "\t" << currE << "\t" << nv << "\t" << cgErr
-			<< "\t" << smp_dur << "\t" << slv_dur << std::endl;
+		std::cout << ll << "\t" << currE << "\t" << nv << std::endl;
 	};
 
-	auto runner = RunRBM<ValT>(N, alpha, true, std::cerr);
+	auto runner = RunRBMExact<ValT>(N, alpha, true, std::cerr);
 	runner.initializeRandom(0.01);
-	runner.setIterParams(2000, 100);
+	runner.setIterParams(20, 0);
 	runner.setOptimizer(paramIn["Optimizer"]);
-	runner.setSolverParams(useCG, 1e-3);
 
 	{
 		json j = runner.getParams();
@@ -62,11 +61,6 @@ int main(int argc, char** argv)
 		fout << j << std::endl;
 	}
 
-	auto randomizer = [](auto& sampler)
-	{
-		sampler.randomizeSigma();
-	};
-
-	runner.run<LocalSweeper, true>(callback, randomizer, std::move(ham), 2000);
+	runner.run(callback, BasisFull{N}, std::move(ham));
 	return 0;
 }
