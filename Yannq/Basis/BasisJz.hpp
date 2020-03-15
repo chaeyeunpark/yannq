@@ -1,6 +1,5 @@
 #ifndef YANNQ_BASIS_BASJSJZ_HPP
 #define YANNQ_BASIS_BASJSJZ_HPP
-#include <boost/math/special_functions/binomial.hpp>
 //! \ingroup Basis
 //! Basis for U(1) symmetric subspace.
 class BasisJz

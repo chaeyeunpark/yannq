@@ -2,7 +2,11 @@
 #define YANNQ_RUNNERS_RUNRBM_HPP
 #include <chrono>
 
+#if defined(__GNUC__) && (__GNUC__ <= 7)
+#include <experimental/filesystem>
+#else
 #include <filesystem>
+#endif
 #include <cereal/cereal.hpp>
 #include <cereal/archives/binary.hpp>
 #include <nlohmann/json.hpp>
@@ -46,6 +50,12 @@ public:
 	using MachineT = yannq::RBM<T>;
 	using json = nlohmann::json;
 
+#if defined(__GNUC__) && (__GNUC__ <= 7)
+	using path = std::experimental::filesystem::path;
+#else
+	using path = std::filesystem::path;
+#endif
+
 private:
 	MachineT qs_;
 	std::ostream& logger_;
@@ -83,12 +93,12 @@ public:
 		lambdaMin_ = lambdaMin;
 	}
 
-	void initializeFrom(const std::filesystem::path& path)
+	void initializeFrom(const path& filePath)
 	{
 		using std::ios;
-		logger_ << "Loading initial weights from " << path << std::endl;
+		logger_ << "Loading initial weights from " << filePath << std::endl;
 
-		std::fstream in(path, ios::binary | ios::in);
+		std::fstream in(filePath, ios::binary | ios::in);
 		cereal::BinaryInputArchive ia(in);
 		std::unique_ptr<MachineT> qsLoad{nullptr};
 		ia(qsLoad);

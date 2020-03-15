@@ -67,6 +67,6 @@ int main(int argc, char** argv)
 		sampler.randomizeSigma();
 	};
 
-	runner.run<LocalSweeper, false>(callback, randomizer, std::move(ham), 2000);
+	runner.run<LocalSweeper, true>(callback, randomizer, std::move(ham), 2000);
 	return 0;
 }
