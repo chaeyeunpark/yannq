@@ -2,5 +2,5 @@
 /debug*
 /docs
 /.vscode
+/externals/*
 .ycm_extra_conf.py
-Doxyfile

@@ -11,7 +11,10 @@
 
 namespace yannq
 {
+//! \addtogroup GroundState
 
+//! \ingroup GroundState
+//! This class calculate the quantum Fisher matrix by exactly constructing the quantum state.
 template<typename Machine, typename ScalarType = typename Machine::ScalarType>
 class SRMatExact
 {
@@ -80,7 +83,11 @@ public:
 		grad_ -= t*oloc_.conjugate();
 	}
 
-	VectorType oloc() const
+	const VectorType& oloc() const&
+	{
+		return oloc_;
+	}
+	VectorType oloc() &&
 	{
 		return oloc_;
 	}

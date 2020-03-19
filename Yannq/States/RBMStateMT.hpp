@@ -220,7 +220,7 @@ public:
 		RealScalarType re{};
 		RealScalarType im{};
 
-#pragma omp parallel for schedule(static,4) reduction(+:re, im)
+#pragma omp parallel for schedule(static, 4) reduction(+:re, im)
 		for(int j = 0; j < m; j++)
 		{
 			T t = thetaAt(j);
@@ -248,7 +248,7 @@ public:
 		}
 
 
-#pragma omp parallel for schedule(static,4) reduction(+:res)
+#pragma omp parallel for schedule(static, 4) reduction(+:res)
 		for(int j = 0; j < m; j++)
 		{
 			T t = thetaAt(j);
@@ -273,7 +273,7 @@ public:
 			res -= 2.0*qs_.A(elt).real()*RealScalarType(sigmaAt(elt));
 		}
 
-#pragma omp parallel for schedule(static,4) reduction(+:res)
+#pragma omp parallel for schedule(static, 4) reduction(+:res)
 		for(int j = 0; j < m; j++)
 		{
 			T t = thetaAt(j);
@@ -455,7 +455,7 @@ public:
 
 	void flip(int k)
 	{
-#pragma omp parallel for schedule(static,4)
+#pragma omp parallel for schedule(static, 4)
 		for(int j = 0; j < theta_.size(); j++)
 		{
 			theta_(j) -= 2.0*RealScalarType(sigma_(k))*(this->qs_.W(j,k));
@@ -465,7 +465,7 @@ public:
 
 	void flip(int k, int l)
 	{
-#pragma omp parallel for schedule(static,4)
+#pragma omp parallel for schedule(static, 4)
 		for(int j = 0; j < theta_.size(); j++)
 		{
 			theta_(j) += -2.0*RealScalarType(sigma_(k))*(this->qs_.W(j,k))
@@ -480,7 +480,7 @@ public:
 	{
 		for(int elt: v)
 		{
-#pragma omp parallel for schedule(static,4)
+#pragma omp parallel for schedule(static, 4)
 			for(int j = 0; j < theta_.size(); j++)
 			{
 				theta_(j) -= 2.0*RealScalarType(sigma_(elt))*(this->qs_.W(j,elt));

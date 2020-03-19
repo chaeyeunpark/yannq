@@ -8,8 +8,6 @@
 #include <cassert>
 #include <Eigen/Eigen>
 
-#include <cereal/access.hpp> 
-#include <cereal/types/memory.hpp>
 
 #include <nlohmann/json.hpp>
 
@@ -20,7 +18,7 @@
 namespace yannq
 {
 //! \ingroup Machines
-//! RBM machine that uses biases
+//! RBM machine
 template<typename T>
 class RBM
 {
@@ -73,6 +71,11 @@ public:
 			return n_*m_;
 	}
 
+	inline bool useBias() const
+	{
+		return useBias_;
+	}
+
 	inline VectorType calcTheta(const Eigen::VectorXi& sigma) const
 	{
 		VectorType s = sigma.cast<T>();
@@ -93,6 +96,11 @@ public:
 			a_.setZero();
 			b_.setZero();
 		}
+	}
+
+	void setUseBias(bool newBias)
+	{
+		useBias_ = newBias;
 	}
 
 	void resize(int n, int m)
@@ -144,12 +152,16 @@ public:
 	void setA(const VectorConstRefType& A)
 	{
 		assert(A.size() == a_.size());
+		if(!useBias_)
+			return ;
 		a_ = A;
 	}
 
 	void setB(const VectorConstRefType& B)
 	{
 		assert(B.size() == b_.size());
+		if(!useBias_)
+			return ;
 		b_ = B;
 	}
 
@@ -363,19 +375,6 @@ public:
 		return i*m_ + j;
 	}
 
-
-	/* Serialization using cereal */
-	template<class Archive>
-	void serialize(Archive& ar)
-	{
-		ar(useBias_);
-		ar(n_,m_);
-		ar(W_);
-		if(!useBias_)
-			return ;
-		ar(a_,b_);
-	}
-
 };
 
 
@@ -412,35 +411,4 @@ typename RBM<T>::VectorType getPsi(const RBM<T>& qs, const std::vector<uint32_t>
 }
 }//namespace yannq
 
-namespace cereal
-{
-	template <typename T>
-	struct LoadAndConstruct<yannq::RBM<T> >
-	{
-		template<class Archive>
-		static void load_and_construct(Archive& ar, cereal::construct<yannq::RBM<T> >& construct)
-		{
-			bool useBias;
-			ar(useBias);
-
-			int n,m;
-			ar(n, m);
-
-			construct(n, m, useBias);
-			
-			Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> W;
-			ar(W);
-			construct->setW(W);
-
-			if(!useBias)
-				return ;
-			Eigen::Matrix<T, Eigen::Dynamic, 1> A;
-			Eigen::Matrix<T, Eigen::Dynamic, 1> B;
-			ar(A, B);
-
-			construct->setA(A);
-			construct->setB(B);
-		}
-	};
-}//namespace cereal
 #endif//YANNQ_MACHINES_RBM_HPP

@@ -13,6 +13,7 @@
 #include <ios>
 
 #include "Yannq.hpp"
+#include "Serializers/SerializeRBM.hpp"
 
 namespace yannq
 {
@@ -43,6 +44,9 @@ public:
 	}
 };
 
+//! \addtogroup Runners
+
+//! \ingroup Runners
 template<typename T, class RandomEngine = std::default_random_engine>
 class RunRBM
 {
@@ -86,6 +90,10 @@ public:
 		re_.seed(rd());
 	}
 
+	/**
+	 * Set parameter for diagonal shift regularization.
+	 * At \f$n\f$-th step, the shile is calculated by \f$\max[\lambda_{\rm ini}\times \lambda_{\rm decay}^n, \lambda_{\rm min}]\f$.
+	 */
 	void setLambda(double lambdaIni, double lambdaDecay, double lambdaMin)
 	{
 		lambdaIni_ = lambdaIni;
@@ -93,6 +101,9 @@ public:
 		lambdaMin_ = lambdaMin;
 	}
 
+	/** 
+	 * \brief Load initial weight from a file
+	 */
 	void initializeFrom(const path& filePath)
 	{
 		using std::ios;
@@ -105,23 +116,43 @@ public:
 		qs_ = *qsLoad;
 	}
 
+	/** 
+	 * \brief Initialize the machine to random weights
+	 */
 	void initializeRandom(double wIni)
 	{
 		logger_ << "Set initial weights randomly from N(0.0, " << wIni << "^2)" << std::endl;
 		qs_.initializeRandom(re_, wIni);
 	}
 
+	/**
+	 * \brief Set optimizer from json parameter
+	 */
 	void setOptimizer(const json& optParam)
 	{
 		opt_ = yannq::OptimizerFactory<T>::getInstance().createOptimizer(optParam);
 	}
-
+	
+	/**
+	 * \brief Set the number of iterations and how often to save
+	 *
+	 * \param maxIter The number of iterations to use
+	 * \param saveWfPer Save the parameters for each saveWfPer epochs
+	 */
 	void setIterParams(const int maxIter, const int saveWfPer)
 	{
 		maxIter_ = maxIter;
 		saveWfPer_ = saveWfPer;
 	}
 
+	/**
+	 * \brief Set parameters for conjugate gradient solver for SR
+	 * 
+	 * \param useCG Whether to use conjugate gradient solver
+	 * \param cgTol Tolereance for CG solver
+	 * \param beta1 Exponential decay momentum for the energy gradient
+	 * \param beta2 Exponential decay momentum for the quantum Fisher matrix
+	 */
 	void setSolverParams(const bool useCG, const double cgTol = 1e-4, const double beta1 = 0.0, const double beta2 = 0.0)
 	{
 		useCG_ = useCG;
@@ -130,6 +161,9 @@ public:
 		beta2_ = beta2;
 	}
 
+	/**
+	 * \brief Set the number of chains for the parallel tempering
+	 */
 	void setNumChains(const int numChains)
 	{
 		numChains_ = numChains;
@@ -189,7 +223,18 @@ public:
 	{
 		return Sampler<MachineT, std::default_random_engine, RBMStateValueMT<T>, Sweeper>(qs_, sweeper);
 	}
-
+	
+	/** \brief Run the calculation
+	 *
+	 * Two template parameters determine which Sweeper to use and whether to use the parallel tempering.
+	 * For \f$U(1)\f$ symmetric Hamiltonains, you may use the SwapSweeper. Otherwise, LocalSweeper should be used.
+	 * \param callback Callback function that is called for each epoch. The parameters of the callback function
+	 * is given by (the epoch, estimated energy in this epoch, norm of the update, error from conjugate gradient solver, sampling duration, solving duration).
+	 * \param randomizer It is a functor that intiailize the sampler before each use
+	 * \param ham The Hamiltonian we want to solve
+	 * \param nSamples The number of samples we will use for each epoch. Default: the number of parameters of the machine.
+	 * \param nSamplesDiscard The number of samples we will discard before sampling. It is used for equilbration. Default: 0.1*nSamples.
+	 */
 	template<class Sweeper, bool usePT, class Callback, class SweeperRandomizer, class Hamiltonian>
 	void run(Callback&& callback, SweeperRandomizer&& randomizer, Hamiltonian&& ham, int nSamples = -1, int nSamplesDiscard = -1)
 	{

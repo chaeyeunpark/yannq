@@ -2,7 +2,7 @@
 #define YANNQ_GROUNDSTATES_SRMAT_HPP_HPP
 #include <Eigen/Core>
 #include <Eigen/Dense>
-#include<Eigen/IterativeLinearSolvers>
+#include <Eigen/IterativeLinearSolvers>
 
 #include "Utilities/Utility.hpp"
 #include "Observables/FisherMatrix.hpp"
@@ -53,7 +53,7 @@ public:
 		fisher_.initIter(nsmp);
 		energy_.initIter(nsmp);
 
-#pragma omp parallel for schedule(static,8)
+#pragma omp parallel for schedule(dynamic, 8)
 		for(std::size_t n = 0; n < rs.size(); n++)
 		{
 			const auto& elt = rs[n];
@@ -76,7 +76,7 @@ public:
 	{
 		return fisher_.oloc();
 	}
-	VectorType&& oloc() &&
+	VectorType oloc() &&
 	{
 		return fisher_.oloc();
 	}
@@ -125,6 +125,11 @@ public:
 		return cg.solve(energyGrad_);
 	}
 
+	/*! \brief Solve the optimizing vector by solving the linear equation exactly..
+	 *
+	 * We solve \f$ (S + \epsilon \mathbb{1})v = f \f$ where \f$ f \f$ is the gradient of the energy expectation values. 
+	 * \param shift \f$ \epsilon \f$ that controls regularization
+	 */
 	VectorType solveExact(double shift)
 	{
 		MatrixType mat = fisher_.corrMat();
