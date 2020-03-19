@@ -13,7 +13,6 @@ TEMPLATE_TEST_CASE("test RBM serialization", "[RBM][serialization]",
 {
 	std::random_device rd;
 	std::default_random_engine re{rd()};
-	std::stringstream ss(std::ios::binary | std::ios::in | std::ios::out);
 	
 	using Machine = yannq::RBM<TestType>;
 
@@ -24,6 +23,8 @@ TEMPLATE_TEST_CASE("test RBM serialization", "[RBM][serialization]",
 			auto rbm = std::make_unique<Machine>(20, alpha*20, useBias);
 			rbm->initializeRandom(re, 1.0);
 
+			{
+			std::stringstream ss(std::ios::binary | std::ios::in | std::ios::out);
 			{
 				cereal::BinaryOutputArchive oarchive( ss );
 				oarchive(rbm);
@@ -36,6 +37,24 @@ TEMPLATE_TEST_CASE("test RBM serialization", "[RBM][serialization]",
 
 				REQUIRE(*rbm == *deserialized);
 			}
+			}
+			{
+			std::stringstream ss(std::ios::binary | std::ios::in | std::ios::out);
+			{
+				cereal::BinaryOutputArchive oarchive( ss );
+				oarchive(*rbm);
+			}
+			
+			{
+				cereal::BinaryInputArchive iarchive( ss );
+				Machine deserialized(1,1);
+				iarchive(deserialized);
+
+				REQUIRE(*rbm == deserialized);
+			}
+			}
+
+
 		}
 	}
 }
