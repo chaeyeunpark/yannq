@@ -13,6 +13,7 @@
 #include <ios>
 
 #include "Yannq.hpp"
+#include "Serializers/SerializeRBM.hpp"
 
 namespace yannq
 {
