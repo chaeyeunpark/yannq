@@ -70,30 +70,21 @@ public:
 				MatrixType local(8, qs_.getDim());
 
 #pragma omp for schedule(dynamic)
-				for(uint32_t k = 0; k < (basis_.size()/8-1); k++)
+				for(uint32_t k = 0; k < basis_.size(); k+=8)
 				{
-					for(int l = 0; l < 8; ++l)
+					uint32_t togo = std::min(8u, static_cast<uint32_t>(basis_.size()-k));
+					for(int l = 0; l < togo; ++l)
 					{
-						local.row(l) = qs_.logDeriv(qs_.makeData(toSigma(n_, basis_[8*k+l])));
+						local.row(l) = 
+							qs_.logDeriv(qs_.makeData(toSigma(n_, basis_[k+l])));
 					}
-					deltas_.block(8*k, 0, 8, qs_.getDim()) = local;
-				}
-				//Do remainings
-#pragma omp critical
-				{
-					uint32_t k = (basis_.size()/8);
-					uint32_t remainings = basis_.size() - 8*k;
-					for(int l = 0; l < remainings; ++l)
-					{
-						local.row(l) = qs_.logDeriv(qs_.makeData(toSigma(n_, basis_[8*k+l])));
-					}
-					deltas_.block(8*k, remainings, 8, qs_.getDim()) = local.topRows(remainings);
+					deltas_.block(k, 0, togo, qs_.getDim()) = local.topRows(togo);
 				}
 			}
 		}
 		else
 		{
-			for(int k = 0; k < basis_.size(); ++k)
+			for(uint32_t k = 0; k < basis_.size(); k++)
 			{
 				deltas_.row(k) = qs_.logDeriv(qs_.makeData(toSigma(n_, basis_[k])));
 			}
