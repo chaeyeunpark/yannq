@@ -62,19 +62,40 @@ public:
 		energyVar_ = static_cast<std::complex<double> >(k.adjoint()*k).real();
 		energyVar_ -= energy_*energy_;
 		
-		deltas_.setZero(basis_.size(),qs_.getDim());
-#pragma omp parallel
+		deltas_.setZero(basis_.size(), qs_.getDim());
+		if(basis_.size() > 32)
 		{
-			MatrixType local(8, qs_.getDim());
+#pragma omp parallel
+			{
+				MatrixType local(8, qs_.getDim());
 
 #pragma omp for schedule(dynamic)
-			for(uint32_t k = 0; k < basis_.size(); k+=8)
-			{
-				for(int l = 0; l < 8; ++l)
+				for(uint32_t k = 0; k < (basis_.size()/8-1); k++)
 				{
-					local.row(l) = qs_.logDeriv(qs_.makeData(toSigma(n_, basis_[k+l])));
+					for(int l = 0; l < 8; ++l)
+					{
+						local.row(l) = qs_.logDeriv(qs_.makeData(toSigma(n_, basis_[8*k+l])));
+					}
+					deltas_.block(8*k, 0, 8, qs_.getDim()) = local;
 				}
-				deltas_.block(k, 0, 8, qs_.getDim()) = local;
+				//Do remainings
+#pragma omp critical
+				{
+					uint32_t k = (basis_.size()/8);
+					uint32_t remainings = basis_.size() - 8*k;
+					for(int l = 0; l < remainings; ++l)
+					{
+						local.row(l) = qs_.logDeriv(qs_.makeData(toSigma(n_, basis_[8*k+l])));
+					}
+					deltas_.block(8*k, remainings, 8, qs_.getDim()) = local.topRows(remainings);
+				}
+			}
+		}
+		else
+		{
+			for(int k = 0; k < basis_.size(); ++k)
+			{
+				deltas_.row(k) = qs_.logDeriv(qs_.makeData(toSigma(n_, basis_[k])));
 			}
 		}
 		deltasPsis_ = st.cwiseAbs2().asDiagonal()*deltas_; 
