@@ -8,6 +8,7 @@
 
 #include "ED/ConstructSparseMat.hpp"
 #include "Utilities/Utility.hpp"
+#include "Observables/ConstructDeltaExact.hpp"
 
 namespace yannq
 {
@@ -15,10 +16,11 @@ namespace yannq
 
 //! \ingroup GroundState
 //! This class calculate the quantum Fisher matrix by exactly constructing the quantum state.
-template<typename Machine, typename ScalarType = typename Machine::ScalarType>
+template<typename Machine>
 class SRMatExact
 {
 public:
+	using ScalarType = typename Machine::ScalarType;
 	using RealScalarType = typename remove_complex<ScalarType>::type;
 
 	using MatrixType = typename Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>;
@@ -62,33 +64,8 @@ public:
 		energyVar_ = static_cast<std::complex<double> >(k.adjoint()*k).real();
 		energyVar_ -= energy_*energy_;
 		
-		deltas_.setZero(basis_.size(), qs_.getDim());
-		if(basis_.size() > 32)
-		{
-#pragma omp parallel
-			{
-				MatrixType local(8, qs_.getDim());
+		deltas_ = constructDeltaExact(qs_, basis_);
 
-#pragma omp for schedule(dynamic)
-				for(uint32_t k = 0; k < basis_.size(); k+=8)
-				{
-					uint32_t togo = std::min(8u, static_cast<uint32_t>(basis_.size()-k));
-					for(int l = 0; l < togo; ++l)
-					{
-						local.row(l) = 
-							qs_.logDeriv(qs_.makeData(toSigma(n_, basis_[k+l])));
-					}
-					deltas_.block(k, 0, togo, qs_.getDim()) = local.topRows(togo);
-				}
-			}
-		}
-		else
-		{
-			for(uint32_t k = 0; k < basis_.size(); k++)
-			{
-				deltas_.row(k) = qs_.logDeriv(qs_.makeData(toSigma(n_, basis_[k])));
-			}
-		}
 		deltasPsis_ = st.cwiseAbs2().asDiagonal()*deltas_; 
 		oloc_ = deltasPsis_.colwise().sum();
 		grad_ = (st.asDiagonal()*deltas_).adjoint()*k;
