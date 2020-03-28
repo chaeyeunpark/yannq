@@ -56,7 +56,7 @@ public:
 		{
 			sweep();
 		}
-		using DataT = typename std::result_of<decltype(&StateValue::data)(StateValue)>::type;
+		using DataT = typename std::result_of_t<decltype(&StateValue::data)(StateValue)>;
 
 		std::vector<DataT> res;
 		res.reserve(n_sweeps);

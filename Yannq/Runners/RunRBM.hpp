@@ -14,6 +14,7 @@
 
 #include "Yannq.hpp"
 #include "Serializers/SerializeRBM.hpp"
+#include "Samplers/ExactSampler.hpp"
 
 namespace yannq
 {
@@ -161,14 +162,6 @@ public:
 		beta2_ = beta2;
 	}
 
-	/**
-	 * \brief Set the number of chains for the parallel tempering
-	 */
-	void setNumChains(const int numChains)
-	{
-		numChains_ = numChains;
-	}
-
 	const MachineT& getQs() const &
 	{
 		return qs_;
@@ -203,48 +196,51 @@ public:
 		};
 		j["numThreads"] = Eigen::nbThreads();
 		j["machine"] = qs_.params();
-		j["sampler"] = 
-		{
-			{"PT", numChains_},
-		};
+
 
 		return j;
 	}
 
 	//if usePT
-	template<class Sweeper, bool usePT, std::enable_if_t<usePT, int> = 0 > 
-	auto createSampler(Sweeper& sweeper)
+	template<class Sweeper> 
+	auto createSamplerPT(Sweeper& sweeper, uint32_t numChains)
 	{
-		return SamplerPT<MachineT, std::default_random_engine, RBMStateValue<T>, Sweeper>(qs_, numChains_, sweeper);
+		return SamplerPT<MachineT, std::default_random_engine, RBMStateValue<T>, Sweeper>(qs_, numChains, sweeper);
 	}
 	//if not usePT
-	template<class Sweeper, bool usePT, std::enable_if_t<!usePT, int> = 0 > 
-	auto createSampler(Sweeper& sweeper)
+	template<class Sweeper> 
+	auto createSamplerMT(Sweeper& sweeper)
 	{
 		return Sampler<MachineT, std::default_random_engine, RBMStateValueMT<T>, Sweeper>(qs_, sweeper);
+	}
+	
+	template<class Iterable>
+	auto createSamplerExact(Iterable&& basis)
+	{
+		return ExactSampler<MachineT, std::default_random_engine>(qs_, std::forward<Iterable>(basis));
 	}
 	
 	/** \brief Run the calculation
 	 *
 	 * Two template parameters determine which Sweeper to use and whether to use the parallel tempering.
 	 * For \f$U(1)\f$ symmetric Hamiltonains, you may use the SwapSweeper. Otherwise, LocalSweeper should be used.
-	 * \param callback Callback function that is called for each epoch. The parameters of the callback function
+	 * 
+	 * \param sampler Any sampler can be taken. Usually, it is convinient to use createSampler methods.
+	 * \param callback Callback function that is called for each epoch. The parameters of the callback function.
 	 * is given by (the epoch, estimated energy in this epoch, norm of the update, error from conjugate gradient solver, sampling duration, solving duration).
-	 * \param randomizer It is a functor that intiailize the sampler before each use
-	 * \param ham The Hamiltonian we want to solve
+	 * \param randomizer It is a functor that intiailize the sampler before each use.
+	 * \param ham The Hamiltonian we want to solve.
 	 * \param nSamples The number of samples we will use for each epoch. Default: the number of parameters of the machine.
 	 * \param nSamplesDiscard The number of samples we will discard before sampling. It is used for equilbration. Default: 0.1*nSamples.
 	 */
-	template<class Sweeper, bool usePT, class Callback, class SweeperRandomizer, class Hamiltonian>
-	void run(Callback&& callback, SweeperRandomizer&& randomizer, Hamiltonian&& ham, int nSamples = -1, int nSamplesDiscard = -1)
+	template<class Sampler, class Callback, class SweeperRandomizer, class Hamiltonian>
+	void run(Sampler& sampler, Callback&& callback, SweeperRandomizer&& randomizer, Hamiltonian&& ham, int nSamples = -1, int nSamplesDiscard = -1)
 	{
 		using Clock = std::chrono::high_resolution_clock;
 		using namespace yannq;
 		using MatrixT = typename MachineT::MatrixType;
 		using VectorT = typename MachineT::VectorType;
 
-		Sweeper sweeper(qs_.getN());
-		auto sampler = createSampler<Sweeper, usePT>(sweeper);
 		SRMat<MachineT,Hamiltonian> srm(qs_, std::forward<Hamiltonian>(ham));
 		
 		sampler.initializeRandomEngine();
