@@ -18,6 +18,8 @@ int main(int argc, char** argv)
 	using namespace yannq;
 	using nlohmann::json;
 
+	const int numChains = 16;
+
 	std::random_device rd;
 	std::default_random_engine re(rd());
 
@@ -67,6 +69,9 @@ int main(int argc, char** argv)
 		sampler.randomizeSigma();
 	};
 
-	runner.run<LocalSweeper, false>(callback, randomizer, std::move(ham), 2000);
+	LocalSweeper sweeper{N};
+	auto sampler = runner.createSamplerPT(sweeper, numChains);
+
+	runner.run(sampler, callback, randomizer, std::move(ham), 2000);
 	return 0;
 }

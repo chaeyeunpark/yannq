@@ -70,7 +70,7 @@ public:
 			sv_.emplace_back(qs_, randomSigma(n_, nup, re_[0]));
 		}
 	}
-	
+
 	void mixChains()
 	{
 		using std::real;
