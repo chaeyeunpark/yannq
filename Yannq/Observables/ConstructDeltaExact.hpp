@@ -8,25 +8,25 @@ template<class Machine, class RandomIterable>
 typename Machine::MatrixType constructDeltaExact(const Machine& qs, RandomIterable&& basis)
 {
 	using MatrixType = typename Machine::MatrixType;
+	using Range = tbb::blocked_range<std::size_t>;
 	const int N = qs.getN();
 	MatrixType deltas(basis.size(), qs.getDim());
 	deltas.setZero(basis.size(), qs.getDim());
-	if(basis.size() > 32)
+	if(basis.size() >= 32)
 	{
-		tbb::enumerable_thread_specific<MatrixType>
-			tmp(8, qs.getDim());
-
-		tbb::parallel_for(std::size_t(0u), basis.size(), std::size_t(8u),
-			[&](std::size_t idx)
+		tbb::parallel_for(Range(std::size_t(0u), basis.size(), 8),
+			[&](const Range& r)
 		{
-			uint32_t togo = std::min(8u, static_cast<uint32_t>(basis.size()-idx));
-			for(int l = 0; l < togo; ++l)
+			MatrixType tmp(r.end()-r.begin(), qs.getDim());
+			uint32_t start = r.begin();
+			uint32_t end = r.end();
+			for(int l = 0; l < end-start; ++l)
 			{
-				tmp.local().row(l) = 
-					qs.logDeriv(qs.makeData(toSigma(N, basis[idx+l])));
+				tmp.row(l) = 
+					qs.logDeriv(qs.makeData(toSigma(N, basis[l+start])));
 			}
-			deltas.block(idx, 0, togo, qs.getDim()) = tmp.local().topRows(togo);
-		});
+			deltas.block(start, 0, end-start, qs.getDim()) = tmp;
+		}, tbb::simple_partitioner());
 	}
 	else
 	{

@@ -25,9 +25,9 @@ namespace edp
 	}
 
 	//basis must be sorted
-	template<typename T, typename ColFunc>
+	template<typename T, typename ColFunc, typename Iterable>
 	Eigen::SparseMatrix<T> constructSubspaceMat(ColFunc&& t,
-			const std::vector<uint32_t>& basis)
+			Iterable&& basis)
 	{
 		const uint32_t n = basis.size();
 

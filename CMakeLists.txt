@@ -19,7 +19,7 @@ find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
 link_libraries(Eigen3::Eigen)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -DEIGEN_USE_MKL_ALL")
 
 set(CEREAL_URL "https://github.com/USCiLab/cereal/archive/v1.3.0.tar.gz")
 set(CEREAL_DOWNLOAD_PATH "${CMAKE_SOURCE_DIR}/externals/cereal-v1.3.0.tar.gz")
@@ -52,8 +52,9 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	include_directories("$ENV{MKLROOT}/include")
 	link_libraries(mkl_intel_lp64 mkl_intel_thread mkl_core tbb pthread m dl)
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mkl=parallel")
-	link_libraries(tbb pthread m dl)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mkl=parallel -tbb")
+	include_directories("$ENV{MKLROOT}/include")
+	link_libraries(mkl_intel_lp64 mkl_tbb_thread mkl_core tbb stdc++ pthread m dl)
 endif()
 
 add_custom_command(

@@ -395,8 +395,8 @@ typename RBM<T>::VectorType getPsi(const RBM<T>& qs, bool normalize)
 	return psi;
 }
 
-template<typename T>
-typename RBM<T>::VectorType getPsi(const RBM<T>& qs, const std::vector<uint32_t>& basis, bool normalize)
+template<typename T, typename Iterable> //Iterable must be random iterable
+typename RBM<T>::VectorType getPsi(const RBM<T>& qs, Iterable&& basis, bool normalize)
 {
 	const uint32_t n = qs.getN();
 	typename RBM<T>::VectorType psi(basis.size());

@@ -29,7 +29,7 @@ public:
 private:
 	const uint32_t n_;
 	const Machine& qs_;
-	std::vector<uint32_t> basis_;
+	tbb::concurrent_vector<uint32_t> basis_;
 
 	Eigen::SparseMatrix<RealScalarType> ham_;
 
@@ -108,10 +108,12 @@ public:
 	SRMatExact(const Machine& qs, Iterable&& basis, ColFunc&& col)
 	  : n_{qs.getN()}, qs_(qs)
 	{
-		for(auto elt: basis)
+		tbb::parallel_do(basis.begin(), basis.end(), 
+				[&](uint32_t elt)
 		{
 			basis_.emplace_back(elt);
-		}
+		});
+		tbb::parallel_sort(basis_.begin(), basis_.end());
 		ham_ = edp::constructSubspaceMat<double>(std::forward<ColFunc>(col), basis_);
 	}
 };

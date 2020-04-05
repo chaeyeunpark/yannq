@@ -27,8 +27,7 @@ public:
 		re_.seed(rd());
 	}
 	
-	
-	auto sampling(int n_sweeps, int /*nSamplesDiscard*/)
+	auto sampling(uint32_t n_sweeps, uint32_t /*nSamplesDiscard*/)
 	{
 		using DataT = typename std::result_of_t<decltype(&Machine::makeData)(Machine, Eigen::VectorXi)>;
 
@@ -41,15 +40,22 @@ public:
 		}
 
 		std::uniform_real_distribution<> urd(0.0, accum[basis_.size()]);
-		std::vector<DataT> res;
+		accum[basis_.size()] += 1e-8;
+		tbb::concurrent_vector<DataT> res;
+		tbb::queuing_mutex rMutex;
 		res.reserve(n_sweeps);
-		for(int ll = 0; ll < n_sweeps; ll++)
+		tbb::parallel_for(0u, n_sweeps,
+			[&](uint32_t idx)
 		{
-			auto iter = std::upper_bound(accum.begin(), accum.end(), urd(re_));
+			double r;
+			{
+				tbb::queuing_mutex::scoped_lock lock(rMutex);
+				r = urd(re_);
+			}
+			auto iter = std::upper_bound(accum.begin(), accum.end(), r);
 			auto idx = std::distance(accum.begin(), iter);
-			if(idx == basis_.size())
-				std::cout << "ERRRRR" << std::endl;
-			res.emplace_back(qs_.makeData(toSigma(n_, basis_[idx])));
+			auto data = qs_.makeData(toSigma(n_, basis_[idx]));
+			res.emplace_back(data);
 		}
 		return res;
 	}

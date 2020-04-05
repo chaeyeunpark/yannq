@@ -1,5 +1,6 @@
 #ifndef YANNQ_BASIS_BASJSJZ_HPP
 #define YANNQ_BASIS_BASJSJZ_HPP
+#include <iterator>
 //! \ingroup Basis
 //! Basis for U(1) symmetric subspace.
 class BasisJz
@@ -9,7 +10,8 @@ private:
 	int nup_;
 	
 public:
-	struct BasisJzIterator
+	struct BasisJzIterator 
+		: public std::iterator<std::forward_iterator_tag, uint32_t>
 	{
 		uint32_t n_;
 		BasisJzIterator& operator++() //prefix
@@ -40,6 +42,10 @@ public:
 		bool operator!=(const BasisJzIterator& rhs)
 		{
 			return n_ != rhs.n_;
+		}
+		BasisJzIterator(uint32_t n)
+			: n_{n}
+		{
 		}
 	};
 
