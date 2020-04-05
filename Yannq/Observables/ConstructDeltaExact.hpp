@@ -1,6 +1,9 @@
 #ifndef YANNQ_OBSERVARBLES_CONSTRUCTDELTAEXACT_HPP
 #define YANNQ_OBSERVARBLES_CONSTRUCTDELTAEXACT_HPP
 #include <Eigen/Dense>
+
+#include <tbb/tbb.h>
+
 template<class Machine, class RandomIterable>
 typename Machine::MatrixType constructDeltaExact(const Machine& qs, RandomIterable&& basis)
 {
@@ -10,22 +13,20 @@ typename Machine::MatrixType constructDeltaExact(const Machine& qs, RandomIterab
 	deltas.setZero(basis.size(), qs.getDim());
 	if(basis.size() > 32)
 	{
-#pragma omp parallel
-		{
-			MatrixType local(8, qs.getDim());
+		tbb::enumerable_thread_specific<MatrixType>
+			tmp(8, qs.getDim());
 
-#pragma omp for schedule(dynamic)
-			for(uint32_t k = 0; k < basis.size(); k+=8)
+		tbb::parallel_for(std::size_t(0u), basis.size(), std::size_t(8u),
+			[&](std::size_t idx)
+		{
+			uint32_t togo = std::min(8u, static_cast<uint32_t>(basis.size()-idx));
+			for(int l = 0; l < togo; ++l)
 			{
-				uint32_t togo = std::min(8u, static_cast<uint32_t>(basis.size()-k));
-				for(int l = 0; l < togo; ++l)
-				{
-					local.row(l) = 
-						qs.logDeriv(qs.makeData(toSigma(N, basis[k+l])));
-				}
-				deltas.block(k, 0, togo, qs.getDim()) = local.topRows(togo);
+				tmp.local().row(l) = 
+					qs.logDeriv(qs.makeData(toSigma(N, basis[idx+l])));
 			}
-		}
+			deltas.block(idx, 0, togo, qs.getDim()) = tmp.local().topRows(togo);
+		});
 	}
 	else
 	{

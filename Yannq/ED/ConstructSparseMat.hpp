@@ -1,6 +1,7 @@
 #ifndef EDP_CONSTRUCTSPARSEMAT_HPP
 #define EDP_CONSTRUCTSPARSEMAT_HPP
 #include <Eigen/Sparse>
+#include <tbb/tbb.h>
 namespace edp
 {
 	template<typename T, class ColFunc>
@@ -25,16 +26,17 @@ namespace edp
 
 	//basis must be sorted
 	template<typename T, typename ColFunc>
-	Eigen::SparseMatrix<T> constructSubspaceMat(ColFunc&& t, const std::vector<uint32_t>& basis)
+	Eigen::SparseMatrix<T> constructSubspaceMat(ColFunc&& t,
+			const std::vector<uint32_t>& basis)
 	{
-		const int n = basis.size();
+		const uint32_t n = basis.size();
 
 		using TripletT = Eigen::Triplet<T>;
-		std::vector<TripletT> tripletList;
-#pragma omp parallel for
-		for(int i = 0; i < n; i++)
+		tbb::concurrent_vector<TripletT> tripletList;
+		tbb::parallel_for(0u, n, 
+			[&](uint32_t idx)
 		{
-			std::map<uint32_t, T> m = t(basis[i]);
+			std::map<uint32_t, T> m = t(basis[idx]);
 			auto iter = basis.begin();
 			for(auto& kv: m)
 			{
@@ -42,12 +44,9 @@ namespace edp
 				if(iter == basis.end())
 					break;
 				auto j = std::distance(basis.begin(), iter);
-#pragma omp critical
-				{
-					tripletList.emplace_back(i, j, kv.second);
-				}
+				tripletList.emplace_back(idx, j, kv.second);
 			}
-		}
+		});
 
 		Eigen::SparseMatrix<T> res(n, n);
 		res.setFromTriplets(tripletList.begin(), tripletList.end());

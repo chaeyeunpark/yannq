@@ -4,6 +4,8 @@
 #include <Eigen/Dense>
 #include <Eigen/IterativeLinearSolvers>
 
+#include <tbb/tbb.h>
+
 #include "Utilities/Utility.hpp"
 #include "Observables/FisherMatrix.hpp"
 #include "Observables/Energy.hpp"
@@ -53,14 +55,14 @@ public:
 		fisher_.initIter(nsmp);
 		energy_.initIter(nsmp);
 
-#pragma omp parallel for schedule(dynamic, 8)
-		for(std::size_t n = 0; n < rs.size(); n++)
+		tbb::parallel_for(std::size_t(0u), rs.size(),
+			[&](uint32_t idx)
 		{
-			const auto& elt = rs[n];
+			const auto& elt = rs[idx];
 			auto state = construct_state<typename MachineStateTypes<Machine>::StateRef>(qs_, elt);
-			fisher_.eachSample(n, elt, state);
-			energy_.eachSample(n, elt, state);
-		}
+			fisher_.eachSample(idx, elt, state);
+			energy_.eachSample(idx, elt, state);
+		});
 
 		fisher_.finIter();
 		energy_.finIter();
@@ -119,7 +121,10 @@ public:
 	VectorType solveCG(double shift, double tol = 1e-4)
 	{
 		fisher_.setShift(shift);
-		Eigen::ConjugateGradient<FisherMatrix<Machine>, Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
+		Eigen::ConjugateGradient<
+			FisherMatrix<Machine>,
+			Eigen::Lower|Eigen::Upper,
+			Eigen::IdentityPreconditioner> cg;
 		cg.compute(fisher_);
 		cg.setTolerance(tol);
 		return cg.solve(energyGrad_);
