@@ -201,7 +201,7 @@ public:
 	/// logRatioRe for complex ScalarType
 	template<typename T = ScalarType, 
 		std::enable_if_t<is_complex_type<T>::value, int> = 0>
-	ScalarType logRatioRe(const RBMStateObjMT<ScalarType, Derived>& other)
+	RealScalarType logRatioRe(const RBMStateObjMT<ScalarType, Derived>& other)
 	{
 		return std::real(logRatio(other));
 	}
@@ -343,6 +343,7 @@ public:
 		}
 	}
 
+	const Eigen::VectorXi& getSigma() const & { return sigma_; } 
 	Eigen::VectorXi getSigma() && { return std::move(sigma_); } 
 
 	const Vector& getTheta() const & { return theta_; } 
