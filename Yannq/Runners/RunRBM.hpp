@@ -1,19 +1,10 @@
 #ifndef YANNQ_RUNNERS_RUNRBM_HPP
 #define YANNQ_RUNNERS_RUNRBM_HPP
-#include <chrono>
 
-#if defined(__GNUC__) && (__GNUC__ <= 7)
-#include <experimental/filesystem>
-#else
-#include <filesystem>
-#endif
-#include <cereal/cereal.hpp>
-#include <cereal/archives/binary.hpp>
-#include <nlohmann/json.hpp>
-#include <ios>
+#include "AbstractRunner.hpp"
 
-#include "Yannq.hpp"
-#include "Serializers/SerializeRBM.hpp"
+#include "Samplers/Sampler.hpp"
+#include "Samplers/SamplerPT.hpp"
 #include "Samplers/ExactSampler.hpp"
 
 namespace yannq
@@ -50,174 +41,55 @@ public:
 //! \ingroup Runners
 template<typename T, class RandomEngine = std::default_random_engine>
 class RunRBM
+	: public AbstractRunner<T, RandomEngine, RunRBM<T, RandomEngine>>
 {
 public:
-	using MachineT = yannq::RBM<T>;
-	using json = nlohmann::json;
-
-#if defined(__GNUC__) && (__GNUC__ <= 7)
-	using path = std::experimental::filesystem::path;
-#else
-	using path = std::filesystem::path;
-#endif
+	using MachineT = typename AbstractRunner<T, RandomEngine, RunRBM<T, RandomEngine>>::MachineT;
 
 private:
-	MachineT qs_;
-	std::ostream& logger_;
-	RandomEngine re_;
-
 	bool useCG_ = false;
 	double cgTol_ = 1e-4;
-
-	double lambdaIni_ = 1e-3;
-	double lambdaDecay_ = 1.0;
-	double lambdaMin_ = 1e-4;
 
 	double beta1_ = 0.0;
 	double beta2_ = 0.0;
 
-	
-	int maxIter_ = 2000;
-	int saveWfPer_ = 100;
-	int numChains_ = 16;
-
-	std::unique_ptr<yannq::Optimizer<T> > opt_;
-
 public:
-	RunRBM(const unsigned int N, const unsigned int alpha, bool useBias, std::ostream& logger)
-		: qs_(N, alpha*N, useBias), logger_{logger}
+	RunRBM(const unsigned int N, const unsigned int alpha,
+			bool useBias, std::ostream& logger)
+		: AbstractRunner<T, RandomEngine, RunRBM<T, RandomEngine>>
+		  	(N, alpha, useBias, logger)
 	{
-		std::random_device rd;
-		re_.seed(rd());
 	}
 
-	/**
-	 * Set parameter for diagonal shift regularization.
-	 * At \f$n\f$-th step, the shile is calculated by \f$\max[\lambda_{\rm ini}\times \lambda_{\rm decay}^n, \lambda_{\rm min}]\f$.
-	 */
-	void setLambda(double lambdaIni, double lambdaDecay, double lambdaMin)
-	{
-		lambdaIni_ = lambdaIni;
-		lambdaDecay_ = lambdaDecay;
-		lambdaMin_ = lambdaMin;
-	}
-
-	/** 
-	 * \brief Load initial weight from a file
-	 */
-	void initializeFrom(const path& filePath)
-	{
-		using std::ios;
-		logger_ << "Loading initial weights from " << filePath << std::endl;
-
-		std::fstream in(filePath, ios::binary | ios::in);
-		cereal::BinaryInputArchive ia(in);
-		std::unique_ptr<MachineT> qsLoad{nullptr};
-		ia(qsLoad);
-		qs_ = *qsLoad;
-	}
-
-	/** 
-	 * \brief Initialize the machine to random weights
-	 */
-	void initializeRandom(double wIni)
-	{
-		logger_ << "Set initial weights randomly from N(0.0, " << wIni << "^2)" << std::endl;
-		qs_.initializeRandom(re_, wIni);
-	}
-
-	/**
-	 * \brief Set optimizer from json parameter
-	 */
-	void setOptimizer(const json& optParam)
-	{
-		opt_ = yannq::OptimizerFactory<T>::getInstance().createOptimizer(optParam);
-	}
-	
-	/**
-	 * \brief Set the number of iterations and how often to save
-	 *
-	 * \param maxIter The number of iterations to use
-	 * \param saveWfPer Save the parameters for each saveWfPer epochs
-	 */
-	void setIterParams(const int maxIter, const int saveWfPer)
-	{
-		maxIter_ = maxIter;
-		saveWfPer_ = saveWfPer;
-	}
-
-	/**
-	 * \brief Set parameters for conjugate gradient solver for SR
-	 * 
-	 * \param useCG Whether to use conjugate gradient solver
-	 * \param cgTol Tolereance for CG solver
-	 * \param beta1 Exponential decay momentum for the energy gradient
-	 * \param beta2 Exponential decay momentum for the quantum Fisher matrix
-	 */
-	void setSolverParams(const bool useCG, const double cgTol = 1e-4, const double beta1 = 0.0, const double beta2 = 0.0)
+	void setSolverParams(bool useCG, double cgTol = 1e-4)
 	{
 		useCG_ = useCG;
 		cgTol_ = cgTol;
+	}
+
+	void setMomentum(double beta1 = 0.0, double beta2 = 0.0)
+	{
 		beta1_ = beta1;
 		beta2_ = beta2;
 	}
 
-	const MachineT& getQs() const &
-	{
-		return qs_;
-	}
-
-	MachineT getQs() && 
-	{
-		return qs_;
-	}
-
-	unsigned int getDim() const
-	{
-		return qs_.getDim();
-	}
-
-	json getParams() const
-	{
-		json j;
-		j["Optimizer"] = opt_->params();
-		
-		json SR = 
-		{
-			{"lambda_ini", lambdaIni_},
-			{"lambda_decay", lambdaDecay_},
-			{"lambda_min", lambdaMin_},
-		};
-
-		j["solver"] = {
-			{"SR", SR},
-			{"beta1", beta1_},
-			{"beta2", beta2_}
-		};
-		j["numThreads"] = Eigen::nbThreads();
-		j["machine"] = qs_.params();
-
-
-		return j;
-	}
-
 	//if usePT
 	template<class Sweeper> 
-	auto createSamplerPT(Sweeper& sweeper, uint32_t numChains)
+	auto createSamplerPT(Sweeper& sweeper, uint32_t numChains) const
 	{
-		return SamplerPT<MachineT, std::default_random_engine, RBMStateValue<T>, Sweeper>(qs_, numChains, sweeper);
+		return SamplerPT<MachineT, std::default_random_engine, RBMStateValue<T>, Sweeper>(this->qs_, numChains, sweeper);
 	}
 	//if not usePT
 	template<class Sweeper> 
-	auto createSamplerMT(Sweeper& sweeper)
+	auto createSamplerMT(Sweeper& sweeper) const
 	{
-		return Sampler<MachineT, std::default_random_engine, RBMStateValueMT<T>, Sweeper>(qs_, sweeper);
+		return Sampler<MachineT, std::default_random_engine, RBMStateValueMT<T>, Sweeper>(this->qs_, sweeper);
 	}
 	
 	template<class Iterable>
-	auto createSamplerExact(Iterable&& basis)
+	auto createSamplerExact(Iterable&& basis) const
 	{
-		return ExactSampler<MachineT, std::default_random_engine>(qs_, std::forward<Iterable>(basis));
+		return ExactSampler<MachineT, std::default_random_engine>(this->qs_, std::forward<Iterable>(basis));
 	}
 	
 	/** \brief Run the calculation
@@ -241,11 +113,16 @@ public:
 		using MatrixT = typename MachineT::MatrixType;
 		using VectorT = typename MachineT::VectorType;
 
-		SRMat<MachineT,Hamiltonian> srm(qs_, std::forward<Hamiltonian>(ham));
+		if(!this->threadsInitiialized_)
+			this->initializeThreads();
+		if(!this->weightsInitialized_)
+			this->initializeRandom();
+
+		SRMat<MachineT,Hamiltonian> srm(this->qs_, std::forward<Hamiltonian>(ham));
 		
 		sampler.initializeRandomEngine();
 
-		const int dim = qs_.getDim();
+		const int dim = this->getDim();
 
 		if(nSamples == -1)
 			nSamples = dim;
@@ -255,17 +132,24 @@ public:
 		ObsAvg<VectorT> gradAvg(beta1_, VectorT::Zero(dim));
 		ObsAvg<MatrixT> fisherAvg(beta2_, MatrixT::Zero(dim,dim));
 
-		for(int ll = 0; ll <= maxIter_; ll++)
+		//These should be changed into structured binding for C++17
+		double lambdaIni, lambdaDecay, lambdaMin;
+		std::tie(lambdaIni, lambdaDecay, lambdaMin) 
+			= this->getLambdas();
+		int maxIter, saveWfPer;
+		std::tie(maxIter, saveWfPer) = this->getIterParams();
+
+		for(int ll = 0; ll <= maxIter; ll++)
 		{
-			logger_ << "Epochs: " << ll << "\t# of samples:" << nSamples << 
+			this->logger() << "Epochs: " << ll << "\t# of samples:" << nSamples << 
 				"\t# of discard samples: " << nSamplesDiscard << std::endl;
-			if((saveWfPer_ != 0) && (ll % saveWfPer_ == 0))
+			if((saveWfPer != 0) && (ll % saveWfPer == 0))
 			{
 				char fileName[30];
 				sprintf(fileName, "w%04d.dat",ll);
 				std::fstream out(fileName, std::ios::binary | std::ios::out);
 				{
-					auto qsToSave = std::make_unique<MachineT>(qs_);
+					auto qsToSave = std::make_unique<MachineT>(this->qs_);
 					cereal::BinaryOutputArchive oa(out);
 					oa(qsToSave);
 				}
@@ -283,7 +167,7 @@ public:
 
 			double currE = srm.eloc();
 			
-			double lambda = std::max(lambdaIni_*pow(lambdaDecay_,ll), lambdaMin_);
+			double lambda = std::max(lambdaIni*pow(lambdaDecay,ll), lambdaMin);
 			VectorT v;
 			double cgErr;
 
@@ -302,13 +186,14 @@ public:
 				v = llt.solve(gradAvg.getAvg());
 				cgErr = 0;
 			}
-			VectorT optV = opt_->getUpdate(v);
+
+			VectorT optV = this->opt_->getUpdate(v);
 
 			auto slv_dur = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - slv_start).count();
 
 			double nv = v.norm();
 
-			qs_.updateParams(optV);
+			this->qs_.updateParams(optV);
 
 			callback(ll, currE, nv, cgErr, smp_dur, slv_dur);
 		}

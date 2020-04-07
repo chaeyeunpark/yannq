@@ -1,121 +1,22 @@
 #ifndef YANNQ_RUNNERS_RUNRBMEXACT_HPP
 #define YANNQ_RUNNERS_RUNRBMEXACT_HPP
-#include <chrono>
 
-#if defined(__GNUC__) && (__GNUC__ <= 7)
-#include <experimental/filesystem>
-#else
-#include <filesystem>
-#endif
-#include <cereal/cereal.hpp>
-#include <cereal/archives/binary.hpp>
-#include <nlohmann/json.hpp>
-#include <ios>
-
-#include "Yannq.hpp"
-#include "Serializers/SerializeRBM.hpp"
+#include "AbstractRunner.hpp"
 
 namespace yannq
 {
 template<typename T, class RandomEngine = std::default_random_engine>
 class RunRBMExact
+	: public AbstractRunner<T, RandomEngine, RunRBMExact<T, RandomEngine> >
 {
 public:
-	using MachineT = yannq::RBM<T>;
-	using json = nlohmann::json;
-
-#if defined(__GNUC__) && (__GNUC__ <= 7)
-	using path = std::experimental::filesystem::path;
-#else
-	using path = std::filesystem::path;
-#endif
-
-private:
-	MachineT qs_;
-	std::ostream& logger_;
-	RandomEngine re_;
-
-	bool useCG_ = false;
-	double lambdaIni_ = 1e-3;
-	double lambdaDecay_ = 1.0;
-	double lambdaMin_ = 1e-4;
-
-	int maxIter_ = 2000;
-	int saveWfPer_ = 100;
-	int numChains_ = 16;
-
-	std::unique_ptr<yannq::Optimizer<T> > opt_;
+	using MachineT = typename AbstractRunner<T, RandomEngine, RunRBMExact<T, RandomEngine>>::MachineT;
 
 public:
 	RunRBMExact(const uint32_t N, const int alpha, bool useBias, std::ostream& logger)
-		: qs_(N, alpha*N, useBias), logger_{logger}
+		: AbstractRunner<T, RandomEngine, RunRBMExact<T, RandomEngine>>
+		  	(N, alpha, useBias, logger)
 	{
-		std::random_device rd;
-		re_.seed(rd());
-	}
-
-	void setLambda(double lambdaIni, double lambdaDecay, double lambdaMin)
-	{
-		lambdaIni_ = lambdaIni;
-		lambdaDecay_ = lambdaDecay;
-		lambdaMin_ = lambdaMin;
-	}
-
-	void initializeFrom(const path& filePath)
-	{
-		using std::ios;
-		logger_ << "Loading initial weights from " << filePath << std::endl;
-
-		std::fstream in(filePath, ios::binary | ios::in);
-		cereal::BinaryInputArchive ia(in);
-		std::unique_ptr<MachineT> qsLoad{nullptr};
-		ia(qsLoad);
-		qs_ = *qsLoad;
-	}
-
-	void initializeRandom(double wIni)
-	{
-		logger_ << "Set initial weights randomly from N(0.0, " << wIni << "^2)" << std::endl;
-		qs_.initializeRandom(re_, wIni);
-	}
-
-	void setOptimizer(const json& optParam)
-	{
-		opt_ = std::move(yannq::OptimizerFactory<T>::getInstance().createOptimizer(optParam));
-	}
-
-	void setIterParams(const int maxIter, const int saveWfPer)
-	{
-		maxIter_ = maxIter;
-		saveWfPer_ = saveWfPer;
-	}
-
-	const MachineT& getQs() const &
-	{
-		return qs_;
-	}
-	MachineT getQs() && 
-	{
-		return qs_;
-	}
-
-	json getParams() const
-	{
-		json j;
-		j["Optimizer"] = opt_->params();
-		
-		json SR = 
-		{
-			{"lambdaIni", lambdaIni_},
-			{"lambdaDecay", lambdaDecay_},
-			{"lambdaMin", lambdaMin_},
-		};
-		j["SR"] = SR;
-		j["numThreads"] = Eigen::nbThreads();
-		j["machine"] = qs_.params();
-		j["sampler"] = "Exact";
-
-		return j;
 	}
 
 	template<class Callback, class Basis, class Hamiltonian>
@@ -128,19 +29,32 @@ public:
 		using MatrixT = typename MachineT::MatrixType;
 		using VectorT = typename MachineT::VectorType;
 
-		const int dim = qs_.getDim();
-		SRMatExact<MachineT> srex(qs_, std::forward<Basis>(basis), ham);
+		if(!this->threadsInitiialized_)
+			this->initializeThreads();
+		if(!this->weightsInitialized_)
+			this->initializeRandom();
 
-		for(int ll = 0; ll <= maxIter_; ll++)
+		const int dim = this->getDim();
+
+		//These should be changed into structured binding for C++17
+		double lambdaIni, lambdaDecay, lambdaMin;
+		std::tie(lambdaIni, lambdaDecay, lambdaMin) 
+			= this->getLambdas();
+		int maxIter, saveWfPer;
+		std::tie(maxIter, saveWfPer) = this->getIterParams();
+
+		SRMatExact<MachineT> srex(this->qs_, std::forward<Basis>(basis), ham);
+
+		for(int ll = 0; ll <= maxIter; ll++)
 		{
-			logger_ << "Epochs: " << ll << std::endl;
-			if((saveWfPer_ != 0) && (ll % saveWfPer_ == 0))
+			this->logger() << "Epochs: " << ll << std::endl;
+			if((saveWfPer != 0) && (ll % saveWfPer == 0))
 			{
 				char fileName[30];
 				sprintf(fileName, "w%04d.dat",ll);
 				std::fstream out(fileName, std::ios::binary | std::ios::out);
 				{
-					auto qsToSave = std::make_unique<MachineT>(qs_);
+					auto qsToSave = std::make_unique<MachineT>(this->qs_);
 					cereal::BinaryOutputArchive oa(out);
 					oa(qsToSave);
 				}
@@ -150,19 +64,16 @@ public:
 
 			double currE = srex.eloc();
 			auto corrMat = srex.corrMat();
-			double lambda = std::max(lambdaIni_*pow(lambdaDecay_,ll), lambdaMin_);
+			double lambda = std::max(lambdaIni*pow(lambdaDecay,ll), lambdaMin);
 			corrMat += lambda*MatrixT::Identity(dim,dim);
 			Eigen::LLT<Eigen::MatrixXcd> llt(corrMat);
 
 			auto grad = srex.energyGrad();
 			auto v = llt.solve(grad);
-			auto optV = opt_->getUpdate(v);
+			auto optV = this->opt_->getUpdate(v);
 
-			qs_.updateParams(optV);
-
+			this->qs_.updateParams(optV);
 			double nv = v.norm();
-
-			qs_.updateParams(optV);
 
 			callback(ll, currE, nv);
 		}
