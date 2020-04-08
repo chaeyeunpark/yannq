@@ -8,8 +8,7 @@
 #include <cassert>
 #include <Eigen/Eigen>
 
-#include <cereal/access.hpp> 
-#include <cereal/types/memory.hpp>
+#include <tbb/tbb.h>
 
 #include <nlohmann/json.hpp>
 
@@ -20,7 +19,7 @@
 namespace yannq
 {
 //! \ingroup Machines
-//! RBM machine that uses biases
+//! RBM machine
 template<typename T>
 class RBM
 {
@@ -35,8 +34,8 @@ public:
 	using VectorConstRefType = Eigen::Ref<const VectorType>;
 
 private:
-	int n_; //# of qubits
-	int m_; //# of hidden units
+	uint32_t n_; //# of qubits
+	uint32_t m_; //# of hidden units
 
 	bool useBias_;
 
@@ -56,21 +55,26 @@ public:
 			{"m", m_}
 		};
 	}
-	inline int getN() const
+	inline uint32_t getN() const
 	{
 		return n_;
 	}
-	inline int getM() const
+	inline uint32_t getM() const
 	{
 		return m_;
 	}
 
-	inline int getDim() const
+	inline uint32_t getDim() const
 	{
 		if(useBias_)
 			return n_*m_ + n_ + m_;
 		else
 			return n_*m_;
+	}
+
+	inline bool useBias() const
+	{
+		return useBias_;
 	}
 
 	inline VectorType calcTheta(const Eigen::VectorXi& sigma) const
@@ -84,7 +88,7 @@ public:
 		return W_.transpose()*h + a_;
 	}
 	
-	RBM(int n, int m, bool useBias = true)
+	RBM(uint32_t n, uint32_t m, bool useBias = true)
 		: n_(n), m_(m), useBias_(useBias),
 		W_(m,n), a_(n), b_(m)
 	{
@@ -95,7 +99,12 @@ public:
 		}
 	}
 
-	void resize(int n, int m)
+	void setUseBias(bool newBias)
+	{
+		useBias_ = newBias;
+	}
+
+	void resize(uint32_t n, uint32_t m)
 	{
 		n_ = n;
 		m_ = m;
@@ -105,7 +114,7 @@ public:
 		W_.resize(m,n);
 	}
 
-	void conservativeResize(int newM)
+	void conservativeResize(uint32_t newM)
 	{
 		VectorType newB = VectorType::Zero(newM);
 		newB.head(m_) = b_;
@@ -144,12 +153,16 @@ public:
 	void setA(const VectorConstRefType& A)
 	{
 		assert(A.size() == a_.size());
+		if(!useBias_)
+			return ;
 		a_ = A;
 	}
 
 	void setB(const VectorConstRefType& B)
 	{
 		assert(B.size() == b_.size());
+		if(!useBias_)
+			return ;
 		b_ = B;
 	}
 
@@ -174,15 +187,15 @@ public:
 
 	~RBM() = default;
 
-	T W(int j, int i) const
+	T W(uint32_t j, uint32_t i) const
 	{
 		return W_.coeff(j,i);
 	}
-	T A(int i) const
+	T A(uint32_t i) const
 	{
 		return a_.coeff(i);
 	}
-	T B(int j) const
+	T B(uint32_t j) const
 	{
 		return b_.coeff(j);
 	}
@@ -260,18 +273,18 @@ public:
 		std::normal_distribution<double> nd{0, sigma};
 		if(useBias_)
 		{
-			for(int i = 0; i < n_; i++)
+			for(uint32_t i = 0u; i < n_; i++)
 			{
 				a_.coeffRef(i) = nd(re);
 			}
-			for(int i = 0; i < m_; i++)
+			for(uint32_t i = 0u; i < m_; i++)
 			{
 				b_.coeffRef(i) = nd(re);
 			}
 		}
-		for(int j = 0; j < n_; j++)
+		for(uint32_t j = 0u; j < n_; j++)
 		{
-			for(int i = 0; i < m_; i++)
+			for(uint32_t i = 0u; i < m_; i++)
 			{
 				W_.coeffRef(i, j) = nd(re);
 			}
@@ -287,18 +300,18 @@ public:
 		
 		if(useBias_)
 		{
-			for(int i = 0; i < n_; i++)
+			for(uint32_t i = 0u; i < n_; i++)
 			{
 				a_.coeffRef(i) = T{nd(re), nd(re)};
 			}
-			for(int i = 0; i < m_; i++)
+			for(uint32_t i = 0u; i < m_; i++)
 			{
 				b_.coeffRef(i) = T{nd(re), nd(re)};
 			}
 		}
-		for(int j = 0; j < n_; j++)
+		for(uint32_t j = 0; j < n_; j++)
 		{
-			for(int i = 0; i < m_; i++)
+			for(uint32_t i = 0u; i < m_; i++)
 			{
 				W_.coeffRef(i, j) = T{nd(re), nd(re)};
 			}
@@ -323,7 +336,7 @@ public:
 
 		VectorType ss = std::get<0>(t).template cast<T>();
 		T s = a_.transpose()*ss;
-		for(int j = 0; j < m_; j++)
+		for(uint32_t j = 0u; j < m_; j++)
 		{
 			s += logCosh(std::get<1>(t).coeff(j));
 		}
@@ -347,7 +360,7 @@ public:
 		VectorType tanhs = std::get<1>(t).array().tanh(); 
 		VectorType sigma = std::get<0>(t).template cast<ScalarType>();
 		
-		for(int i = 0; i < n_; i++) 
+		for(uint32_t i = 0u; i < n_; i++) 
 		{ 
 			res.segment(i*m_, m_) = sigma(i)*tanhs; 
 		}
@@ -358,22 +371,9 @@ public:
 		return res; 
 	} 
 
-	uint32_t widx(int i, int j) const
+	uint32_t widx(uint32_t i, uint32_t j) const
 	{
 		return i*m_ + j;
-	}
-
-
-	/* Serialization using cereal */
-	template<class Archive>
-	void serialize(Archive& ar)
-	{
-		ar(useBias_);
-		ar(n_,m_);
-		ar(W_);
-		if(!useBias_)
-			return ;
-		ar(a_,b_);
 	}
 
 };
@@ -382,65 +382,35 @@ public:
 template<typename T>
 typename RBM<T>::VectorType getPsi(const RBM<T>& qs, bool normalize)
 {
-	const int n = qs.getN();
-	typename RBM<T>::VectorType psi(1<<n);
-#pragma omp parallel for schedule(dynamic, 8)
-	for(uint64_t i = 0; i < (1u<<n); i++)
+	const uint32_t n = qs.getN();
+	typename RBM<T>::VectorType psi(1u<<n);
+	tbb::parallel_for(0u, (1u << n),
+		[n, &qs, &psi](uint32_t idx)
 	{
-		auto s = toSigma(n, i);
-		psi(i) = qs.coeff(std::make_tuple(s, qs.calcTheta(s)));
-	}
+		auto s = toSigma(n, idx);
+		psi(idx) = qs.coeff(std::make_tuple(s, qs.calcTheta(s)));
+	});
 	if(normalize)
 		psi.normalize();
 	return psi;
 }
 
-template<typename T>
-typename RBM<T>::VectorType getPsi(const RBM<T>& qs, const std::vector<uint32_t>& basis, bool normalize)
+template<typename T, typename Iterable> //Iterable must be random iterable
+typename RBM<T>::VectorType getPsi(const RBM<T>& qs, Iterable&& basis, bool normalize)
 {
-	const int n = qs.getN();
+	const uint32_t n = qs.getN();
 	typename RBM<T>::VectorType psi(basis.size());
-#pragma omp parallel for schedule(dynamic, 8)
-	for(uint64_t i = 0; i < basis.size(); i++)
+
+	tbb::parallel_for(std::size_t(0u), basis.size(),
+		[n, &qs, &psi, &basis](uint32_t idx)
 	{
-		auto s = toSigma(n, basis[i]);
-		psi(i) = qs.coeff(qs.makeData(s));
-	}
+		auto s = toSigma(n, basis[idx]);
+		psi(idx) = qs.coeff(qs.makeData(s));
+	});
 	if(normalize)
 		psi.normalize();
 	return psi;
 }
 }//namespace yannq
 
-namespace cereal
-{
-	template <typename T>
-	struct LoadAndConstruct<yannq::RBM<T> >
-	{
-		template<class Archive>
-		static void load_and_construct(Archive& ar, cereal::construct<yannq::RBM<T> >& construct)
-		{
-			bool useBias;
-			ar(useBias);
-
-			int n,m;
-			ar(n, m);
-
-			construct(n, m, useBias);
-			
-			Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> W;
-			ar(W);
-			construct->setW(W);
-
-			if(!useBias)
-				return ;
-			Eigen::Matrix<T, Eigen::Dynamic, 1> A;
-			Eigen::Matrix<T, Eigen::Dynamic, 1> B;
-			ar(A, B);
-
-			construct->setA(A);
-			construct->setB(B);
-		}
-	};
-}//namespace cereal
 #endif//YANNQ_MACHINES_RBM_HPP

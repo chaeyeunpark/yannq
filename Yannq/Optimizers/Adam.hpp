@@ -58,7 +58,7 @@ public:
 		: alpha_(params.value("alpha", DEFAULT_PARAMS[0])), 
 			beta1_(params.value("beta1", DEFAULT_PARAMS[1])),
 			beta2_(params.value("beta2", DEFAULT_PARAMS[2])),
-			eps_(params.value("beta2", DEFAULT_PARAMS[3])),
+			eps_(params.value("eps", DEFAULT_PARAMS[3])),
 			t_{0}
 	{
 	}

@@ -12,6 +12,8 @@
 
 #include <Basis/BasisFull.hpp>
 
+#include <tbb/tbb.h>
+
 using namespace yannq;
 using std::ios;
 
@@ -22,6 +24,8 @@ int main(int argc, char** argv)
 
 	std::random_device rd;
 	std::default_random_engine re(rd());
+
+	tbb::task_scheduler_init init(8);
 
 	std::cout << std::setprecision(8);
 

@@ -183,6 +183,32 @@ void TestRBMState(bool useBias)
 		}
 	}
 
+	SECTION("Test other ratio")
+	{
+		for(int i = 0; i < 100; i++)
+		{
+			rbm.initializeRandom(re, 1.0);
+			auto psi = getPsi(rbm, true);
+
+			for(int k = 0; k < 10; k++)
+			{
+				Eigen::VectorXi sigma = randomSigma(N, re);
+				uint32_t v = toValue(sigma);
+				RBMState<T> st(rbm, sigma);
+
+				for(int m = 1; m < 6; m++)
+				{
+					Eigen::VectorXi sigma2 = randomSigma(N, re);
+					uint32_t v2 = toValue(sigma2);
+					RBMState<T> st2(rbm, sigma2);
+					auto logRat = std::log(psi(v2)) - std::log(psi(v));
+					REQUIRE_THAT( st.logRatio(st2), IsSameT(logRat, eps));
+					REQUIRE_THAT( st.logRatioRe(st2), IsSameRealT(std::real(logRat), eps));
+				}
+			}
+		}
+	}
+
 	/* As State class uses cached data,
 	 * we need to check flip update cache corretly
 	 */

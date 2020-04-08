@@ -8,14 +8,19 @@
 
 #include "ED/ConstructSparseMat.hpp"
 #include "Utilities/Utility.hpp"
+#include "Observables/ConstructDeltaExact.hpp"
 
 namespace yannq
 {
+//! \addtogroup GroundState
 
-template<typename Machine, typename ScalarType = typename Machine::ScalarType>
+//! \ingroup GroundState
+//! This class calculate the quantum Fisher matrix by exactly constructing the quantum state.
+template<typename Machine>
 class SRMatExact
 {
 public:
+	using ScalarType = typename Machine::ScalarType;
 	using RealScalarType = typename remove_complex<ScalarType>::type;
 
 	using MatrixType = typename Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>;
@@ -24,7 +29,7 @@ public:
 private:
 	const uint32_t n_;
 	const Machine& qs_;
-	std::vector<uint32_t> basis_;
+	tbb::concurrent_vector<uint32_t> basis_;
 
 	Eigen::SparseMatrix<RealScalarType> ham_;
 
@@ -59,28 +64,19 @@ public:
 		energyVar_ = static_cast<std::complex<double> >(k.adjoint()*k).real();
 		energyVar_ -= energy_*energy_;
 		
-		deltas_.setZero(basis_.size(),qs_.getDim());
-#pragma omp parallel
-		{
-			MatrixType local(8, qs_.getDim());
+		deltas_ = constructDeltaExact(qs_, basis_);
 
-#pragma omp for schedule(dynamic)
-			for(uint32_t k = 0; k < basis_.size(); k+=8)
-			{
-				for(int l = 0; l < 8; ++l)
-				{
-					local.row(l) = qs_.logDeriv(qs_.makeData(toSigma(n_, basis_[k+l])));
-				}
-				deltas_.block(k, 0, 8, qs_.getDim()) = local;
-			}
-		}
 		deltasPsis_ = st.cwiseAbs2().asDiagonal()*deltas_; 
 		oloc_ = deltasPsis_.colwise().sum();
 		grad_ = (st.asDiagonal()*deltas_).adjoint()*k;
 		grad_ -= t*oloc_.conjugate();
 	}
 
-	VectorType oloc() const
+	const VectorType& oloc() const&
+	{
+		return oloc_;
+	}
+	VectorType oloc() &&
 	{
 		return oloc_;
 	}
@@ -112,10 +108,12 @@ public:
 	SRMatExact(const Machine& qs, Iterable&& basis, ColFunc&& col)
 	  : n_{qs.getN()}, qs_(qs)
 	{
-		for(auto elt: basis)
+		tbb::parallel_do(basis.begin(), basis.end(), 
+				[&](uint32_t elt)
 		{
 			basis_.emplace_back(elt);
-		}
+		});
+		tbb::parallel_sort(basis_.begin(), basis_.end());
 		ham_ = edp::constructSubspaceMat<double>(std::forward<ColFunc>(col), basis_);
 	}
 };

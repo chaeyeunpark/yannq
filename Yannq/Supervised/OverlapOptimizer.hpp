@@ -1,6 +1,9 @@
 #ifndef YANNQ_SUPERVISED_OVERLAPOPTIMZER_HPP
 #define YANNQ_SUPERVISED_OVERLAPOPTIMZER_HPP
 #include <Eigen/Dense>
+
+#include <tbb/tbb.h>
+
 #include "Machines/RBM.hpp"
 
 namespace yannq
@@ -40,15 +43,15 @@ public:
 		dervs_.setZero();
 		ratios_.setZero();
 
-#pragma omp parallel for schedule(static,8)
-		for(std::size_t n = 0; n < rs.size(); n++)
+		tbb::parallel_for(0u, rs.size(), 
+			[&](uint32_t idx)
 		{
-			const auto elt = rs[n];
+			const auto elt = rs[idx];
 			auto smp = construct_state<typename MachineStateTypes<Machine>::StateRef>(qs_, elt);
 
-			dervs_.row(n) = qs_.logDeriv(elt);
-			ratios_(n) = target_(toValue(smp.getSigma()))/qs_.coeff(elt);
-		}
+			dervs_.row(idx) = qs_.logDeriv(elt);
+			ratios_(idx) = target_(toValue(smp.getSigma()))/qs_.coeff(elt);
+		});
 		ov_ = ratios_.mean();
 	}
 

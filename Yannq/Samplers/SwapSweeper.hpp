@@ -21,7 +21,8 @@ public:
 	{
 		std::uniform_real_distribution<> urd(0.0,1.0);
 		std::uniform_int_distribution<> uid(0,n_-1);
-		for(int sidx = 0; sidx < n_*nSweep_; sidx++)
+		int toSweep = n_*nSweep_;
+		for(int sidx = 0; sidx < toSweep; sidx++)
 		{
 			int swap1 = uid(re);
 			int swap2 = uid(re);
@@ -29,7 +30,7 @@ public:
 			{
 				continue ;
 			}
-			double p = std::min(1.0,exp(beta*2.0*sv.logRatioRe(swap1, swap2)));
+			double p = std::min(1.0, exp(beta*2.0*sv.logRatioRe(swap1, swap2)));
 			double u = urd(re);
 			if(u < p)//accept
 			{

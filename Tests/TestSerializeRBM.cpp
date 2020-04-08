@@ -2,7 +2,7 @@
 #include <catch.hpp>
 
 #include <Machines/RBM.hpp>
-//#include <Serializers/SerializeRBM.hpp>
+#include <Serializers/SerializeRBM.hpp>
 #include <cereal/archives/binary.hpp>
 #include <cereal/cereal.hpp>
 #include <sstream>
@@ -13,26 +13,48 @@ TEMPLATE_TEST_CASE("test RBM serialization", "[RBM][serialization]",
 {
 	std::random_device rd;
 	std::default_random_engine re{rd()};
-	std::stringstream ss(std::ios::binary | std::ios::in | std::ios::out);
 	
 	using Machine = yannq::RBM<TestType>;
 
 	for(bool useBias: {true,false})
 	{
-		auto rbm = std::make_unique<Machine>(20, 40, useBias);
-		rbm->initializeRandom(re, 0.1);
-
+		for(int alpha : {1,2,3,4})
 		{
-			cereal::BinaryOutputArchive oarchive( ss );
-			oarchive(rbm);
-		}
-		
-		{
-			cereal::BinaryInputArchive iarchive( ss );
-			std::unique_ptr<Machine> deserialized{nullptr};
-			iarchive(deserialized);
+			auto rbm = std::make_unique<Machine>(20, alpha*20, useBias);
+			rbm->initializeRandom(re, 1.0);
 
-			REQUIRE(*rbm == *deserialized);
+			{
+			std::stringstream ss(std::ios::binary | std::ios::in | std::ios::out);
+			{
+				cereal::BinaryOutputArchive oarchive( ss );
+				oarchive(rbm);
+			}
+			
+			{
+				cereal::BinaryInputArchive iarchive( ss );
+				std::unique_ptr<Machine> deserialized{nullptr};
+				iarchive(deserialized);
+
+				REQUIRE(*rbm == *deserialized);
+			}
+			}
+			{
+			std::stringstream ss(std::ios::binary | std::ios::in | std::ios::out);
+			{
+				cereal::BinaryOutputArchive oarchive( ss );
+				oarchive(*rbm);
+			}
+			
+			{
+				cereal::BinaryInputArchive iarchive( ss );
+				Machine deserialized(1,1);
+				iarchive(deserialized);
+
+				REQUIRE(*rbm == deserialized);
+			}
+			}
+
+
 		}
 	}
 }

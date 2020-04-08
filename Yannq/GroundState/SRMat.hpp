@@ -2,7 +2,9 @@
 #define YANNQ_GROUNDSTATES_SRMAT_HPP_HPP
 #include <Eigen/Core>
 #include <Eigen/Dense>
-#include<Eigen/IterativeLinearSolvers>
+#include <Eigen/IterativeLinearSolvers>
+
+#include <tbb/tbb.h>
 
 #include "Utilities/Utility.hpp"
 #include "Observables/FisherMatrix.hpp"
@@ -53,14 +55,14 @@ public:
 		fisher_.initIter(nsmp);
 		energy_.initIter(nsmp);
 
-#pragma omp parallel for schedule(static,8)
-		for(std::size_t n = 0; n < rs.size(); n++)
+		tbb::parallel_for(std::size_t(0u), rs.size(),
+			[&](uint32_t idx)
 		{
-			const auto& elt = rs[n];
+			const auto& elt = rs[idx];
 			auto state = construct_state<typename MachineStateTypes<Machine>::StateRef>(qs_, elt);
-			fisher_.eachSample(n, elt, state);
-			energy_.eachSample(n, elt, state);
-		}
+			fisher_.eachSample(idx, elt, state);
+			energy_.eachSample(idx, elt, state);
+		});
 
 		fisher_.finIter();
 		energy_.finIter();
@@ -76,7 +78,7 @@ public:
 	{
 		return fisher_.oloc();
 	}
-	VectorType&& oloc() &&
+	VectorType oloc() &&
 	{
 		return fisher_.oloc();
 	}
@@ -119,12 +121,20 @@ public:
 	VectorType solveCG(double shift, double tol = 1e-4)
 	{
 		fisher_.setShift(shift);
-		Eigen::ConjugateGradient<FisherMatrix<Machine>, Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
+		Eigen::ConjugateGradient<
+			FisherMatrix<Machine>,
+			Eigen::Lower|Eigen::Upper,
+			Eigen::IdentityPreconditioner> cg;
 		cg.compute(fisher_);
 		cg.setTolerance(tol);
 		return cg.solve(energyGrad_);
 	}
 
+	/*! \brief Solve the optimizing vector by solving the linear equation exactly..
+	 *
+	 * We solve \f$ (S + \epsilon \mathbb{1})v = f \f$ where \f$ f \f$ is the gradient of the energy expectation values. 
+	 * \param shift \f$ \epsilon \f$ that controls regularization
+	 */
 	VectorType solveExact(double shift)
 	{
 		MatrixType mat = fisher_.corrMat();

@@ -1,18 +1,11 @@
 #ifndef YANNQ_RUNNERS_RUNRBM_HPP
 #define YANNQ_RUNNERS_RUNRBM_HPP
-#include <chrono>
 
-#if defined(__GNUC__) && (__GNUC__ <= 7)
-#include <experimental/filesystem>
-#else
-#include <filesystem>
-#endif
-#include <cereal/cereal.hpp>
-#include <cereal/archives/binary.hpp>
-#include <nlohmann/json.hpp>
-#include <ios>
+#include "AbstractRunner.hpp"
 
-#include "Yannq.hpp"
+#include "Samplers/Sampler.hpp"
+#include "Samplers/SamplerPT.hpp"
+#include "Samplers/ExactSampler.hpp"
 
 namespace yannq
 {
@@ -43,168 +36,93 @@ public:
 	}
 };
 
+//! \addtogroup Runners
+
+//! \ingroup Runners
 template<typename T, class RandomEngine = std::default_random_engine>
 class RunRBM
+	: public AbstractRunner<T, RandomEngine, RunRBM<T, RandomEngine>>
 {
 public:
-	using MachineT = yannq::RBM<T>;
-	using json = nlohmann::json;
-
-#if defined(__GNUC__) && (__GNUC__ <= 7)
-	using path = std::experimental::filesystem::path;
-#else
-	using path = std::filesystem::path;
-#endif
+	using MachineT = typename AbstractRunner<T, RandomEngine, RunRBM<T, RandomEngine>>::MachineT;
 
 private:
-	MachineT qs_;
-	std::ostream& logger_;
-	RandomEngine re_;
-
 	bool useCG_ = false;
 	double cgTol_ = 1e-4;
-
-	double lambdaIni_ = 1e-3;
-	double lambdaDecay_ = 1.0;
-	double lambdaMin_ = 1e-4;
 
 	double beta1_ = 0.0;
 	double beta2_ = 0.0;
 
-	
-	int maxIter_ = 2000;
-	int saveWfPer_ = 100;
-	int numChains_ = 16;
-
-	std::unique_ptr<yannq::Optimizer<T> > opt_;
-
 public:
-	RunRBM(const unsigned int N, const unsigned int alpha, bool useBias, std::ostream& logger)
-		: qs_(N, alpha*N, useBias), logger_{logger}
+	RunRBM(const unsigned int N, const unsigned int alpha,
+			bool useBias, std::ostream& logger)
+		: AbstractRunner<T, RandomEngine, RunRBM<T, RandomEngine>>
+		  	(N, alpha, useBias, logger)
 	{
-		std::random_device rd;
-		re_.seed(rd());
 	}
 
-	void setLambda(double lambdaIni, double lambdaDecay, double lambdaMin)
-	{
-		lambdaIni_ = lambdaIni;
-		lambdaDecay_ = lambdaDecay;
-		lambdaMin_ = lambdaMin;
-	}
-
-	void initializeFrom(const path& filePath)
-	{
-		using std::ios;
-		logger_ << "Loading initial weights from " << filePath << std::endl;
-
-		std::fstream in(filePath, ios::binary | ios::in);
-		cereal::BinaryInputArchive ia(in);
-		std::unique_ptr<MachineT> qsLoad{nullptr};
-		ia(qsLoad);
-		qs_ = *qsLoad;
-	}
-
-	void initializeRandom(double wIni)
-	{
-		logger_ << "Set initial weights randomly from N(0.0, " << wIni << "^2)" << std::endl;
-		qs_.initializeRandom(re_, wIni);
-	}
-
-	void setOptimizer(const json& optParam)
-	{
-		opt_ = yannq::OptimizerFactory<T>::getInstance().createOptimizer(optParam);
-	}
-
-	void setIterParams(const int maxIter, const int saveWfPer)
-	{
-		maxIter_ = maxIter;
-		saveWfPer_ = saveWfPer;
-	}
-
-	void setSolverParams(const bool useCG, const double cgTol = 1e-4, const double beta1 = 0.0, const double beta2 = 0.0)
+	void setSolverParams(bool useCG, double cgTol = 1e-4)
 	{
 		useCG_ = useCG;
 		cgTol_ = cgTol;
+	}
+
+	void setMomentum(double beta1 = 0.0, double beta2 = 0.0)
+	{
 		beta1_ = beta1;
 		beta2_ = beta2;
 	}
 
-	void setNumChains(const int numChains)
-	{
-		numChains_ = numChains;
-	}
-
-	const MachineT& getQs() const &
-	{
-		return qs_;
-	}
-
-	MachineT getQs() && 
-	{
-		return qs_;
-	}
-
-	unsigned int getDim() const
-	{
-		return qs_.getDim();
-	}
-
-	json getParams() const
-	{
-		json j;
-		j["Optimizer"] = opt_->params();
-		
-		json SR = 
-		{
-			{"lambda_ini", lambdaIni_},
-			{"lambda_decay", lambdaDecay_},
-			{"lambda_min", lambdaMin_},
-		};
-
-		j["solver"] = {
-			{"SR", SR},
-			{"beta1", beta1_},
-			{"beta2", beta2_}
-		};
-		j["numThreads"] = Eigen::nbThreads();
-		j["machine"] = qs_.params();
-		j["sampler"] = 
-		{
-			{"PT", numChains_},
-		};
-
-		return j;
-	}
-
 	//if usePT
-	template<class Sweeper, bool usePT, std::enable_if_t<usePT, int> = 0 > 
-	auto createSampler(Sweeper& sweeper)
+	template<class Sweeper> 
+	auto createSamplerPT(Sweeper& sweeper, uint32_t numChains) const
 	{
-		return SamplerPT<MachineT, std::default_random_engine, RBMStateValue<T>, Sweeper>(qs_, numChains_, sweeper);
+		return SamplerPT<MachineT, std::default_random_engine, RBMStateValue<T>, Sweeper>(this->qs_, numChains, sweeper);
 	}
 	//if not usePT
-	template<class Sweeper, bool usePT, std::enable_if_t<!usePT, int> = 0 > 
-	auto createSampler(Sweeper& sweeper)
+	template<class Sweeper> 
+	auto createSamplerMT(Sweeper& sweeper) const
 	{
-		return Sampler<MachineT, std::default_random_engine, RBMStateValueMT<T>, Sweeper>(qs_, sweeper);
+		return Sampler<MachineT, std::default_random_engine, RBMStateValueMT<T>, Sweeper>(this->qs_, sweeper);
 	}
-
-	template<class Sweeper, bool usePT, class Callback, class SweeperRandomizer, class Hamiltonian>
-	void run(Callback&& callback, SweeperRandomizer&& randomizer, Hamiltonian&& ham, int nSamples = -1, int nSamplesDiscard = -1)
+	
+	template<class Iterable>
+	auto createSamplerExact(Iterable&& basis) const
+	{
+		return ExactSampler<MachineT, std::default_random_engine>(this->qs_, std::forward<Iterable>(basis));
+	}
+	
+	/** \brief Run the calculation
+	 *
+	 * Two template parameters determine which Sweeper to use and whether to use the parallel tempering.
+	 * For \f$U(1)\f$ symmetric Hamiltonains, you may use the SwapSweeper. Otherwise, LocalSweeper should be used.
+	 * 
+	 * \param sampler Any sampler can be taken. Usually, it is convinient to use createSampler methods.
+	 * \param callback Callback function that is called for each epoch. The parameters of the callback function.
+	 * is given by (the epoch, estimated energy in this epoch, norm of the update, error from conjugate gradient solver, sampling duration, solving duration).
+	 * \param randomizer It is a functor that intiailize the sampler before each use.
+	 * \param ham The Hamiltonian we want to solve.
+	 * \param nSamples The number of samples we will use for each epoch. Default: the number of parameters of the machine.
+	 * \param nSamplesDiscard The number of samples we will discard before sampling. It is used for equilbration. Default: 0.1*nSamples.
+	 */
+	template<class Sampler, class Callback, class SweeperRandomizer, class Hamiltonian>
+	void run(Sampler& sampler, Callback&& callback, SweeperRandomizer&& randomizer, Hamiltonian&& ham, int nSamples = -1, int nSamplesDiscard = -1)
 	{
 		using Clock = std::chrono::high_resolution_clock;
 		using namespace yannq;
 		using MatrixT = typename MachineT::MatrixType;
 		using VectorT = typename MachineT::VectorType;
 
-		Sweeper sweeper(qs_.getN());
-		auto sampler = createSampler<Sweeper, usePT>(sweeper);
-		SRMat<MachineT,Hamiltonian> srm(qs_, std::forward<Hamiltonian>(ham));
+		if(!this->threadsInitiialized_)
+			this->initializeThreads();
+		if(!this->weightsInitialized_)
+			this->initializeRandom();
+
+		SRMat<MachineT,Hamiltonian> srm(this->qs_, std::forward<Hamiltonian>(ham));
 		
 		sampler.initializeRandomEngine();
 
-		const int dim = qs_.getDim();
+		const int dim = this->getDim();
 
 		if(nSamples == -1)
 			nSamples = dim;
@@ -214,17 +132,24 @@ public:
 		ObsAvg<VectorT> gradAvg(beta1_, VectorT::Zero(dim));
 		ObsAvg<MatrixT> fisherAvg(beta2_, MatrixT::Zero(dim,dim));
 
-		for(int ll = 0; ll <= maxIter_; ll++)
+		//These should be changed into structured binding for C++17
+		double lambdaIni, lambdaDecay, lambdaMin;
+		std::tie(lambdaIni, lambdaDecay, lambdaMin) 
+			= this->getLambdas();
+		int maxIter, saveWfPer;
+		std::tie(maxIter, saveWfPer) = this->getIterParams();
+
+		for(int ll = 0; ll <= maxIter; ll++)
 		{
-			logger_ << "Epochs: " << ll << "\t# of samples:" << nSamples << 
+			this->logger() << "Epochs: " << ll << "\t# of samples:" << nSamples << 
 				"\t# of discard samples: " << nSamplesDiscard << std::endl;
-			if((saveWfPer_ != 0) && (ll % saveWfPer_ == 0))
+			if((saveWfPer != 0) && (ll % saveWfPer == 0))
 			{
 				char fileName[30];
 				sprintf(fileName, "w%04d.dat",ll);
 				std::fstream out(fileName, std::ios::binary | std::ios::out);
 				{
-					auto qsToSave = std::make_unique<MachineT>(qs_);
+					auto qsToSave = std::make_unique<MachineT>(this->qs_);
 					cereal::BinaryOutputArchive oa(out);
 					oa(qsToSave);
 				}
@@ -242,7 +167,7 @@ public:
 
 			double currE = srm.eloc();
 			
-			double lambda = std::max(lambdaIni_*pow(lambdaDecay_,ll), lambdaMin_);
+			double lambda = std::max(lambdaIni*pow(lambdaDecay,ll), lambdaMin);
 			VectorT v;
 			double cgErr;
 
@@ -261,13 +186,14 @@ public:
 				v = llt.solve(gradAvg.getAvg());
 				cgErr = 0;
 			}
-			VectorT optV = opt_->getUpdate(v);
+
+			VectorT optV = this->opt_->getUpdate(v);
 
 			auto slv_dur = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - slv_start).count();
 
 			double nv = v.norm();
 
-			qs_.updateParams(optV);
+			this->qs_.updateParams(optV);
 
 			callback(ll, currE, nv, cgErr, smp_dur, slv_dur);
 		}

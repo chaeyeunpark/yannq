@@ -3,9 +3,9 @@
 #include <vector>
 #include <random>
 #include <complex>
-#ifdef _OPENMP
-#include <omp.h>
-#endif
+
+#include <tbb/tbb.h>
+
 namespace yannq
 {
 
@@ -15,114 +15,89 @@ class SamplerPT
 private:
 	const Machine& qs_;
 	const int n_;
-	int numChain_;
+	const uint32_t numChain_;
 	std::vector<double> betas_;
 
 	std::vector<RandomEngine> re_;
 	Sweeper& sweeper_;
 
-protected:
 	std::vector<StateValue> sv_;
 
 public:
-	SamplerPT(const Machine& qs, int numChain, Sweeper& sweeper)
-		: qs_(qs), n_(qs.getN()), numChain_(numChain), sweeper_(sweeper)
+	SamplerPT(const Machine& qs, uint32_t numChain, Sweeper& sweeper)
+		: qs_(qs), n_(qs.getN()), numChain_(numChain),
+		re_(numChain, RandomEngine{}),
+		sweeper_(sweeper)
 	{
-		for(int idx = 0; idx < numChain_; idx++)
+		for(int idx = 0; idx < numChain; idx++)
 		{
-			betas_.emplace_back( double(numChain_ - idx)/numChain_);
+			betas_.emplace_back( double(numChain - idx)/numChain );
 		}
 	}
 
 	void initializeRandomEngine()
 	{
 		std::random_device rd;
-		int numThreads;
-#ifdef _OPENMP
-#pragma omp parallel
+		for(uint32_t idx = 0u; idx < numChain_; ++idx)
 		{
-			numThreads = omp_get_num_threads();
-		}
-#else
-		numThreads = 1;
-#endif
-		re_.resize(numThreads);
-		for(int i = 0; i < numThreads; i++)
-		{
-			re_[i].seed(rd());
+			re_[idx].seed(rd());
 		}
 	}
 	
 	void randomizeSigma()
 	{
 		sv_.clear();
-		for(int i = 0; i < numChain_; i++)
+		for(uint32_t idx = 0u; idx < numChain_; ++idx)
 		{
-			sv_.emplace_back(qs_, randomSigma(n_, re_[0]));
+			sv_.emplace_back(qs_, randomSigma(n_, re_[idx]));
 		}
 	}
 
 	void randomizeSigma(int nup)
 	{
 		sv_.clear();
-		for(int i = 0; i < numChain_; i++)
+		for(uint32_t idx = 0u; idx < numChain_; ++idx)
 		{
-			sv_.emplace_back(qs_, randomSigma(n_, nup, re_[0]));
+			sv_.emplace_back(qs_, randomSigma(n_, nup, re_[idx]));
 		}
 	}
-	
+
 	void mixChains()
 	{
 		using std::real;
-#pragma omp parallel 
+		tbb::enumerable_thread_specific<std::uniform_real_distribution<double> > urd(0.0,1.0);
+		tbb::parallel_for(0u, numChain_, 2u,
+			[&](uint32_t idx)
 		{
-#ifdef _OPENMP
-			int tid = omp_get_thread_num();
-#else
-			int tid = 0;
-#endif
-			std::uniform_real_distribution<> urd(0.0,1.0);
-#pragma omp for
-			for(int idx = 0; idx < numChain_; idx+=2)
+			double p = exp((betas_[idx+1]-betas_[idx])*2.0*
+					sv_[idx+1].logRatioRe(sv_[idx]));
+			double u = urd.local()(re_[idx]);
+			if(u < p)
 			{
-				double p = exp((betas_[idx+1]-betas_[idx])*2.0*
-						sv_[idx+1].logRatioRe(sv_[idx]));
-				double u = urd(re_[tid]);
-				if(u < p)
-				{
-					std::swap(sv_[idx+1],sv_[idx]);
-				}
+				std::swap(sv_[idx+1],sv_[idx]);
 			}
-#pragma omp for 
-			for(int idx = 1; idx < numChain_-1; idx+=2)
+		});
+		tbb::parallel_for(1u, numChain_-1, 2u, 
+			[&](uint32_t idx)
+		{
+			double p = exp((betas_[idx+1]-betas_[idx])*2.0*
+					sv_[idx+1].logRatioRe(sv_[idx]));
+			double u = urd.local()(re_[idx]);
+			if(u < p)
 			{
-				double p = exp((betas_[idx+1]-betas_[idx])*2.0*
-						sv_[idx+1].logRatioRe(sv_[idx]));
-				double u = urd(re_[tid]);
-				if(u < p)
-				{
-					std::swap(sv_[idx+1],sv_[idx]);
-				}
+				std::swap(sv_[idx+1],sv_[idx]);
 			}
-		}
+		});
 	}
 
 	void sweep()
 	{
 		using std::real;
-#pragma omp parallel
+		tbb::parallel_for(0u, numChain_,
+			[&](uint32_t idx)
 		{
-#ifdef _OPENMP
-			int tid = omp_get_thread_num();
-#else
-			int tid = 0;
-#endif
-#pragma omp for 
-			for(int cidx = 0; cidx < numChain_; cidx++)
-			{
-				sweeper_.localSweep(sv_[cidx], betas_[cidx], re_[tid]);
-			}
-		}
+			sweeper_.localSweep(sv_[idx], betas_[idx], re_[idx]);
+		});
 	}
 
 
