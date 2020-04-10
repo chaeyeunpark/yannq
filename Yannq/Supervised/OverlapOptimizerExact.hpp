@@ -7,10 +7,11 @@
 #include "Utilities/Utility.hpp"
 #include "Utilities/type_traits.hpp"
 
+#include <iterator>
+#include <tbb/tbb.h>
+
 namespace yannq
 {
-
-
 //! Use this if the parameter type of the machine is complex.
 template<class Machine>
 class OverlapOptimizerExact
@@ -24,7 +25,7 @@ public:
 private:
 	const int n_;
 	const Machine& qs_;
-	std::vector<uint32_t> basis_;
+	tbb::concurrent_vector<uint32_t> basis_;
 
 	VectorType target_;
 
@@ -35,14 +36,17 @@ private:
 	ScalarType ov_;
 
 public:
-	template<class Iterable>
-	explicit OverlapOptimizerExact(const Machine& qs, Iterable&& basis)
+	template<class BasisType, std::enable_if_t<
+		!std::is_same_v<BasisType, tbb::concurrent_vector<uint32_t>>, int> = 0>
+	explicit OverlapOptimizerExact(const Machine& qs, BasisType&& basis)
 		: n_(qs.getN()), qs_(qs)
 	{
-		for(auto elt: basis)
-		{
-			basis_.emplace_back(elt);
-		}
+		basis_ = parallelConstructBasis(basis);
+	}
+
+	explicit OverlapOptimizerExact(const Machine& qs, tbb::concurrent_vector<uint32_t>&& basis)
+		: n_(qs.getN()), qs_(qs), basis_(std::move(basis))
+	{
 	}
 
 	void setTarget(VectorType v)
@@ -63,12 +67,12 @@ public:
 		return target_;
 	}
 
-	const std::vector<uint32_t>& getBasis() const&
+	const tbb::concurrent_vector<uint32_t>& getBasis() const&
 	{
 		return basis_;
 	}
 
-	std::vector<uint32_t> getBasis() &&
+	tbb::concurrent_vector<uint32_t> getBasis() &&
 	{
 		return basis_;
 	}

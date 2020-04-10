@@ -3,4 +3,43 @@
 //! \defgroup Basis Basis for a spin-1/2 system
 #include "BasisJz.hpp"
 #include "BasisFull.hpp"
+
+#include <iterator>
+#include <type_traits>
+#include <tbb/concurrent_vector.h>
+/**
+ * Enable if Iterable is not random access iterable
+ */
+template<class BasisType>
+tbb::concurrent_vector<uint32_t> parallelConstructBasis(BasisType&& basis, std::forward_iterator_tag)
+{
+	tbb::concurrent_vector<uint32_t> res;
+	tbb::parallel_do(basis.begin(), basis.end(),
+		[&](uint32_t elt)
+	{
+		res.emplace_back(elt);
+	});
+	tbb::parallel_sort(res.begin(), res.end());
+	return res;
+}
+
+template<class BasisType>
+tbb::concurrent_vector<uint32_t> parallelConstructBasis(BasisType&& basis, std::random_access_iterator_tag)
+{
+	tbb::concurrent_vector<uint32_t> res(basis.size(), 0u);
+	tbb::parallel_for(std::size_t(0u), basis.size()
+		[&](uint32_t idx)
+	{
+		res[idx] = basis[idx];
+	});
+	return res;
+}
+
+template<class BasisType>
+inline tbb::concurrent_vector<uint32_t> parallelConstructBasis(BasisType&& basis)
+{
+	using IteratorType = std::result_of_t<decltype(&std::decay_t<BasisType>::begin)(BasisType)>;
+	return parallelConstructBasis(basis, 
+			typename std::iterator_traits<IteratorType>::iterator_category());
+}
 #endif//YANNQ_BASIS_BASIS_HPP

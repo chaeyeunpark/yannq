@@ -2,6 +2,8 @@
 #define YANNQ_RUNNERS_RUNRBMEXACT_HPP
 
 #include "AbstractRunner.hpp"
+#include "Supervised/OverlapOptimizerExact.hpp"
+#include "GroundState/SRMatExact.hpp"
 
 namespace yannq
 {
@@ -11,6 +13,8 @@ class RunRBMExact
 {
 public:
 	using MachineT = typename AbstractRunner<T, RandomEngine, RunRBMExact<T, RandomEngine>>::MachineT;
+	using MatrixType = typename MachineT::MatrixType;
+	using VectorType = typename MachineT::VectorType;
 
 public:
 	RunRBMExact(const uint32_t N, const int alpha, bool useBias, std::ostream& logger)
@@ -26,8 +30,6 @@ public:
 		using std::max;
 		using namespace yannq;
 		using Clock = std::chrono::high_resolution_clock;
-		using MatrixT = typename MachineT::MatrixType;
-		using VectorT = typename MachineT::VectorType;
 
 		if(!this->threadsInitiialized_)
 			this->initializeThreads();
@@ -36,7 +38,7 @@ public:
 
 		const int dim = this->getDim();
 
-		//These should be changed into structured binding for C++17
+		//In C++17, these should be changed into structured binding
 		double lambdaIni, lambdaDecay, lambdaMin;
 		std::tie(lambdaIni, lambdaDecay, lambdaMin) 
 			= this->getLambdas();
@@ -65,7 +67,7 @@ public:
 			double currE = srex.eloc();
 			auto corrMat = srex.corrMat();
 			double lambda = std::max(lambdaIni*pow(lambdaDecay,ll), lambdaMin);
-			corrMat += lambda*MatrixT::Identity(dim,dim);
+			corrMat += lambda*MatrixType::Identity(dim,dim);
 			Eigen::LLT<Eigen::MatrixXcd> llt(corrMat);
 
 			auto grad = srex.energyGrad();
@@ -76,6 +78,66 @@ public:
 			double nv = v.norm();
 
 			callback(ll, currE, nv);
+		}
+	}
+
+	template<class Callback, class Basis>
+	void runSupervised(Callback&& callback, Basis&& basis, const VectorType& st)
+	{
+		using std::pow;
+		using std::max;
+		using namespace yannq;
+		using Clock = std::chrono::high_resolution_clock;
+
+		if(!this->threadsInitiialized_)
+			this->initializeThreads();
+		if(!this->weightsInitialized_)
+			this->initializeRandom();
+
+		const int dim = this->getDim();
+
+		//In C++17, these should be changed into structured binding
+		double lambdaIni, lambdaDecay, lambdaMin;
+		std::tie(lambdaIni, lambdaDecay, lambdaMin) 
+			= this->getLambdas();
+		int maxIter, saveWfPer;
+		std::tie(maxIter, saveWfPer) = this->getIterParams();
+
+		OverlapOptimizerExact<MachineT> ovex(this->qs_, std::forward<Basis>(basis));
+
+		ovex.setTarget(st);
+
+		for(int ll = 0; ll <= maxIter; ll++)
+		{
+			this->logger() << "Epochs: " << ll << std::endl;
+			if((saveWfPer != 0) && (ll % saveWfPer == 0))
+			{
+				char fileName[30];
+				sprintf(fileName, "w%04d.dat",ll);
+				std::fstream out(fileName, std::ios::binary | std::ios::out);
+				{
+					auto qsToSave = std::make_unique<MachineT>(this->qs_);
+					cereal::BinaryOutputArchive oa(out);
+					oa(qsToSave);
+				}
+			}
+
+			ovex.constructExact();
+
+			double lambda = std::max(lambdaIni*pow(lambdaDecay,ll), lambdaMin);
+			auto corrMat = ovex.corrMat();
+			corrMat += lambda*MatrixType::Identity(dim,dim);
+			Eigen::LLT<Eigen::MatrixXcd> llt(corrMat);
+			auto grad = ovex.calcLogGrad();
+			auto v = llt.solve(grad);
+			double nv = v.norm();
+
+			auto optV = this->opt_->getUpdate(v);
+			double fidelity = ovex.fidelity();
+
+			this->qs_.updateParams(optV);
+
+			callback(ll, fidelity, nv);
 		}
 	}
 };

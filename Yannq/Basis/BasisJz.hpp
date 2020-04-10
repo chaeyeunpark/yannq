@@ -1,8 +1,64 @@
 #ifndef YANNQ_BASIS_BASJSJZ_HPP
 #define YANNQ_BASIS_BASJSJZ_HPP
+#include <cstdint>
 #include <iterator>
+
 //! \ingroup Basis
 //! Basis for U(1) symmetric subspace.
+
+namespace yannq
+{
+struct BasisJzIterator 
+{
+	uint32_t n_;
+	BasisJzIterator& operator++() //prefix
+	{
+		next();
+		return *this;
+	}
+	BasisJzIterator operator++(int) //postfix
+	{
+		BasisJzIterator r(*this);
+		next();
+		return r;
+	}
+	void next()
+	{
+		uint32_t t = n_ | (n_-1);
+		uint32_t w = (t + 1) | (((~t & -~t) - 1) >> (__builtin_ctz(n_) + 1));
+		n_ = w;
+	}
+	uint32_t operator*() const
+	{
+		return n_;
+	}
+	bool operator==(const BasisJzIterator& rhs)
+	{
+		return n_ == rhs.n_;
+	}
+	bool operator!=(const BasisJzIterator& rhs)
+	{
+		return n_ != rhs.n_;
+	}
+	BasisJzIterator(uint32_t n)
+		: n_{n}
+	{
+	}
+};
+}//namspace yannq
+
+template<>
+struct std::iterator_traits<yannq::BasisJzIterator>
+{
+	using difference_type = void;
+	using value_type = uint32_t;
+	using pointer = void;
+	using reference = uint32_t&;
+	using iterator_category = std::forward_iterator_tag;
+};
+
+namespace yannq
+{
 class BasisJz
 {
 private:
@@ -10,44 +66,6 @@ private:
 	int nup_;
 	
 public:
-	struct BasisJzIterator 
-		: public std::iterator<std::forward_iterator_tag, uint32_t>
-	{
-		uint32_t n_;
-		BasisJzIterator& operator++() //prefix
-		{
-			next();
-			return *this;
-		}
-		BasisJzIterator operator++(int) //postfix
-		{
-			BasisJzIterator r(*this);
-			next();
-			return r;
-		}
-		void next()
-		{
-			uint32_t t = n_ | (n_-1);
-			uint32_t w = (t + 1) | (((~t & -~t) - 1) >> (__builtin_ctz(n_) + 1));
-			n_ = w;
-		}
-		uint32_t operator*() const
-		{
-			return n_;
-		}
-		bool operator==(const BasisJzIterator& rhs)
-		{
-			return n_ == rhs.n_;
-		}
-		bool operator!=(const BasisJzIterator& rhs)
-		{
-			return n_ != rhs.n_;
-		}
-		BasisJzIterator(uint32_t n)
-			: n_{n}
-		{
-		}
-	};
 
 	//! Construct a basis for the subspace. The dimension is \f$N \choose nup\f$.
 	//! \param N number of total spins
@@ -84,6 +102,7 @@ public:
     	return res;  
 	}
 };
+}//namespace yannq
 
 
 #endif//YANNQ_BASIS_BASJSJZ_HPP

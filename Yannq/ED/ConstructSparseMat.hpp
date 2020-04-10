@@ -24,10 +24,11 @@ namespace edp
 		return res;
 	}
 
-	//basis must be sorted
+	/**
+	 * @basis: Random access iterable container for the basis
+	 */
 	template<typename T, typename ColFunc, typename Iterable>
-	Eigen::SparseMatrix<T> constructSubspaceMat(ColFunc&& t,
-			Iterable&& basis)
+	Eigen::SparseMatrix<T> constructSubspaceMat(ColFunc&& t, Iterable&& basis)
 	{
 		const uint32_t n = basis.size();
 
