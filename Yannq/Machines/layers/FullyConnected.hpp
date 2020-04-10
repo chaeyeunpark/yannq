@@ -136,7 +136,7 @@ public:
 	}
 
 	// Feedforward
-	void forward(const VectorType &input, VectorType &output) override 
+	void forward(const VectorConstRefType& input, VectorRefType output) override 
 	{
 		if(useBias_)
 			output = bias_;
@@ -146,10 +146,10 @@ public:
 	}
 
 	// Computes derivative.
-	void backprop(const VectorType &prev_layer_output,
-			const VectorType & /*this_layer_output*/,
-			const VectorType &dout, VectorType &din,
-			VectorRefType der) override 
+	void backprop(const VectorConstRefType& prev_layer_output,
+			const VectorConstRefType& this_layer_output,
+			const VectorConstRefType& dout,
+			VectorRefType din, VectorRefType der) override 
 	{
 		// dout = d(L) / d(z)
 		// Derivative for bias, d(L) / d(b) = d(L) / d(z)

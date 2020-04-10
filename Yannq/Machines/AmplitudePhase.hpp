@@ -1,5 +1,7 @@
 #ifndef YANNQ_MACHINES_AMPLITUDEPHASE_HPP
 #define YANNQ_MACHINES_AMPLITUDEPHASE_HPP
+#include <tbb/tbb.h>
+
 #include "RBM.hpp"
 #include "FeedForward.hpp"
 namespace yannq
@@ -11,11 +13,11 @@ public:
 private:
 	const uint32_t N_;
 
-	RBM<ScalarType, false> amplitude_;
+	RBM<ScalarType> amplitude_;
 	FeedForward<ScalarType> phase_;
 
 public:
-	using AmplitudeMachine = RBM<ScalarType, false>;
+	using AmplitudeMachine = RBM<ScalarType>;
 	using CxScalarType = std::complex<double>;
 	using MatrixType = Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>;
 	using VectorType = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
@@ -124,34 +126,34 @@ public:
 
 AmplitudePhase::CxVectorType getPsi(const AmplitudePhase& qs, bool normalize)
 {
-	const auto n = qs.getN();
+	const uint32_t n = qs.getN();
 	AmplitudePhase::CxVectorType psi(1<<n);
-#pragma omp parallel for schedule(static,8)
-	for(uint64_t i = 0; i < (1u<<n); i++)
+	tbb::parallel_for(uint32_t(0u), (1u << n), 
+		[n, &qs, &psi](uint32_t idx)
 	{
-		auto s = toSigma(n, i);
-		psi(i) = qs.coeff(qs.makeAmpData(s));
-	}
+		auto s = toSigma(n, idx);
+		psi(idx) = qs.coeff(qs.makeAmpData(s));
+	});
 	if(normalize)
-		return psi.normalized();
-	else
-		return psi;
+		psi.normalize();
+	return psi;
 }
 
-AmplitudePhase::CxVectorType getPsi(const AmplitudePhase& qs, const std::vector<uint32_t>& basis, bool normalize)
+template<typename Iterable> //Iterable must be random access iterable
+AmplitudePhase::CxVectorType getPsi(const AmplitudePhase& qs, Iterable&& basis, bool normalize)
 {
-	const auto n = qs.getN();
+	const uint32_t n = qs.getN();
 	AmplitudePhase::CxVectorType psi(basis.size());
-#pragma omp parallel for schedule(static,8)
-	for(uint64_t i = 0; i < basis.size(); i++)
+
+	tbb::parallel_for(std::size_t(0u), basis.size(),
+		[n, &qs, &psi, &basis](std::size_t idx)
 	{
-		auto s = toSigma(n, basis[i]);
-		psi(i) = qs.coeff(qs.makeAmpData(s));
-	}
+		auto s = toSigma(n, basis[idx]);
+		psi(idx) = qs.coeff(qs.makeAmpData(s));
+	});
 	if(normalize)
-		return psi.normalized();
-	else
-		return psi;
+		psi.normalize();
+	return psi;
 }
 }//namespace yannq
 #endif//YANNQ_MACHINES_AMPLITUDEPHASE_HPP

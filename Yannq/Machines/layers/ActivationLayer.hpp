@@ -28,7 +28,9 @@
 namespace yannq {
 
 template <typename T, class Activation>
-class ActivationLayer : public AbstractLayer<T> {
+class ActivationLayer
+	: public AbstractLayer<T> 
+{
 public:
 	using ScalarType = T;
 	using VectorType = typename AbstractLayer<T>::VectorType;
@@ -69,15 +71,17 @@ public:
 	}
 
 	// Feedforward
-	void forward(const VectorType &input, VectorType &output) override 
+	void forward(const VectorConstRefType& input, VectorRefType output) override 
 	{
+		assert(input.size() == output.size());
 		f_.operator()(input, output);
 	}
 
 	// Computes derivative.
-	void backprop(const VectorType &prev_layer_output,
-			const VectorType &this_layer_output, const VectorType &dout,
-			VectorType &din, VectorRefType /*der*/) override 
+	void backprop(const VectorConstRefType& prev_layer_output,
+			const VectorConstRefType& this_layer_output,
+			const VectorConstRefType& dout,
+			VectorRefType din, VectorRefType /*der*/) override 
 	{
 		din.resize(prev_layer_output.size());
 		f_.ApplyJacobian(prev_layer_output, this_layer_output, dout, din);

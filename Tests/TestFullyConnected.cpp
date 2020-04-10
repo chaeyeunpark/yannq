@@ -36,7 +36,8 @@ TEST_CASE("Test backprop of FullyConnected layer", "[layer,fully_connected]")
 			VectorType din(inSize);
 			VectorType der(fc.paramDim());
 
-			fc.backprop(input, VectorXd(), dout, din, der);
+			VectorType tmp;
+			fc.backprop(input, tmp, dout, din, der);
 
 			REQUIRE_THAT((din - ndiff_in(fc, input, outSize)*dout).norm()/dout.norm()/outSize, 
 					WithinAbsMatcher(0.,1e-6));

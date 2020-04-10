@@ -113,8 +113,6 @@ add_test(
 )
 
 
-
-#[[
 add_executable(TestConvLayer "Tests/TestConvLayer.cpp")
 add_test(
 	NAME TestConvLayer
@@ -138,18 +136,22 @@ add_test(
 	NAME TestFeedForward
 	COMMAND TestFeedForward
 )
-#]]
 
 add_executable(TestHamXYZSto "Tests/TestHamXYZSto.cpp")
 add_test(
 	NAME TestHamXYZSto
 	COMMAND TestHamXYZSto
 )
+add_executable(TestHamXYZSto2 "Tests/TestHamXYZSto2.cpp")
+add_test(
+	NAME TestHamXYZSto2
+	COMMAND TestHamXYZSto2
+)
 
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND}
 	DEPENDS TestRBMStates TestHamTFI TestHamKitaev
-	TestHamKitaevC24 TestUtility TestHamJ1J2 TestSerializeRBM TestHamXYZSto )
-	#	TestConvLayer TestActivations TestFullyConnected  TestFeedForward )
+	TestHamKitaevC24 TestUtility TestHamJ1J2 TestSerializeRBM TestHamXYZSto 
+	TestConvLayer TestActivations TestFullyConnected  TestFeedForward)
 
 add_executable(RBMTFI "Examples/RBMTFI.cpp")
 add_dependencies(RBMTFI libcereal_untar)
@@ -167,5 +169,5 @@ add_executable(port_saved "utils/port_saved.cpp")
 add_dependencies(port_saved libcereal_untar)
 target_link_libraries(port_saved stdc++fs)
 
-add_executable(TestAmplitudePhase "Tests/TestAmplitudePhase.cpp")
+add_executable(AmplitudePhase "Examples/AmplitudePhase.cpp")
 

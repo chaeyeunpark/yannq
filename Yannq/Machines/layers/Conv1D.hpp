@@ -74,7 +74,9 @@ public:
 	}
 
 	uint32_t paramDim() const override { return npar_; }
-	uint32_t outputDim(uint32_t inputDim) const override { return (inputDim / stride_ / inChannels_) * outChannels_; };
+	uint32_t outputDim(uint32_t inputDim) const override {
+		return (inputDim / stride_ / inChannels_) * outChannels_; 
+	}
 
 	VectorType getParams() const override 
 	{
@@ -82,7 +84,8 @@ public:
 		if(useBias_)
 		{
 			pars.head(outChannels_) = bias_;
-			pars.segment(outChannels_, kernel_.size()) = Eigen::Map<const VectorType>(kernel_.data(), kernel_.rows()*kernel_.cols());
+			pars.segment(outChannels_, kernel_.size()) = 
+				Eigen::Map<const VectorType>(kernel_.data(), kernel_.rows()*kernel_.cols());
 		}
 		else
 		{
@@ -122,7 +125,7 @@ public:
 	 * @input: inChannels*size
 	 * @output: outChannels*size
 	 */
-	void forward(const VectorType &input, VectorType &output) override 
+	void forward(const VectorConstRefType& input, VectorRefType output) override 
 	{
 		assert(input.size() % inChannels_ == 0);
 		uint32_t inSize = input.size() / inChannels_;
@@ -132,7 +135,6 @@ public:
 
 		// y = Wx+b
 		for (uint32_t oc = 0; oc < outChannels_; oc++)
-#pragma omp parallel for
 		for (uint32_t r = 0; r < outSize; r ++) 
 		{
 			for (uint32_t ic = 0; ic < inChannels_; ic++)
@@ -152,16 +154,18 @@ public:
 		}
 	}
 
-	void backprop(const VectorType &prev_layer_output,
-			const VectorType & /*this_layer_output*/,
-			const VectorType &dout, VectorType &din,
-			VectorRefType der) override 
+	void backprop(const VectorConstRefType& prev_layer_output,
+			const VectorConstRefType& this_layer_output,
+			const VectorConstRefType& dout, 
+			VectorRefType din,
+			VectorRefType der) override
 	{
 		assert(prev_layer_output.size() % inChannels_ == 0);
 		uint32_t inSize = prev_layer_output.size() / inChannels_;
 		uint32_t outSize = inSize / stride_;
 
-		din.setZero(inSize*inChannels_);
+		din.resize(inSize*inChannels_);
+		din.setZero();
 		der.setZero();
 
 		// propagate delta to prev-layer

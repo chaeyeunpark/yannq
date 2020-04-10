@@ -1,3 +1,5 @@
+// Modified from NetKet source for YANNQ Project
+// <Chae-Yeun Park>(chae.yeun.park@gmail.com)
 // Copyright 2018 The Simons Foundation, Inc. - All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -76,7 +78,7 @@ public:
 	  @param input a constant reference to the input to the layer
 	  @param output reference to the output vector. Must have the size of outputDim. 
 	  */
-	virtual void forward(const VectorType &input, VectorType &output) = 0;
+	virtual void forward(const VectorConstRefType& input, VectorRefType output) = 0;
 
 	/**
 	  Member function to perform backpropagation to compute derivates.
@@ -91,10 +93,11 @@ public:
 	  current layer.
 	  @param der a constant reference to the derivatives wrt to the parameters in
 	  the machine.
-*/
-	virtual void backprop(const VectorType &prev_layer_output,
-			const VectorType &this_layer_output,
-			const VectorType &dout, VectorType &din,
+	*/
+	virtual void backprop(const VectorConstRefType& prev_layer_output,
+			const VectorConstRefType& this_layer_output,
+			const VectorConstRefType& dout, 
+			VectorRefType din,
 			VectorRefType der) = 0;
 
 	virtual nlohmann::json to_json() const = 0;

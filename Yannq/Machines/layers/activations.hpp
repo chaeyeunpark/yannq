@@ -174,7 +174,8 @@ class ReLU<T, std::enable_if_t<is_complex_type<T>::value > >
 
 public:
 	static constexpr char name[] = "ReLU";
-	// A = Z
+
+	// A = ReLU(Z)
 	inline void operator()(VectorConstRefType Z, VectorRefType A) const  {
 		for (int i = 0; i < Z.size(); ++i) {
 			A(i) =
@@ -183,7 +184,7 @@ public:
 	}
 
 	// Apply the (derivative of activation function) matrix J to a vector F
-	// A = Z
+	// A = ReLU(Z)
 	// J = dA / dZ = I
 	// G = J * F = F
 	inline void ApplyJacobian(VectorConstRefType Z, VectorConstRefType /*A*/,
@@ -206,7 +207,8 @@ class ReLU<T, std::enable_if_t<!is_complex_type<T>::value> >
 
 public:
 	static constexpr char name[] = "ReLU";
-	// A = Z
+
+	// A = ReLU(Z)
 	inline void operator()(VectorConstRefType Z, VectorRefType A) const  {
 		for (int i = 0; i < Z.size(); ++i) {
 			A(i) = std::max(Z(i), T{0.0});
@@ -214,7 +216,7 @@ public:
 	}
 
 	// Apply the (derivative of activation function) matrix J to a vector F
-	// A = Z
+	// A = ReLU(Z)
 	// J = dA / dZ = I
 	// G = J * F = F
 	inline void ApplyJacobian(VectorConstRefType Z, VectorConstRefType /*A*/,
@@ -257,7 +259,7 @@ public:
 	{
 	}
 
-	// A = Z
+	// A = LeakyReLU(Z)
 	inline void operator()(VectorConstRefType Z, VectorRefType A) const  {
 		for (int i = 0; i < Z.size(); ++i) {
 			A(i) =
@@ -266,7 +268,7 @@ public:
 	}
 
 	// Apply the (derivative of activation function) matrix J to a vector F
-	// A = Z
+	// A = LeakyReLU(Z)
 	// J = dA / dZ = I
 	// G = J * F = F
 	inline void ApplyJacobian(VectorConstRefType Z, VectorConstRefType /*A*/,
@@ -298,7 +300,7 @@ public:
 		: negativeSlope_{negativeSlope}
 	{
 	}
-	// A = Z
+	// A = LeakyReLU(Z)
 	inline void operator()(VectorConstRefType Z, VectorRefType A) const  {
 		for (int i = 0; i < Z.size(); ++i) {
 			A(i) = std::max(Z(i), T{negativeSlope_*Z(i)});
@@ -306,7 +308,7 @@ public:
 	}
 
 	// Apply the (derivative of activation function) matrix J to a vector F
-	// A = Z
+	// A = LeakyReLU(Z)
 	// J = dA / dZ = I
 	// G = J * F = F
 	inline void ApplyJacobian(VectorConstRefType Z, VectorConstRefType /*A*/,
@@ -322,6 +324,173 @@ template<typename T>
 constexpr char LeakyReLU<T, std::enable_if_t<!is_complex_type<T>::value>>::name[];
 template<typename T>
 constexpr char LeakyReLU<T, std::enable_if_t<is_complex_type<T>::value>>::name[];
+
+template<typename T>
+class HardTanh
+{
+	static_assert(!is_complex_type<T>::value, "T must be a real type for HardTanh");
+	using ScalarType = T;
+	using VectorType = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+	using VectorRefType = Eigen::Ref<VectorType>;
+	using VectorConstRefType = Eigen::Ref<const VectorType>;
+	
+public:
+	static constexpr char name[] = "HardTanh";
+
+	HardTanh()
+	{
+	}
+
+	// A = hardtanh(Z)
+	inline void operator()(VectorConstRefType Z, VectorRefType A) const  
+	{
+		using std::abs;
+		for (int i = 0; i < Z.size(); ++i) 
+		{
+			A(i) = abs(Z(i))>1.0?copysign(1.0, Z(i)):Z(i);
+		}
+	}
+
+	// Apply the (derivative of activation function) matrix J to a vector F
+	// A = hardtanh(Z)
+	// J = dA / dZ = I
+	// G = J * F = F
+	inline void ApplyJacobian(VectorConstRefType Z, VectorConstRefType /*A*/,
+			VectorConstRefType F, VectorRefType G) const  
+	{
+		using std::abs;
+		for (int i = 0; i < Z.size(); ++i) {
+			G(i) = abs(Z(i))>1.0?0.0:F(i);
+		}
+	}
+};
+template<typename T>
+constexpr char HardTanh<T>::name[];
+
+template<typename T>
+class SoftShrink
+{
+	static_assert(!is_complex_type<T>::value, "T must be a real type for SoftShrink");
+	using ScalarType = T;
+	using VectorType = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+	using VectorRefType = Eigen::Ref<VectorType>;
+	using VectorConstRefType = Eigen::Ref<const VectorType>;
+	
+public:
+	static constexpr char name[] = "SoftShrink";
+
+	SoftShrink()
+	{
+	}
+
+	// A = softshrink(Z)
+	inline void operator()(VectorConstRefType Z, VectorRefType A) const  
+	{
+		using std::abs;
+		for (int i = 0; i < Z.size(); ++i) 
+		{
+			A(i) = abs(Z(i))<1.0?0.0:(Z(i)-copysign(1.0,Z(i)));
+		}
+	}
+
+	// Apply the (derivative of activation function) matrix J to a vector F
+	// A = softshrink(Z)
+	// J = dA / dZ = I
+	// G = J * F = F
+	inline void ApplyJacobian(VectorConstRefType Z, VectorConstRefType /*A*/,
+			VectorConstRefType F, VectorRefType G) const  
+	{
+		using std::abs;
+		for (int i = 0; i < Z.size(); ++i) {
+			G(i) = abs(Z(i))<1.0?0.0:F(i);
+		}
+	}
+};
+template<typename T>
+constexpr char SoftShrink<T>::name[];
+
+template<typename T>
+class LeakyHardTanh
+{
+	static_assert(!is_complex_type<T>::value, "T must be a real type for SoftShrink");
+	using ScalarType = T;
+	using VectorType = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+	using VectorRefType = Eigen::Ref<VectorType>;
+	using VectorConstRefType = Eigen::Ref<const VectorType>;
+
+	const double outsideSlope_;
+	
+public:
+	static constexpr char name[] = "LeakyHardTanh";
+
+	LeakyHardTanh(double outsideSlope = 0.2)
+		: outsideSlope_{outsideSlope}
+	{
+	}
+
+	// A = leakyhardtanh(Z)
+	inline void operator()(VectorConstRefType Z, VectorRefType A) const  
+	{
+		using std::abs;
+		for (int i = 0; i < Z.size(); ++i) 
+		{
+			T val = abs(Z(i))>1.0?copysign(1.0, Z(i)):Z(i);
+			val += abs(Z(i))<1.0?0.0:outsideSlope_*(Z(i)-copysign(1.0,Z(i)));
+			A(i) = val;
+		}
+	}
+
+	// Apply the (derivative of activation function) matrix J to a vector F
+	// A = Z
+	// J = dA / dZ = I
+	// G = J * F = F
+	inline void ApplyJacobian(VectorConstRefType Z, VectorConstRefType /*A*/,
+			VectorConstRefType F, VectorRefType G) const  
+	{
+		using std::abs;
+		for (int i = 0; i < Z.size(); ++i) {
+			G(i) = abs(Z(i))>1.0?outsideSlope_*F(i):F(i);
+		}
+	}
+};
+template<typename T>
+constexpr char LeakyHardTanh<T>::name[];
+
+
+template<typename T>
+class SoftSign
+{
+	static_assert(!is_complex_type<T>::value, "T must be a real type for SoftSign");
+	using ScalarType = T;
+	using VectorType = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+	using VectorRefType = Eigen::Ref<VectorType>;
+	using VectorConstRefType = Eigen::Ref<const VectorType>;
+	
+public:
+	static constexpr char name[] = "SoftSign";
+
+	SoftSign()
+	{
+	}
+
+	// A = softsign(Z)
+	inline void operator()(VectorConstRefType Z, VectorRefType A) const  
+	{
+		A.array() = Z.array()/(Z.array().abs()+1.0);
+	}
+
+	// Apply the (derivative of activation function) matrix J to a vector F
+	// A = softsign(Z)
+	// J = dA / dZ = I
+	// G = J * F = F
+	inline void ApplyJacobian(VectorConstRefType Z, VectorConstRefType A,
+			VectorConstRefType F, VectorRefType G) const  
+	{
+		G.array() = (1.0+Z.array().abs()).square().inverse()*F.array();
+	}
+};
+template<typename T>
+constexpr char SoftSign<T>::name[];
 
 }//namsepace activation
 

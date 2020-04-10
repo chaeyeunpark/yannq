@@ -1,9 +1,10 @@
 #ifndef YANNQ_MACHINES_FEEDFORWARD_HPP
 #define YANNQ_MACHINES_FEEDFORWARD_HPP
-#include "Machines/layers/AbstractLayer.hpp"
-#include "Utilities/Utility.hpp"
 #include <iostream>
 #include <sstream>
+
+#include "layers/AbstractLayer.hpp"
+#include "Utilities/Utility.hpp"
 namespace yannq
 {
 enum class InitializationMode
@@ -19,8 +20,6 @@ public:
 	using MatrixType = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
 	using VectorRefType = Eigen::Ref<VectorType>;
 	using VectorConstRefType = Eigen::Ref<const VectorType>;
-
-
 
 private:
 	std::vector<std::unique_ptr<AbstractLayer<T>>> layers_;

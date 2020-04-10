@@ -395,14 +395,14 @@ typename RBM<T>::VectorType getPsi(const RBM<T>& qs, bool normalize)
 	return psi;
 }
 
-template<typename T, typename Iterable> //Iterable must be random iterable
+template<typename T, typename Iterable> //Iterable must be random access iterable
 typename RBM<T>::VectorType getPsi(const RBM<T>& qs, Iterable&& basis, bool normalize)
 {
 	const uint32_t n = qs.getN();
 	typename RBM<T>::VectorType psi(basis.size());
 
 	tbb::parallel_for(std::size_t(0u), basis.size(),
-		[n, &qs, &psi, &basis](uint32_t idx)
+		[n, &qs, &psi, &basis](std::size_t idx)
 	{
 		auto s = toSigma(n, basis[idx]);
 		psi(idx) = qs.coeff(qs.makeData(s));

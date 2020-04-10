@@ -1,20 +1,21 @@
-#include <Machines/AmplitudePhase.cpp>
-#include <Machines/layers/layers.hpp>
-#include <Machines/FeedForward.hpp>
-
 #include <iostream>
-#include <GroundState/SRMatExact.hpp>
-#include <Hamiltonians/XXXJ1J2.hpp>
-#include <Basis/BasisJz.hpp>
 
-#include <Optimizers/SGD.hpp>
+#include "Machines/AmplitudePhase.cpp"
+#include "Machines/layers/layers.hpp"
+#include "Machines/FeedForward.hpp"
+
+#include "GroundState/SRMatExact.hpp"
+#include "Hamiltonians/XXXJ1J2.hpp"
+#include "Basis/BasisJz.hpp"
+
+#include "Optimizers/SGD.hpp"
 
 int main()
 {
 	using namespace yannq;
 	using namespace Eigen;
-	const int N = 12;
-	const int M = 4*N;
+	const int N = 16;
+	const int M = 3*N;
 
 	std::random_device rd;
 	std::default_random_engine re{rd()};

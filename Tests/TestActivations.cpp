@@ -12,7 +12,10 @@
 using namespace yannq;
 using namespace Eigen;
 
-TEMPLATE_PRODUCT_TEST_CASE("Test ActivationLayer by activations", "[layer][activations]", (activation::Identity, activation::LnCosh, activation::Tanh, activation::ReLU, activation::LeakyReLU),(double))
+TEMPLATE_PRODUCT_TEST_CASE("Test ActivationLayer by activations", "[layer][activations]", 
+		(activation::Identity, activation::LnCosh, activation::Tanh, activation::ReLU, 
+		 activation::LeakyReLU, activation::HardTanh, activation::SoftShrink,
+		 activation::LeakyHardTanh, activation::SoftSign),(double))
 {
 	using std::abs;
 	using Catch::Matchers::Floating::WithinAbsMatcher;
@@ -27,7 +30,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Test ActivationLayer by activations", "[layer][activ
 
 	for(int i = 0; i < 100; i++)
 	{
-		VectorType input = VectorType::Random(inSize);
+		VectorType input = 2.0*VectorType::Random(inSize);
 		VectorType output(inSize);
 		VectorType dout = VectorType::Random(inSize);
 		VectorType din(inSize);
@@ -35,13 +38,23 @@ TEMPLATE_PRODUCT_TEST_CASE("Test ActivationLayer by activations", "[layer][activ
 		auto t = VectorType(10);
 		layer.forward(input,output);
 		layer.backprop(input, output, dout, din, t);
+		
+		VectorType din_num = ndiff_in(layer, input, inSize)*dout;
 
-		T diff = input.adjoint()*din;
-		diff -= T(input.adjoint()*ndiff_in(layer, input, inSize)*dout);
-		REQUIRE_THAT(abs(diff)/inSize,
+		VectorType diff = din - din_num;
+
+		if(diff.norm()/inSize > 1e-6)
+		{
+			std::cout << "input: " << input.transpose() << std::endl;
+			std::cout << "dout: " <<dout.transpose() << std::endl;
+			std::cout << "din: " << din.transpose() << std::endl;
+			std::cout << "din_num: " << din_num.transpose() << std::endl;
+		}
+		REQUIRE_THAT(diff.norm()/inSize,
 				WithinAbsMatcher(0.,1e-6));
 	}
 }
+
 TEMPLATE_PRODUCT_TEST_CASE("Test ActivationLayer by activations", "[layer][activations]", (activation::Identity, activation::LnCosh, activation::Tanh, activation::ReLU),(std::complex<double>))
 {
 	using std::abs;
@@ -57,7 +70,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Test ActivationLayer by activations", "[layer][activ
 
 	for(int i = 0; i < 100; i++)
 	{
-		VectorType input = VectorType::Random(inSize);
+		VectorType input = 2.0*VectorType::Random(inSize);
 		VectorType output(inSize);
 		VectorType dout = VectorType::Random(inSize);
 		VectorType din(inSize);
