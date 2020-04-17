@@ -9,17 +9,17 @@ namespace yannq
 {
 template<typename T, class RandomEngine = std::default_random_engine>
 class RunRBMExact
-	: public AbstractRunner<T, RandomEngine, RunRBMExact<T, RandomEngine> >
+	: public AbstractRunner<RBM<T>, RandomEngine, RunRBMExact<T, RandomEngine> >
 {
 public:
-	using MachineT = typename AbstractRunner<T, RandomEngine, RunRBMExact<T, RandomEngine>>::MachineT;
-	using MatrixType = typename MachineT::MatrixType;
-	using VectorType = typename MachineT::VectorType;
+	using MachineType = RBM<T>;
+	using MatrixType = typename MachineType::MatrixType;
+	using VectorType = typename MachineType::VectorType;
 
 public:
 	RunRBMExact(const uint32_t N, const int alpha, bool useBias, std::ostream& logger)
-		: AbstractRunner<T, RandomEngine, RunRBMExact<T, RandomEngine>>
-		  	(N, alpha, useBias, logger)
+		: AbstractRunner<MachineType, RandomEngine, RunRBMExact<T, RandomEngine>>
+		  	(logger, N, N*alpha, useBias)
 	{
 	}
 
@@ -45,7 +45,7 @@ public:
 		int maxIter, saveWfPer;
 		std::tie(maxIter, saveWfPer) = this->getIterParams();
 
-		SRMatExact<MachineT> srex(this->qs_, std::forward<Basis>(basis), ham);
+		SRMatExact<MachineType> srex(this->qs_, std::forward<Basis>(basis), ham);
 
 		for(int ll = 0; ll <= maxIter; ll++)
 		{
@@ -56,7 +56,7 @@ public:
 				sprintf(fileName, "w%04d.dat",ll);
 				std::fstream out(fileName, std::ios::binary | std::ios::out);
 				{
-					auto qsToSave = std::make_unique<MachineT>(this->qs_);
+					auto qsToSave = std::make_unique<MachineType>(this->qs_);
 					cereal::BinaryOutputArchive oa(out);
 					oa(qsToSave);
 				}
@@ -103,7 +103,7 @@ public:
 		int maxIter, saveWfPer;
 		std::tie(maxIter, saveWfPer) = this->getIterParams();
 
-		OverlapOptimizerExact<MachineT> ovex(this->qs_, std::forward<Basis>(basis));
+		OverlapOptimizerExact<MachineType> ovex(this->qs_, std::forward<Basis>(basis));
 
 		ovex.setTarget(st);
 
@@ -116,7 +116,7 @@ public:
 				sprintf(fileName, "w%04d.dat",ll);
 				std::fstream out(fileName, std::ios::binary | std::ios::out);
 				{
-					auto qsToSave = std::make_unique<MachineT>(this->qs_);
+					auto qsToSave = std::make_unique<MachineType>(this->qs_);
 					cereal::BinaryOutputArchive oa(out);
 					oa(qsToSave);
 				}

@@ -33,11 +33,13 @@ namespace yannq {
 template<typename T>
 class FullyConnected : public AbstractLayer<T> 
 {
+public:
 	using VectorType = typename AbstractLayer<T>::VectorType;
 	using MatrixType = typename AbstractLayer<T>::MatrixType;
 	using VectorRefType = typename AbstractLayer<T>::VectorRefType;
 	using VectorConstRefType = typename AbstractLayer<T>::VectorConstRefType;
 
+private:
 	bool useBias_;
 
 	uint32_t inputDim_;        // input size
@@ -48,14 +50,12 @@ class FullyConnected : public AbstractLayer<T>
 	VectorType bias_;    // Bias parameters, b(out_size x 1)
 	// Note that input of this layer is also the output of
 	// previous layer
-
-	constexpr static char name_[] = "Fully Connected Layer";
-
+	
 public:
 	/// Constructor
-	FullyConnected(const uint32_t input_size, const uint32_t output_size,
+	FullyConnected(const uint32_t inputDim, const uint32_t outputDim,
 			const bool useBias = false)
-		: useBias_(useBias), inputDim_(input_size), outputDim_(output_size) 
+		: useBias_(useBias), inputDim_(inputDim), outputDim_(outputDim) 
 	{
 		weight_.resize(inputDim_, outputDim_);
 
@@ -68,16 +68,28 @@ public:
 		bias_.setZero();
 	}
 
-	std::string name() const override { return name_; }
+	FullyConnected(const FullyConnected& ) = default;
+	FullyConnected(FullyConnected&& ) = default;
 
-	nlohmann::json to_json() const override {
-		nlohmann::json layerpar;
-		layerpar["Name"] = "FullyConnected";
-		layerpar["UseBias"] = useBias_;
-		layerpar["Inputs"] = inputDim_;
-		layerpar["Outputs"] = outputDim_;
+	FullyConnected& operator=(const FullyConnected&) = default;
+	FullyConnected& operator=(FullyConnected&&) = default;
 
-		return layerpar;
+	bool operator==(const FullyConnected& rhs) const
+	{
+		return (weight_ == rhs.weight_) && (bias_ == rhs.bias_);
+	}
+
+
+	std::string name() const override { return "Fully Connected Layer"; }
+
+	nlohmann::json desc() const override 
+	{
+		nlohmann::json res;
+		res["name"] = name();
+		res["use_bias"] = useBias_;
+		res["input_dim"] = inputDim_;
+		res["output_dim"] = outputDim_;
+		return res;
 	}
 
 	template<class RandomEngine>
@@ -91,6 +103,7 @@ public:
 	uint32_t inputDim() const { return inputDim_; }
 
 	uint32_t outputDim(uint32_t inputDim) const override {
+		(void)inputDim;
 		assert(inputDim == inputDim_);
 		return outputDim_; 
 	}
@@ -147,7 +160,7 @@ public:
 
 	// Computes derivative.
 	void backprop(const VectorConstRefType& prev_layer_output,
-			const VectorConstRefType& this_layer_output,
+			const VectorConstRefType& /*this_layer_output*/,
 			const VectorConstRefType& dout,
 			VectorRefType din, VectorRefType der) override 
 	{
@@ -178,8 +191,7 @@ public:
 		return outputDim_;
 	}
 };
-template<typename T>
-constexpr char FullyConnected<T>::name_[];
+
 }  // namespace yannq
 
 #endif

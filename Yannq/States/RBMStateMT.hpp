@@ -248,6 +248,7 @@ private:
 public:
 	using Machine = RBM<ScalarType>;
 	using Vector = typename Machine::VectorType;
+	using ReScalarType = typename remove_complex<ScalarType>::type;
 
 	RBMStateValueMT(const Machine& qs, Eigen::VectorXi&& sigma) noexcept
 		: RBMStateObjMT<ScalarType, RBMStateValueMT<ScalarType> >(qs), 
@@ -307,7 +308,7 @@ public:
 		tbb::parallel_for(0u, uint32_t(theta_.size()), 
 			[this, k](uint32_t idx)
 		{
-			theta_(idx) -= 2.0*T(sigma_(k))*(this->qs_.W(idx,k));
+			theta_(idx) -= 2.0*ReScalarType(sigma_(k))*(this->qs_.W(idx,k));
 		});
 		sigma_(k) *= -1;
 	}
@@ -317,8 +318,8 @@ public:
 		tbb::parallel_for(0u, uint32_t(theta_.size()), 
 			[this, k, l](uint32_t idx)
 		{
-			theta_(idx) += -2.0*T(sigma_(k))*(this->qs_.W(idx,k))
-				-2.0*T(sigma_(l))*(this->qs_.W(idx,l));
+			theta_(idx) += -2.0*ReScalarType(sigma_(k))*(this->qs_.W(idx,k))
+				-2.0*ReScalarType(sigma_(l))*(this->qs_.W(idx,l));
 		});
 		sigma_(k) *= -1;
 		sigma_(l) *= -1;
@@ -333,7 +334,7 @@ public:
 			ScalarType diff{};
 			for(int elt: v)
 			{
-				 diff += 2.0*T(sigma_(elt))*(this->qs_.W(idx,elt));
+				 diff += 2.0*ReScalarType(sigma_(elt))*(this->qs_.W(idx,elt));
 			}
 			theta_(idx) -= diff;
 		});

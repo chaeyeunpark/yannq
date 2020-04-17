@@ -45,7 +45,7 @@ private:
 
 public:
 
-	nlohmann::json params() const
+	nlohmann::json to_json() const
 	{
 		return nlohmann::json
 		{
@@ -55,6 +55,7 @@ public:
 			{"m", m_}
 		};
 	}
+
 	inline uint32_t getN() const
 	{
 		return n_;

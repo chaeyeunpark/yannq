@@ -17,11 +17,10 @@
 #include "Serializers/SerializeRBM.hpp"
 namespace yannq
 {
-template<typename T, class RandomEngine, class Derived>
+template<class MachineType, class RandomEngine, class Derived>
 class AbstractRunner
 {
 public:
-	using MachineT = yannq::RBM<T>;
 	using json = nlohmann::json;
 
 #if defined(__GNUC__) && (__GNUC__ <= 7)
@@ -31,7 +30,7 @@ public:
 #endif
 
 protected:
-	MachineT qs_;
+	MachineType qs_;
 	std::ostream& logger_;
 	RandomEngine re_;
 
@@ -50,16 +49,19 @@ private:
 	tbb::task_scheduler_init init_;
 
 protected:
-	std::unique_ptr<yannq::Optimizer<T> > opt_;
+	std::unique_ptr<yannq::Optimizer<typename MachineType::ScalarType> > opt_;
 
-public:
-	AbstractRunner(const uint32_t N, const int alpha, bool useBias, std::ostream& logger)
-		: qs_(N, alpha*N, useBias), logger_{logger},
+	template<typename ...Ts>
+	AbstractRunner(std::ostream& logger, Ts&&... args)
+		: qs_(std::forward<Ts>(args)...), logger_{logger},
 		init_(tbb::task_scheduler_init::deferred)
 	{
 		std::random_device rd;
 		re_.seed(rd());
 	}
+
+
+public:
 
 	std::ostream& logger()
 	{
@@ -114,7 +116,7 @@ public:
 
 		std::fstream in(filePath, ios::binary | ios::in);
 		cereal::BinaryInputArchive ia(in);
-		std::unique_ptr<MachineT> qsLoad{nullptr};
+		std::unique_ptr<MachineType> qsLoad{nullptr};
 		ia(qsLoad);
 		qs_ = *qsLoad;
 	}
@@ -128,7 +130,7 @@ public:
 
 	void setOptimizer(const json& optParam)
 	{
-		opt_ = std::move(yannq::OptimizerFactory<T>::getInstance().createOptimizer(optParam));
+		opt_ = std::move(yannq::OptimizerFactory<typename MachineType::ScalarType>::getInstance().createOptimizer(optParam));
 	}
 
 	void setIterParams(const int maxIter, const int saveWfPer)
@@ -142,11 +144,11 @@ public:
 		return {maxIter_, saveWfPer_};
 	}
 
-	const MachineT& getQs() const &
+	const MachineType& getQs() const &
 	{
 		return qs_;
 	}
-	MachineT getQs() && 
+	MachineType getQs() && 
 	{
 		return qs_;
 	}
@@ -164,7 +166,7 @@ public:
 		};
 		j["SR"] = SR;
 		j["numThreads"] = Eigen::nbThreads();
-		j["machine"] = qs_.params();
+		j["machine"] = qs_.desc();
 		j["sampler"] = "Exact";
 
 		return j;

@@ -47,14 +47,14 @@ endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 	include_directories("$ENV{MKLROOT}/include")
-	link_libraries(mkl_intel_lp64 mkl_intel_thread mkl_core tbb pthread m dl)
+	link_libraries(mkl_intel_lp64 mkl_tbb_thread mkl_core tbb pthread m dl)
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	include_directories("$ENV{MKLROOT}/include")
-	link_libraries(mkl_intel_lp64 mkl_intel_thread mkl_core tbb pthread m dl)
+	link_libraries(mkl_intel_lp64 mkl_tbb_thread mkl_core tbb pthread m dl)
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mkl=parallel -tbb")
 	include_directories("$ENV{MKLROOT}/include")
-	link_libraries(mkl_intel_lp64 mkl_tbb_thread mkl_core tbb stdc++ pthread m dl)
+	link_libraries(tbb stdc++ pthread m dl)
 endif()
 
 add_custom_command(
@@ -135,6 +135,27 @@ add_executable(TestFeedForward "Tests/TestFeedForward.cpp")
 add_test(
 	NAME TestFeedForward
 	COMMAND TestFeedForward
+)
+
+add_executable(TestSerializeConv1D "Tests/TestSerializeConv1D.cpp")
+add_dependencies(TestSerializeConv1D libcereal_untar)
+add_test(
+	NAME TestSerializeConv1D
+	COMMAND TestSerializeConv1D
+)
+
+add_executable(TestSerializeActivations "Tests/TestSerializeActivations.cpp")
+add_dependencies(TestSerializeActivations libcereal_untar)
+add_test(
+	NAME TestSerializeActivations
+	COMMAND TestSerializeActivations
+)
+
+add_executable(TestSerializeFullyConnected "Tests/TestSerializeFullyConnected.cpp")
+add_dependencies(TestSerializeFullyConnected libcereal_untar)
+add_test(
+	NAME TestSerializeFullyConnected
+	COMMAND TestSerializeFullyConnected
 )
 
 add_executable(TestHamXYZSto "Tests/TestHamXYZSto.cpp")

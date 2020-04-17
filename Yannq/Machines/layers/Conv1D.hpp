@@ -24,11 +24,13 @@ template<typename T>
 class Conv1D : public AbstractLayer<T> {
 	static_assert(!AbstractLayer<T>::MatrixType::IsRowMajor, "MatrixType must be column-major");
 
+public:
 	using VectorType = Eigen::Matrix<T, Eigen::Dynamic, 1>;
 	using MatrixType = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
 	using VectorRefType = Eigen::Ref<VectorType>;
 	using VectorConstRefType = Eigen::Ref<const VectorType>;
 
+private:
 	const bool useBias_;  // boolean to turn or off bias
 
 	const uint32_t inChannels_;   // number of input channels
@@ -41,8 +43,6 @@ class Conv1D : public AbstractLayer<T> {
 
 	MatrixType kernel_;  // Weight parameters, W((inChannels_ * kernelSize)x(outChannels))
 	VectorType bias_;     // Bias parameters, b(outChannels)
-
-	constexpr static char name_[] = "Convolutional 1D Layer";
 
 	static uint32_t numParams(bool useBias, const uint32_t inChannels,
 			const uint32_t outChannels, const uint32_t kernelSize)
@@ -65,7 +65,30 @@ public:
 	{
 	}
 
-	std::string name() const override { return name_; }
+	Conv1D(const Conv1D& rhs) = default;
+	Conv1D(Conv1D&& rhs) = default;
+
+	Conv1D& operator=(const Conv1D& rhs) = default;
+	Conv1D& operator=(Conv1D&& rhs) = default;
+
+	bool operator==(const Conv1D& rhs) const
+	{
+		if(useBias_ != rhs.useBias_)
+			return false;
+
+		bool res = (inChannels_ == rhs.inChannels_) && 
+				(outChannels_ == rhs.outChannels_) &&
+				(kernelSize_ == rhs.kernelSize_) &&
+				(stride_ == rhs.stride_) &&
+				(kernel_ == rhs.kernel_);
+
+		if(!useBias_)
+			return res;
+		else
+			return res && (bias_ == rhs.bias_);
+	}
+
+	std::string name() const override { return "Convolutional 1D Layer"; }
 
 	template<class RandomEngine>
 	void randomizeParams(RandomEngine&& re, double sigma)
@@ -217,9 +240,9 @@ public:
 		return outChannels_*kernelSize_;
 	}
 
-	nlohmann::json to_json() const override {
+	nlohmann::json desc() const override {
 		nlohmann::json layerpar;
-		layerpar["name"] = name_;
+		layerpar["name"] = name();
 		layerpar["use_bias"] = useBias_;
 		layerpar["input_channels"] = inChannels_;
 		layerpar["output_channels"] = outChannels_;
@@ -228,8 +251,6 @@ public:
 		return layerpar;
 	}
 };
-template<typename T>
-constexpr char Conv1D<T>::name_[];
 }// namespace yannq
 
 #endif

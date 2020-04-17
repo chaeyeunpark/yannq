@@ -27,8 +27,8 @@ template<class BasisType>
 tbb::concurrent_vector<uint32_t> parallelConstructBasis(BasisType&& basis, std::random_access_iterator_tag)
 {
 	tbb::concurrent_vector<uint32_t> res(basis.size(), 0u);
-	tbb::parallel_for(std::size_t(0u), basis.size()
-		[&](uint32_t idx)
+	tbb::parallel_for(std::size_t(0u), basis.size(),
+		[&](std::size_t idx)
 	{
 		res[idx] = basis[idx];
 	});

@@ -14,8 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef YANNQ_ABSTRACTLAYER_HH
-#define YANNQ_ABSTRACTLAYER_HH
+#pragma once
 
 #include <complex>
 #include <fstream>
@@ -44,6 +43,8 @@ public:
 	  @return Name of Layer.
 	  */
 	virtual std::string name() const = 0;
+
+	virtual bool operator==(const AbstractLayer<T>& rhs) const = 0;
 
 	/**
 	  Member function returning the number of variational parameters.
@@ -100,13 +101,11 @@ public:
 			VectorRefType din,
 			VectorRefType der) = 0;
 
-	virtual nlohmann::json to_json() const = 0;
+	virtual nlohmann::json desc() const = 0;
 
 	/**
 	  destructor
 	  */
 	virtual ~AbstractLayer() {}
 };
-}  // namespace netket
-
-#endif
+}  // namespace yannq

@@ -41,10 +41,10 @@ public:
 //! \ingroup Runners
 template<typename T, class RandomEngine = std::default_random_engine>
 class RunRBM
-	: public AbstractRunner<T, RandomEngine, RunRBM<T, RandomEngine>>
+	: public AbstractRunner<RBM<T>, RandomEngine, RunRBM<T, RandomEngine>>
 {
 public:
-	using MachineT = typename AbstractRunner<T, RandomEngine, RunRBM<T, RandomEngine>>::MachineT;
+	using MachineType = RBM<T>;
 
 private:
 	bool useCG_ = false;
@@ -56,8 +56,8 @@ private:
 public:
 	RunRBM(const unsigned int N, const unsigned int alpha,
 			bool useBias, std::ostream& logger)
-		: AbstractRunner<T, RandomEngine, RunRBM<T, RandomEngine>>
-		  	(N, alpha, useBias, logger)
+		: AbstractRunner<RBM<T>, RandomEngine, RunRBM<T, RandomEngine>>
+		  	(logger, N, /* M = */alpha*N, useBias)
 	{
 	}
 
@@ -77,19 +77,19 @@ public:
 	template<class Sweeper> 
 	auto createSamplerPT(Sweeper& sweeper, uint32_t numChains) const
 	{
-		return SamplerPT<MachineT, std::default_random_engine, RBMStateValue<T>, Sweeper>(this->qs_, numChains, sweeper);
+		return SamplerPT<MachineType, std::default_random_engine, RBMStateValue<T>, Sweeper>(this->qs_, numChains, sweeper);
 	}
 	//if not usePT
 	template<class Sweeper> 
 	auto createSamplerMT(Sweeper& sweeper) const
 	{
-		return Sampler<MachineT, std::default_random_engine, RBMStateValueMT<T>, Sweeper>(this->qs_, sweeper);
+		return Sampler<MachineType, std::default_random_engine, RBMStateValueMT<T>, Sweeper>(this->qs_, sweeper);
 	}
 	
 	template<class Iterable>
 	auto createSamplerExact(Iterable&& basis) const
 	{
-		return ExactSampler<MachineT, std::default_random_engine>(this->qs_, std::forward<Iterable>(basis));
+		return ExactSampler<MachineType, std::default_random_engine>(this->qs_, std::forward<Iterable>(basis));
 	}
 	
 	/** \brief Run the calculation
@@ -110,15 +110,15 @@ public:
 	{
 		using Clock = std::chrono::high_resolution_clock;
 		using namespace yannq;
-		using MatrixT = typename MachineT::MatrixType;
-		using VectorT = typename MachineT::VectorType;
+		using MatrixT = typename MachineType::MatrixType;
+		using VectorT = typename MachineType::VectorType;
 
 		if(!this->threadsInitiialized_)
 			this->initializeThreads();
 		if(!this->weightsInitialized_)
 			this->initializeRandom();
 
-		SRMat<MachineT,Hamiltonian> srm(this->qs_, std::forward<Hamiltonian>(ham));
+		SRMat<MachineType,Hamiltonian> srm(this->qs_, std::forward<Hamiltonian>(ham));
 		
 		sampler.initializeRandomEngine();
 
@@ -149,7 +149,7 @@ public:
 				sprintf(fileName, "w%04d.dat",ll);
 				std::fstream out(fileName, std::ios::binary | std::ios::out);
 				{
-					auto qsToSave = std::make_unique<MachineT>(this->qs_);
+					auto qsToSave = std::make_unique<MachineType>(this->qs_);
 					cereal::BinaryOutputArchive oa(out);
 					oa(qsToSave);
 				}
@@ -159,7 +159,8 @@ public:
 			//Sampling
 			auto smp_start = Clock::now();
 			auto sr = sampler.sampling(nSamples, nSamplesDiscard);
-			auto smp_dur = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - smp_start).count();
+			auto smp_dur = std::chrono::duration_cast<std::chrono::milliseconds>
+				(Clock::now() - smp_start).count();
 
 			auto slv_start = Clock::now();
 
@@ -189,7 +190,8 @@ public:
 
 			VectorT optV = this->opt_->getUpdate(v);
 
-			auto slv_dur = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - slv_start).count();
+			auto slv_dur = std::chrono::duration_cast<std::chrono::milliseconds>
+				(Clock::now() - slv_start).count();
 
 			double nv = v.norm();
 

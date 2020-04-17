@@ -18,9 +18,13 @@ private:
 
 public:
 	using AmplitudeMachine = RBM<ScalarType>;
+	using ReScalarType = ScalarType;
 	using CxScalarType = std::complex<double>;
 	using MatrixType = Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>;
 	using VectorType = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
+
+	using ReMatrixType = Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>;
+	using ReVectorType = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
 
 	using CxMatrixType = Eigen::Matrix<CxScalarType, Eigen::Dynamic, Eigen::Dynamic>;
 	using CxVectorType = Eigen::Matrix<CxScalarType, Eigen::Dynamic, 1>;
@@ -30,27 +34,27 @@ public:
 	using VectorRefType = Eigen::Ref<VectorType>;
 	using VectorConstRefType = Eigen::Ref<const VectorType>;
 
-	AmplitudePhase(uint32_t N, uint32_t M, FeedForward<ScalarType>&& phase)
-		: N_{N}, amplitude_(N, M), phase_(std::move(phase))
+	AmplitudePhase(uint32_t N, uint32_t M, bool useBias, FeedForward<ScalarType>&& phase)
+		: N_{N}, amplitude_(N, M, useBias), phase_(std::move(phase))
 	{
 	}
 
-	VectorType logDerivAmp(const std::pair<AmplitudeDataType,PhaseDataType>& data) const
+	VectorType logDerivAmp(const AmplitudeDataType& data) const
 	{
-		return amplitude_.logDeriv(data.first)/2.0;
+		return amplitude_.logDeriv(data)/2.0;
 	}
 
-	VectorType logDerivPhase(const std::pair<AmplitudeDataType,PhaseDataType>& data) const
+	VectorType logDerivPhase(const PhaseDataType& data) const
 	{
-		return (M_PI)*phase_.backward(data.second);
+		return (M_PI)*phase_.backward(data);
 	}
 
 	CxVectorType logDeriv(const std::pair<AmplitudeDataType,PhaseDataType>& data) const
 	{
 		constexpr CxScalarType I(0., 1.);
 		CxVectorType res(getDim());
-		res.head(amplitude_.getDim()) = logDerivAmp(data);
-		res.tail(phase_.getDim()) = I*logDerivPhase(data);
+		res.head(amplitude_.getDim()) = logDerivAmp(data.first);
+		res.tail(phase_.getDim()) = I*logDerivPhase(data.second);
 		return res;
 	}
 
@@ -75,10 +79,19 @@ public:
 	}
 
 	template<typename RandomEngine>
-	void initializeAmplitudeRandom(RandomEngine&& re, double sigma)
+	void initializeAmplitudeRandom(RandomEngine& re, double sigma)
 	{
 		amplitude_.initializeRandom(re, sigma);
 	}
+
+	template<typename RandomEngine>
+	void initializeRandom(RandomEngine& re, double sigma)
+	{
+		initializeAmplitudeRandom(re, sigma);
+		//phase_.initializeRandom(re, InitializationMode::Xavier);
+		phase_.initializeRandom(re, InitializationMode::LeCun);
+	}
+
 
 	AmplitudeDataType makeAmpData(const Eigen::VectorXi& sigma) const
 	{
@@ -121,6 +134,14 @@ public:
 		assert(m.size() == getDim());
 		amplitude_.updateParams(m.head(amplitude_.getDim()));
 		phase_.updateParams(m.segment(amplitude_.getDim(), phase_.getDim()));
+	}
+
+	nlohmann::json dsec() const
+	{
+		nlohmann::json res;
+		res["amplitude"] = amplitude_.desc();
+		res["phase"] = phase_.desc();
+		return res;
 	}
 };
 

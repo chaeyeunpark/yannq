@@ -54,6 +54,8 @@ public:
 			case InitializationMode::He:
 				return sqrt(2.0/(fanIn));
 			}
+			assert(false);
+			return 0.0;
 		};
 
 		for(auto& layer: layers_)
@@ -104,6 +106,16 @@ public:
 			ss << layer->name() << "\t" << layer->paramDim() << std::endl;
 		}
 		return ss.str();
+	}
+
+	nlohmann::json desc() const
+	{
+		nlohmann::json res;
+		for(const auto& layer: layers_)
+		{
+			res.push_back( layer->desc() );
+		}
+		return res;
 	}
 
 	void setParams(VectorConstRefType pars)

@@ -44,7 +44,6 @@ class Identity
 	using VectorConstRefType = Eigen::Ref<const VectorType>;
 
 public:
-	static constexpr char name[] = "Identity";
 	// A = Z
 	inline void operator()(VectorConstRefType Z, VectorRefType A) const  {
 		A.noalias() = Z;
@@ -59,10 +58,12 @@ public:
 			VectorRefType G) const  {
 		G.noalias() = F;
 	}
+
+	std::string name() const {
+		return "Identity";
+	}
 };
 
-template<typename T>
-constexpr char Identity<T>::name[];
 
 template<typename T>
 class LnCosh 
@@ -73,7 +74,6 @@ class LnCosh
 	using VectorConstRefType = Eigen::Ref<const VectorType>;
 
 public:
-	constexpr static char name[] = "LnCosh";
 	// A = Lncosh(Z)
 	inline void operator()(VectorConstRefType Z, VectorRefType A) const  {
 		for (int i = 0; i < A.size(); ++i) {
@@ -90,9 +90,11 @@ public:
 			VectorRefType G) const  {
 		G.array() = F.array() * Z.array().tanh();
 	}
+
+	std::string name() const {
+		return "LnCosh";
+	}
 };
-template<typename T>
-constexpr char LnCosh<T>::name[];
 
 template<typename T>
 class Tanh 
@@ -103,7 +105,6 @@ class Tanh
 	using VectorConstRefType = Eigen::Ref<const VectorType>;
 
 public:
-	static constexpr char name[] = "Tanh";
 	// A = Tanh(Z)
 	inline void operator()(VectorConstRefType Z, VectorRefType A) const  {
 		A.array() = Z.array().tanh();
@@ -118,9 +119,12 @@ public:
 			VectorRefType G) const  {
 		G.array() = F.array() * (1. - A.array() * A.array());
 	}
+
+	std::string name() const
+	{
+		return "Tanh";
+	}
 };
-template<typename T>
-constexpr char Tanh<T>::name[];
 
 
 template<typename T>
@@ -134,7 +138,6 @@ class Sigmoid
 	using VectorConstRefType = Eigen::Ref<const VectorType>;
 
 public:
-	static constexpr char name[] = "Sigmoid";
 	// A = Sigmoid(Z)
 	inline void operator()(VectorConstRefType Z, VectorRefType A) const  {
 		A.array() = Z.array().exp();
@@ -152,10 +155,12 @@ public:
 			VectorRefType G) const  {
 		G.array() = (1. - A.array() ) * A.array();
 	}
-};
-template<typename T>
-constexpr char Sigmoid<T>::name[];
 
+	std::string name() const
+	{
+		return "Sigmoid";
+	}
+};
 
 template<typename T, typename Enable = void>
 class ReLU;
@@ -173,8 +178,6 @@ class ReLU<T, std::enable_if_t<is_complex_type<T>::value > >
 	const double theta2_ = -std::atan(1);
 
 public:
-	static constexpr char name[] = "ReLU";
-
 	// A = ReLU(Z)
 	inline void operator()(VectorConstRefType Z, VectorRefType A) const  {
 		for (int i = 0; i < Z.size(); ++i) {
@@ -195,6 +198,11 @@ public:
 				(std::arg(Z(i)) < theta1_) && (std::arg(Z(i)) > theta2_) ? F(i) : 0.0;
 		}
 	}
+
+	std::string name() const
+	{
+		return "ReLU";
+	}
 };
 //For real T
 template<typename T>
@@ -206,8 +214,6 @@ class ReLU<T, std::enable_if_t<!is_complex_type<T>::value> >
 	using VectorConstRefType = Eigen::Ref<const VectorType>;
 
 public:
-	static constexpr char name[] = "ReLU";
-
 	// A = ReLU(Z)
 	inline void operator()(VectorConstRefType Z, VectorRefType A) const  {
 		for (int i = 0; i < Z.size(); ++i) {
@@ -227,13 +233,13 @@ public:
 			G(i) = Z(i)>0?F(i):T{0.0};
 		}
 	}
+
+	std::string name() const
+	{
+		return "ReLU";
+	}
+
 };
-
-template<typename T>
-constexpr char ReLU<T, std::enable_if_t<!is_complex_type<T>::value>>::name[];
-template<typename T>
-constexpr char ReLU<T, std::enable_if_t<is_complex_type<T>::value>>::name[];
-
 
 template<typename T, typename Enable = void>
 class LeakyReLU;
@@ -249,11 +255,9 @@ class LeakyReLU<T, std::enable_if_t<is_complex_type<T>::value>>
 
 	const double theta1_ = std::atan(1) * 3;
 	const double theta2_ = -std::atan(1);
-	const double negativeSlope_ = 0.3;
+	double negativeSlope_ = 0.3;
 
 public:
-	static constexpr char name[] = "LeakyReLU";
-
 	LeakyReLU(const double negativeSlope = 0.3)
 		: negativeSlope_{negativeSlope}
 	{
@@ -281,6 +285,10 @@ public:
 		}
 	}
 
+	std::string name() const
+	{
+		return "LeakyReLU";
+	}
 };
 //For real T
 template<typename T>
@@ -291,11 +299,9 @@ class LeakyReLU<T, std::enable_if_t<!is_complex_type<T>::value>>
 	using VectorRefType = Eigen::Ref<VectorType>;
 	using VectorConstRefType = Eigen::Ref<const VectorType>;
 	
-	const double negativeSlope_;
+	double negativeSlope_;
 
 public:
-	static constexpr char name[] = "LeakyReLU";
-
 	LeakyReLU(const double negativeSlope = 0.3)
 		: negativeSlope_{negativeSlope}
 	{
@@ -319,11 +325,13 @@ public:
 			G(i) = Z(i)>0?F(i):T{negativeSlope_*F(i)};
 		}
 	}
+
+	std::string name() const
+	{
+		return "LeakyReLU";
+	}
+
 };
-template<typename T>
-constexpr char LeakyReLU<T, std::enable_if_t<!is_complex_type<T>::value>>::name[];
-template<typename T>
-constexpr char LeakyReLU<T, std::enable_if_t<is_complex_type<T>::value>>::name[];
 
 template<typename T>
 class HardTanh
@@ -335,8 +343,6 @@ class HardTanh
 	using VectorConstRefType = Eigen::Ref<const VectorType>;
 	
 public:
-	static constexpr char name[] = "HardTanh";
-
 	HardTanh()
 	{
 	}
@@ -363,9 +369,12 @@ public:
 			G(i) = abs(Z(i))>1.0?0.0:F(i);
 		}
 	}
+
+	std::string name() const
+	{
+		return "HardTanh";
+	}
 };
-template<typename T>
-constexpr char HardTanh<T>::name[];
 
 template<typename T>
 class SoftShrink
@@ -377,8 +386,6 @@ class SoftShrink
 	using VectorConstRefType = Eigen::Ref<const VectorType>;
 	
 public:
-	static constexpr char name[] = "SoftShrink";
-
 	SoftShrink()
 	{
 	}
@@ -405,9 +412,12 @@ public:
 			G(i) = abs(Z(i))<1.0?0.0:F(i);
 		}
 	}
+
+	std::string name() const
+	{
+		return "SoftShrink";
+	}
 };
-template<typename T>
-constexpr char SoftShrink<T>::name[];
 
 template<typename T>
 class LeakyHardTanh
@@ -418,12 +428,10 @@ class LeakyHardTanh
 	using VectorRefType = Eigen::Ref<VectorType>;
 	using VectorConstRefType = Eigen::Ref<const VectorType>;
 
-	const double outsideSlope_;
+	double outsideSlope_;
 	
 public:
-	static constexpr char name[] = "LeakyHardTanh";
-
-	LeakyHardTanh(double outsideSlope = 0.2)
+	LeakyHardTanh(double outsideSlope = 0.01)
 		: outsideSlope_{outsideSlope}
 	{
 	}
@@ -452,9 +460,12 @@ public:
 			G(i) = abs(Z(i))>1.0?outsideSlope_*F(i):F(i);
 		}
 	}
+
+	std::string name() const
+	{
+		return "LeakyHardTanh";
+	}
 };
-template<typename T>
-constexpr char LeakyHardTanh<T>::name[];
 
 
 template<typename T>
@@ -467,8 +478,6 @@ class SoftSign
 	using VectorConstRefType = Eigen::Ref<const VectorType>;
 	
 public:
-	static constexpr char name[] = "SoftSign";
-
 	SoftSign()
 	{
 	}
@@ -488,10 +497,13 @@ public:
 	{
 		G.array() = (1.0+Z.array().abs()).square().inverse()*F.array();
 	}
-};
-template<typename T>
-constexpr char SoftSign<T>::name[];
 
+	std::string name() const
+	{
+		return "SoftSign";
+	}
+
+};
 }//namsepace activation
 
 }// namespace yannq
