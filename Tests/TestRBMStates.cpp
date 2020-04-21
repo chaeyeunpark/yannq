@@ -28,7 +28,7 @@ template<typename T, class Enable = void>
 struct IsSameRatio;
 
 template<typename T>
-struct IsSameRatio<T, std::enable_if_t<yannq::is_complex_type<T>::value> > 
+struct IsSameRatio<T, typename std::enable_if<yannq::is_complex_type<T>::value>::type > 
 	: public Catch::MatcherBase<T> 
 {
 	using RealT = typename yannq::remove_complex<T>::type;
@@ -61,7 +61,7 @@ struct IsSameRatio<T, std::enable_if_t<yannq::is_complex_type<T>::value> >
 };
 
 template<typename T>
-struct IsSameRatio<T, std::enable_if_t<!yannq::is_complex_type<T>::value> > 
+struct IsSameRatio<T, typename std::enable_if<!yannq::is_complex_type<T>::value>::type > 
 	: public Catch::MatcherBase<T>
 {
 	T val;

@@ -1,9 +1,7 @@
-#ifndef HAMILTONIANS_XXXXJ1J2_HPP
-#define HAMILTONIANS_XXXXJ1J2_HPP
-#include <Eigen/Eigen>
+#pragma once
 #include <nlohmann/json.hpp>
 
-class XXXJ1J2
+class J1J2
 {
 private:
 	int n_;
@@ -13,7 +11,7 @@ private:
 
 public:
 
-	XXXJ1J2(int n, double J1, double J2, bool signRule)
+	J1J2(int n, double J1, double J2, bool signRule)
 		: n_(n), J1_(J1), J2_(J2)
 	{
 		if(signRule)
@@ -26,7 +24,7 @@ public:
 	{
 		return nlohmann::json
 		{
-			{"name", "XXXXJ1J2"},
+			{"name", "XJ1J2"},
 			{"n", n_},
 			{"J1", J1_},
 			{"J2", J2_},
@@ -35,9 +33,9 @@ public:
 	}
 	
 	template<class State>
-	typename State::T operator()(const State& smp) const
+	typename State::Scalar operator()(const State& smp) const
 	{
-		typename State::T s = 0.0;
+		typename State::Scalar s = 0.0;
 
 		//Nearest-neighbor
 		for(int i = 0; i < n_; i++)
@@ -80,4 +78,3 @@ public:
 		return m;
 	}
 };
-#endif//HAMILTONIANS_XXXXJ1J2_HPP

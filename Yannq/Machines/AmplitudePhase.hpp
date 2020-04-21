@@ -9,50 +9,50 @@ namespace yannq
 class AmplitudePhase
 {
 public:
-	using ScalarType = double;
+	using Scalar = double;
 private:
 	const uint32_t N_;
 
-	RBM<ScalarType> amplitude_;
-	FeedForward<ScalarType> phase_;
+	RBM<Scalar> amplitude_;
+	FeedForward<Scalar> phase_;
 
 public:
-	using AmplitudeMachine = RBM<ScalarType>;
-	using ReScalarType = ScalarType;
-	using CxScalarType = std::complex<double>;
-	using MatrixType = Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>;
-	using VectorType = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
+	using AmplitudeMachine = RBM<Scalar>;
+	using RealScalar = Scalar;
+	using ComplexScalar = std::complex<double>;
+	using Matrix = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
+	using Vector = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
 
-	using ReMatrixType = Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>;
-	using ReVectorType = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
+	using RealMatrix = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
+	using RealVector = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
 
-	using CxMatrixType = Eigen::Matrix<CxScalarType, Eigen::Dynamic, Eigen::Dynamic>;
-	using CxVectorType = Eigen::Matrix<CxScalarType, Eigen::Dynamic, 1>;
-	using AmplitudeDataType = std::tuple<Eigen::VectorXi, VectorType>;
-	using PhaseDataType = std::vector<VectorType>;
+	using ComplexMatrix = Eigen::Matrix<ComplexScalar, Eigen::Dynamic, Eigen::Dynamic>;
+	using ComplexVector = Eigen::Matrix<ComplexScalar, Eigen::Dynamic, 1>;
+	using AmplitudeDataType = std::tuple<Eigen::VectorXi, Vector>;
+	using PhaseDataType = std::vector<Vector>;
 
-	using VectorRefType = Eigen::Ref<VectorType>;
-	using VectorConstRefType = Eigen::Ref<const VectorType>;
+	using VectorRef = Eigen::Ref<Vector>;
+	using VectorConstRef = Eigen::Ref<const Vector>;
 
-	AmplitudePhase(uint32_t N, uint32_t M, bool useBias, FeedForward<ScalarType>&& phase)
+	AmplitudePhase(uint32_t N, uint32_t M, bool useBias, FeedForward<Scalar>&& phase)
 		: N_{N}, amplitude_(N, M, useBias), phase_(std::move(phase))
 	{
 	}
 
-	VectorType logDerivAmp(const AmplitudeDataType& data) const
+	Vector logDerivAmp(const AmplitudeDataType& data) const
 	{
 		return amplitude_.logDeriv(data)/2.0;
 	}
 
-	VectorType logDerivPhase(const PhaseDataType& data) const
+	Vector logDerivPhase(const PhaseDataType& data) const
 	{
 		return (M_PI)*phase_.backward(data);
 	}
 
-	CxVectorType logDeriv(const std::pair<AmplitudeDataType,PhaseDataType>& data) const
+	ComplexVector logDeriv(const std::pair<AmplitudeDataType,PhaseDataType>& data) const
 	{
-		constexpr CxScalarType I(0., 1.);
-		CxVectorType res(getDim());
+		constexpr ComplexScalar I(0., 1.);
+		ComplexVector res(getDim());
 		res.head(amplitude_.getDim()) = logDerivAmp(data.first);
 		res.tail(phase_.getDim()) = I*logDerivPhase(data.second);
 		return res;
@@ -108,17 +108,17 @@ public:
 		return std::make_pair(amplitude_.makeData(sigma), phase_.makeData(sigma));
 	}
 
-	ScalarType phaseForward(const PhaseDataType& phaseData) const
+	Scalar phaseForward(const PhaseDataType& phaseData) const
 	{
 		return phase_.forward(phaseData);
 	}
 
-	ScalarType phaseForward(const Eigen::VectorXi& sigma) const
+	Scalar phaseForward(const Eigen::VectorXi& sigma) const
 	{
 		return phase_.forward(sigma);
 	}
 
-	CxScalarType coeff(const AmplitudeDataType& t) const
+	ComplexScalar coeff(const AmplitudeDataType& t) const
 	{
 		constexpr std::complex<double> I(0.,1.);
 		return std::sqrt(amplitude_.coeff(t))*std::exp(I*M_PI*phase_.forward(std::get<0>(t)));
@@ -129,14 +129,14 @@ public:
 		return N_;
 	}
 
-	void updateParams(const VectorConstRefType& m)
+	void updateParams(const VectorConstRef& m)
 	{
 		assert(m.size() == getDim());
 		amplitude_.updateParams(m.head(amplitude_.getDim()));
 		phase_.updateParams(m.segment(amplitude_.getDim(), phase_.getDim()));
 	}
 
-	nlohmann::json dsec() const
+	nlohmann::json desc() const
 	{
 		nlohmann::json res;
 		res["amplitude"] = amplitude_.desc();
@@ -145,10 +145,10 @@ public:
 	}
 };
 
-AmplitudePhase::CxVectorType getPsi(const AmplitudePhase& qs, bool normalize)
+AmplitudePhase::ComplexVector getPsi(const AmplitudePhase& qs, bool normalize)
 {
 	const uint32_t n = qs.getN();
-	AmplitudePhase::CxVectorType psi(1<<n);
+	AmplitudePhase::ComplexVector psi(1<<n);
 	tbb::parallel_for(uint32_t(0u), (1u << n), 
 		[n, &qs, &psi](uint32_t idx)
 	{
@@ -161,10 +161,10 @@ AmplitudePhase::CxVectorType getPsi(const AmplitudePhase& qs, bool normalize)
 }
 
 template<typename Iterable> //Iterable must be random access iterable
-AmplitudePhase::CxVectorType getPsi(const AmplitudePhase& qs, Iterable&& basis, bool normalize)
+AmplitudePhase::ComplexVector getPsi(const AmplitudePhase& qs, Iterable&& basis, bool normalize)
 {
 	const uint32_t n = qs.getN();
-	AmplitudePhase::CxVectorType psi(basis.size());
+	AmplitudePhase::ComplexVector psi(basis.size());
 
 	tbb::parallel_for(std::size_t(0u), basis.size(),
 		[n, &qs, &psi, &basis](std::size_t idx)

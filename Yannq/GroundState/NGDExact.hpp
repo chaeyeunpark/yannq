@@ -18,34 +18,35 @@ namespace yannq
 class NGDExact
 {
 public:
-	using MachineType = AmplitudePhase;
-	using ReScalarType = typename MachineType::ReScalarType;
-	using CxScalarType = typename MachineType::CxScalarType;
+	using Machine = AmplitudePhase;
+	using RealScalar = typename Machine::RealScalar;
+	using ComplexScalar = typename Machine::ComplexScalar;
 
-	using ReMatrixType = typename MachineType::ReMatrixType;
-	using ReVectorType = typename MachineType::ReVectorType;
+	using RealMatrix = typename Machine::RealMatrix;
+	using RealVector = typename Machine::RealVector;
 
-	using CxMatrixType = typename MachineType::CxMatrixType;
-	using CxVectorType = typename MachineType::CxVectorType;
+	using ComplexMatrix = typename Machine::ComplexMatrix;
+	using ComplexVector = typename Machine::ComplexVector;
+
 private:
 	const uint32_t n_;
 	const AmplitudePhase& qs_;
 	tbb::concurrent_vector<uint32_t> basis_;
 
-	Eigen::SparseMatrix<ReScalarType> ham_;
+	Eigen::SparseMatrix<RealScalar> ham_;
 
-	ReMatrixType deltasAmp_;
-	ReMatrixType deltasPhase_;
+	RealMatrix deltasAmp_;
+	RealMatrix deltasPhase_;
 
-	ReMatrixType deltasAmpPsis_;
-	ReMatrixType deltasPhasePsis_;
+	RealMatrix deltasAmpPsis_;
+	RealMatrix deltasPhasePsis_;
 
-	ReVectorType olocAmp_;
-	ReVectorType olocPhase_;
+	RealVector olocAmp_;
+	RealVector olocPhase_;
 
-	ReVectorType grad_;
+	RealVector grad_;
 
-	ReScalarType energy_;
+	RealScalar energy_;
 
 	void constructDeltaAmp()
 	{
@@ -59,8 +60,8 @@ private:
 			{
 				uint32_t start = r.begin();
 				uint32_t end = r.end();
-				ReMatrixType tmp(end-start, qs_.getDimAmp());
-				for(int l = 0; l < end-start; ++l)
+				RealMatrix tmp(end-start, qs_.getDimAmp());
+				for(uint32_t l = 0; l < end-start; ++l)
 				{
 					tmp.row(l) = 
 						qs_.logDerivAmp(qs_.makeAmpData(toSigma(N, basis_[l+start])));
@@ -91,8 +92,8 @@ private:
 			{
 				uint32_t start = r.begin();
 				uint32_t end = r.end();
-				ReMatrixType tmp(end-start, qs_.getDimPhase());
-				for(int l = 0; l < end-start; ++l)
+				RealMatrix tmp(end-start, qs_.getDimPhase());
+				for(uint32_t l = 0; l < end-start; ++l)
 				{
 					tmp.row(l) = 
 						qs_.logDerivPhase(qs_.makePhaseData(toSigma(N, basis_[l+start])));
@@ -113,7 +114,7 @@ private:
 
 public:
 
-	ReScalarType getEnergy() const
+	RealScalar getEnergy() const
 	{
 		return energy_;
 	}
@@ -121,10 +122,10 @@ public:
 
 	void constructExact()
 	{
-		CxVectorType st = getPsi(qs_, basis_, true);
-		CxVectorType k = ham_*st;
+		ComplexVector st = getPsi(qs_, basis_, true);
+		ComplexVector k = ham_*st;
 
-		energy_ = std::real(CxScalarType(st.adjoint()*k));
+		energy_ = std::real(ComplexScalar(st.adjoint()*k));
 
 		constructDeltaAmp();
 		constructDeltaPhase();
@@ -148,46 +149,46 @@ public:
 			*/
 	}
 
-	ReScalarType eloc() const
+	RealScalar eloc() const
 	{
 		return energy_;
 	}
 
-	const ReVectorType& olocAmp() const&
+	const RealVector& olocAmp() const&
 	{
 		return olocAmp_;
 	}
 
-	ReMatrixType olocAmp() &&
+	RealMatrix olocAmp() &&
 	{
 		return olocAmp_;
 	}
 
-	const ReVectorType& olocPhase() const&
+	const RealVector& olocPhase() const&
 	{
 		return olocPhase_;
 	}
 
-	ReMatrixType olocPhase() &&
+	RealMatrix olocPhase() &&
 	{
 		return olocPhase_;
 	}
 
-	ReMatrixType corrMatAmp() const
+	RealMatrix corrMatAmp() const
 	{
-		ReMatrixType res = deltasAmp_.transpose()*deltasAmpPsis_;
+		RealMatrix res = deltasAmp_.transpose()*deltasAmpPsis_;
 		res -= olocAmp_*olocAmp_.transpose();
 		return res;
 	}
 
-	ReMatrixType corrMatPhase() const
+	RealMatrix corrMatPhase() const
 	{
-		ReMatrixType res = deltasPhase_.transpose()*deltasPhasePsis_;
+		RealMatrix res = deltasPhase_.transpose()*deltasPhasePsis_;
 		res -= olocPhase_*olocPhase_.transpose();
 		return res;
 	}
 
-	ReVectorType energyGrad() const
+	RealVector energyGrad() const
 	{
 		return grad_;
 	}
@@ -203,7 +204,8 @@ public:
 		});
 		tbb::parallel_sort(basis_.begin(), basis_.end());
 
-		ham_ = edp::constructSubspaceMat<double>(std::forward<ColFunc>(col), basis_);
+		ham_ = edp::constructSubspaceMat<RealScalar>
+			(std::forward<ColFunc>(col), basis_);
 	}
 };
 } //namespace yannq

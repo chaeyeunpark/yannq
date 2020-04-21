@@ -25,191 +25,193 @@ public:
 	using StateRef = RBMStateRef<RBM<T> >;
 };
 
-template<typename ScalarType, class Derived>
+template<typename T, class Derived>
 class RBMStateObjMT
 {
 protected:
-	const RBM<ScalarType>& qs_;
+	const RBM<T>& qs_;
 public:
-	using Machine = RBM<ScalarType>;
-	using RealScalarType = typename remove_complex<ScalarType>::type;
+	using Scalar = T;
+	using RealScalar = remove_complex_t<Scalar>;
+	using Machine = RBM<Scalar>;
 
 	RBMStateObjMT(const Machine& qs) noexcept
 		: qs_(qs)
 	{
 	}
-
 	
 	/********************** logRatio for a single spin ************************/
 
-	/// logRatio for complex ScalarType
+	/// logRatio for complex Scalar
 	/// returns log[psi(sigma ^ k)] - log[psi(sigma)]
-	ScalarType logRatio(int k) const //calc psi(sigma ^ k) / psi(sigma)
+	Scalar logRatio(int k) const //calc psi(sigma ^ k) / psi(sigma)
 	{
 		using std::exp;
 		using std::cosh;
 		using std::log;
 		using Range = tbb::blocked_range<uint32_t>;
 		
-		ScalarType res = -2.0*qs_.A(k)*RealScalarType(sigmaAt(k));
+		Scalar res = -2.0*qs_.A(k)*RealScalar(sigmaAt(k));
 
 		const uint32_t m = qs_.getM();
 
-		res += tbb::parallel_reduce(Range(0u, m), ScalarType{}, 
-			[this, k](const Range& r, ScalarType val) -> ScalarType
+		res += tbb::parallel_reduce(Range(0u, m), Scalar{}, 
+			[this, k](const Range& r, Scalar val) -> Scalar
 		{
 			for(uint32_t idx = r.begin(); idx != r.end(); ++idx)
 			{
-				ScalarType t = thetaAt(idx)
-					-2.0*ScalarType(sigmaAt(k))*qs_.W(idx,k);
+				Scalar t = thetaAt(idx)
+					-2.0*Scalar(sigmaAt(k))*qs_.W(idx,k);
 				val += logCosh(t) - logCosh(thetaAt(idx));
 			}
 			return val;
-		}, std::plus<ScalarType>());
+		}, std::plus<Scalar>());
 		return res;
 	}
 
-	/// logRatioRe for complex ScalarType
+	/// logRatioRe for complex Scalar
 	/// returns real part of log[psi(sigma ^ k)] - log[psi(sigma)]
-	template<typename T = ScalarType,
-		std::enable_if_t<is_complex_type<T>::value, int> = 0>
-	RealScalarType logRatioRe(int k) const 
+	template<typename U = Scalar,
+		typename std::enable_if<is_complex_type<U>::value, int>::type = 0>
+	RealScalar logRatioRe(int k) const 
 	{
 		return std::real(logRatio(k));
 	}
 
-	/// logRatioRe for real ScalarType
-	template<typename T = ScalarType, 
-		std::enable_if_t<!is_complex_type<T>::value, int> = 0>
-	inline ScalarType logRatioRe(int k) const
+	/// logRatioRe for real Scalar
+	template<typename U = Scalar, 
+		typename std::enable_if<!is_complex_type<U>::value, int>::type = 0>
+	inline Scalar logRatioRe(int k) const
 	{
 		return logRatio(k);
 	}
 	
 	/************************ logRatio for two spins **************************/
 
-	/// logRatio for ScalarType
+	/// logRatio for Scalar
 	/// returns log[psi(sigma ^ k ^ l)] - log[psi(sigma)]
-	ScalarType logRatio(int k, int l) const 
+	Scalar logRatio(int k, int l) const 
 	{
 		using std::exp;
 		using std::cosh;
 		using Range = tbb::blocked_range<uint32_t>;
 
-		ScalarType res = -2.0*qs_.A(k)*RealScalarType(sigmaAt(k))
-			-2.0*qs_.A(l)*RealScalarType(sigmaAt(l));
+		Scalar res = -2.0*qs_.A(k)*RealScalar(sigmaAt(k))
+			-2.0*qs_.A(l)*RealScalar(sigmaAt(l));
 
 		const uint32_t m = qs_.getM();
 
-		res += tbb::parallel_reduce(Range(0u, m), ScalarType{}, 
-			[this, k, l](const Range& r, ScalarType val) -> ScalarType
+		res += tbb::parallel_reduce(Range(0u, m), Scalar{}, 
+			[this, k, l](const Range& r, Scalar val) -> Scalar
 		{
 			for(uint32_t idx = r.begin(); idx != r.end(); ++idx)
 			{
-				ScalarType t = thetaAt(idx)
-					-2.0*ScalarType(sigmaAt(k))*qs_.W(idx,k)
-					-2.0*ScalarType(sigmaAt(l))*qs_.W(idx,l);
+				Scalar t = thetaAt(idx)
+					-2.0*Scalar(sigmaAt(k))*qs_.W(idx,k)
+					-2.0*Scalar(sigmaAt(l))*qs_.W(idx,l);
 				val += logCosh(t)-logCosh(thetaAt(idx));
 			}
 			return val;
-		}, std::plus<ScalarType>());
+		}, std::plus<Scalar>());
 		return res;
 	}
 
-	/// logRatioRe for complex ScalarType
-	template<typename T = ScalarType, 
-		std::enable_if_t<is_complex_type<T>::value, int> = 0>
-	RealScalarType logRatioRe(int k, int l) const
+	/// logRatioRe for complex Scalar
+	template<typename U = Scalar, 
+		typename std::enable_if<is_complex_type<U>::value, int>::type = 0>
+	RealScalar logRatioRe(int k, int l) const
 	{
 		return std::real(logRatio(k,l));
 	}
 
-	template<typename T = ScalarType,
-		std::enable_if_t<!is_complex_type<T>::value, int> = 0>
-	inline RealScalarType logRatioRe(int k, int l) const
+	/// logRatioRe for real Scalar
+	template<typename U = Scalar,
+		typename std::enable_if<!is_complex_type<U>::value, int>::type = 0>
+	inline RealScalar logRatioRe(int k, int l) const
 	{
 		return logRatio(k, l);
 	}
 
 	/************************ logRatio for vector ******************************/
 
-	/// logRatio for ScalarType
-	ScalarType logRatio(const std::vector<int>& v) const
+	/// logRatio for Scalar
+	Scalar logRatio(const std::vector<int>& v) const
 	{
 		using Range = tbb::blocked_range<uint32_t>;
 
-		ScalarType res{};
+		Scalar res{};
 		const uint32_t m = qs_.getM();
 		for(int elt: v)
 		{
-			res -= 2.0*qs_.A(elt)*RealScalarType(sigmaAt(elt));
+			res -= 2.0*qs_.A(elt)*RealScalar(sigmaAt(elt));
 		}
 
-		res += tbb::parallel_reduce(Range(0u, m), ScalarType{},
-			[this, &v](const Range& r, ScalarType val) -> ScalarType
+		res += tbb::parallel_reduce(Range(0u, m), Scalar{},
+			[this, &v](const Range& r, Scalar val) -> Scalar
 		{
 			for(uint32_t idx = r.begin(); idx != r.end(); ++idx)
 			{
-				ScalarType t = thetaAt(idx);
+				Scalar t = thetaAt(idx);
 				for(int elt: v)
 				{
-					t -= 2.0*RealScalarType(sigmaAt(elt))*qs_.W(idx,elt);
+					t -= 2.0*RealScalar(sigmaAt(elt))*qs_.W(idx,elt);
 				}
 				val += logCosh(t)-logCosh(thetaAt(idx));
 			}
 			return val;
-		}, std::plus<ScalarType>());
+		}, std::plus<Scalar>());
 		return res;
 	}
 
-	/// logRatioRe for complex ScalarType
-	template<typename T = ScalarType, 
-		std::enable_if_t<is_complex_type<T>::value, int> = 0>
-	RealScalarType logRatioRe(const std::vector<int>& v) const
+	/// logRatioRe for complex Scalar
+	template<typename U = Scalar, 
+		typename std::enable_if<is_complex_type<U>::value, int>::type = 0>
+	RealScalar logRatioRe(const std::vector<int>& v) const
 	{
 		return std::real(logRatio(v));
 	}
 	
-	//logRatioRe for real ScalarType
-	template<typename T = ScalarType, std::enable_if_t<!is_complex_type<T>::value, int> = 0>
-	inline ScalarType logRatioRe(const std::vector<int>& v) const
+	//logRatioRe for real Scalar
+	template<typename U = Scalar,
+		typename std::enable_if<!is_complex_type<U>::value, int>::type = 0>
+	inline Scalar logRatioRe(const std::vector<int>& v) const
 	{
 		return logRatio(v);
 	}
 
 	/********************* logRatio with another StateObj *********************/
 
-	ScalarType logRatio(const RBMStateObjMT<ScalarType, Derived>& other)
+	Scalar logRatio(const RBMStateObjMT<Scalar, Derived>& other)
 	{
 		using Range = tbb::blocked_range<uint32_t>;
-		ScalarType res = (qs_.getA().transpose())*
-			(other.getSigma() - getSigma()).template cast<ScalarType>();
+		Scalar res = (qs_.getA().transpose())*
+			(other.getSigma() - getSigma()).template cast<Scalar>();
 
 		const uint32_t m = qs_.getM();
-		res += tbb::parallel_reduce(Range(0u, m), ScalarType{},
-			[this, &other](const Range& r, ScalarType val) -> ScalarType
+		res += tbb::parallel_reduce(Range(0u, m), Scalar{},
+			[this, &other](const Range& r, Scalar val) -> Scalar
 		{
 			for(uint32_t idx = r.begin(); idx != r.end(); ++idx)
 			{
 				val += logCosh(other.thetaAt(idx)) - logCosh(thetaAt(idx));
 			}
 			return val;
-		}, std::plus<ScalarType>());
+		}, std::plus<Scalar>());
 		return res;
 	}
 
-	/// logRatioRe for complex ScalarType
-	template<typename T = ScalarType, 
-		std::enable_if_t<is_complex_type<T>::value, int> = 0>
-	RealScalarType logRatioRe(const RBMStateObjMT<ScalarType, Derived>& other)
+	/// logRatioRe for complex Scalar
+	template<typename U = Scalar, 
+		typename std::enable_if<is_complex_type<U>::value, int>::type = 0>
+	RealScalar logRatioRe(const RBMStateObjMT<Scalar, Derived>& other)
 	{
 		return std::real(logRatio(other));
 	}
 
-	/// logRatioRe for real ScalarType
-	template<typename T = ScalarType,
-		std::enable_if_t<!is_complex_type<T>::value, int> = 0>
-	ScalarType logRatioRe(const RBMStateObjMT<ScalarType, Derived>& other)
+	/// logRatioRe for real Scalar
+	template<typename U = Scalar,
+		typename std::enable_if<!is_complex_type<U>::value, int>::type = 0>
+	Scalar logRatioRe(const RBMStateObjMT<Scalar, Derived>& other)
 	{
 		return logRatio(other);
 	}
@@ -226,7 +228,7 @@ public:
 		return static_cast<const Derived*>(this)->sigmaAt(i);
 	}
 
-	inline ScalarType thetaAt(int i) const
+	inline Scalar thetaAt(int i) const
 	{
 		return static_cast<const Derived*>(this)->thetaAt(i);
 	}
@@ -237,36 +239,36 @@ public:
 	}
 };
 
-template<typename ScalarType>
+template<typename Scalar>
 struct RBMStateValueMT
-	: public RBMStateObjMT<ScalarType, RBMStateValueMT<ScalarType> >
+	: public RBMStateObjMT<Scalar, RBMStateValueMT<Scalar> >
 {
 private:
 	Eigen::VectorXi sigma_;
-	typename RBM<ScalarType>::VectorType theta_;
+	typename RBM<Scalar>::Vector theta_;
 
 public:
-	using Machine = RBM<ScalarType>;
-	using Vector = typename Machine::VectorType;
-	using ReScalarType = typename remove_complex<ScalarType>::type;
+	using Machine = RBM<Scalar>;
+	using Vector = typename Machine::Vector;
+	using RealScalar = remove_complex_t<Scalar>;
 
 	RBMStateValueMT(const Machine& qs, Eigen::VectorXi&& sigma) noexcept
-		: RBMStateObjMT<ScalarType, RBMStateValueMT<ScalarType> >(qs), 
+		: RBMStateObjMT<Scalar, RBMStateValueMT<Scalar> >(qs), 
 		sigma_(std::move(sigma))
 	{
 		theta_ = this->qs_.calcTheta(sigma_);
 	}
 
 	RBMStateValueMT(const Machine& qs, const Eigen::VectorXi& sigma) noexcept
-		: RBMStateObjMT<ScalarType, RBMStateValueMT<ScalarType> >(qs), sigma_(sigma)
+		: RBMStateObjMT<Scalar, RBMStateValueMT<Scalar> >(qs), sigma_(sigma)
 	{
 		theta_ = this->qs_.calcTheta(sigma_);
 	}
 
-	RBMStateValueMT(const RBMStateValueMT<ScalarType>& rhs) = default;
-	RBMStateValueMT(RBMStateValueMT<ScalarType>&& rhs) = default;
+	RBMStateValueMT(const RBMStateValueMT<Scalar>& rhs) = default;
+	RBMStateValueMT(RBMStateValueMT<Scalar>&& rhs) = default;
 
-	RBMStateValueMT& operator=(const RBMStateValueMT<ScalarType>& rhs) noexcept
+	RBMStateValueMT& operator=(const RBMStateValueMT<Scalar>& rhs) noexcept
 	{
 		assert(rhs.qs_ == this->qs_);
 		sigma_ = rhs.sigma_;
@@ -274,7 +276,7 @@ public:
 		return *this;
 	}
 
-	RBMStateValueMT& operator=(RBMStateValueMT<ScalarType>&& rhs) noexcept
+	RBMStateValueMT& operator=(RBMStateValueMT<Scalar>&& rhs) noexcept
 	{
 		assert(rhs.qs_ == this->qs_);
 		sigma_ = std::move(rhs.sigma_);
@@ -298,7 +300,7 @@ public:
 	{
 		return sigma_(i);
 	}
-	inline ScalarType thetaAt(int j) const
+	inline Scalar thetaAt(int j) const
 	{
 		return theta_(j);
 	}
@@ -308,7 +310,7 @@ public:
 		tbb::parallel_for(0u, uint32_t(theta_.size()), 
 			[this, k](uint32_t idx)
 		{
-			theta_(idx) -= 2.0*ReScalarType(sigma_(k))*(this->qs_.W(idx,k));
+			theta_(idx) -= 2.0*RealScalar(sigma_(k))*(this->qs_.W(idx,k));
 		});
 		sigma_(k) *= -1;
 	}
@@ -318,8 +320,8 @@ public:
 		tbb::parallel_for(0u, uint32_t(theta_.size()), 
 			[this, k, l](uint32_t idx)
 		{
-			theta_(idx) += -2.0*ReScalarType(sigma_(k))*(this->qs_.W(idx,k))
-				-2.0*ReScalarType(sigma_(l))*(this->qs_.W(idx,l));
+			theta_(idx) += -2.0*RealScalar(sigma_(k))*(this->qs_.W(idx,k))
+				-2.0*RealScalar(sigma_(l))*(this->qs_.W(idx,l));
 		});
 		sigma_(k) *= -1;
 		sigma_(l) *= -1;
@@ -331,10 +333,10 @@ public:
 		tbb::parallel_for(0u, uint32_t(theta_.size()), 
 			[this, &v](uint32_t idx)
 		{
-			ScalarType diff{};
+			Scalar diff{};
 			for(int elt: v)
 			{
-				 diff += 2.0*ReScalarType(sigma_(elt))*(this->qs_.W(idx,elt));
+				 diff += 2.0*RealScalar(sigma_(elt))*(this->qs_.W(idx,elt));
 			}
 			theta_(idx) -= diff;
 		});

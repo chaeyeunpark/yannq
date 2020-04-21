@@ -38,14 +38,14 @@ namespace activation
 template<typename T>
 class Identity 
 {
-	using ScalarType = T;
-	using VectorType = Eigen::Matrix<T, Eigen::Dynamic, 1>;
-	using VectorRefType = Eigen::Ref<VectorType>;
-	using VectorConstRefType = Eigen::Ref<const VectorType>;
-
 public:
+	using Scalar = T;
+	using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+	using VectorRef = Eigen::Ref<Vector>;
+	using VectorConstRef = Eigen::Ref<const Vector>;
+
 	// A = Z
-	inline void operator()(VectorConstRefType Z, VectorRefType A) const  {
+	inline void operator()(VectorConstRef Z, VectorRef A) const  {
 		A.noalias() = Z;
 	}
 
@@ -53,14 +53,19 @@ public:
 	// A = Z
 	// J = dA / dZ = I
 	// G = J * F = F
-	inline void ApplyJacobian(VectorConstRefType /*Z*/, VectorConstRefType /*A*/,
-			VectorConstRefType F,
-			VectorRefType G) const  {
+	inline void ApplyJacobian(VectorConstRef /*Z*/, VectorConstRef /*A*/,
+			VectorConstRef F,
+			VectorRef G) const  {
 		G.noalias() = F;
 	}
 
 	std::string name() const {
 		return "Identity";
+	}
+
+	template<class Archive>
+	void serialize(Archive& /*ar*/)
+	{
 	}
 };
 
@@ -68,14 +73,14 @@ public:
 template<typename T>
 class LnCosh 
 {
-	using ScalarType = T;
-	using VectorType = Eigen::Matrix<T, Eigen::Dynamic, 1>;
-	using VectorRefType = Eigen::Ref<VectorType>;
-	using VectorConstRefType = Eigen::Ref<const VectorType>;
-
 public:
+	using Scalar = T;
+	using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+	using VectorRef = Eigen::Ref<Vector>;
+	using VectorConstRef = Eigen::Ref<const Vector>;
+
 	// A = Lncosh(Z)
-	inline void operator()(VectorConstRefType Z, VectorRefType A) const  {
+	inline void operator()(VectorConstRef Z, VectorRef A) const  {
 		for (int i = 0; i < A.size(); ++i) {
 			A(i) = logCosh(Z(i));
 		}
@@ -85,28 +90,33 @@ public:
 	// A = Lncosh(Z)
 	// J = dA / dZ
 	// G = J * F
-	inline void ApplyJacobian(VectorConstRefType Z, VectorConstRefType /*A*/,
-			VectorConstRefType F,
-			VectorRefType G) const  {
+	inline void ApplyJacobian(VectorConstRef Z, VectorConstRef /*A*/,
+			VectorConstRef F,
+			VectorRef G) const  {
 		G.array() = F.array() * Z.array().tanh();
 	}
 
 	std::string name() const {
 		return "LnCosh";
 	}
+
+	template<class Archive>
+	void serialize(Archive& /*ar*/)
+	{
+	}
 };
 
 template<typename T>
 class Tanh 
 {
-	using ScalarType = T;
-	using VectorType = Eigen::Matrix<T, Eigen::Dynamic, 1>;
-	using VectorRefType = Eigen::Ref<VectorType>;
-	using VectorConstRefType = Eigen::Ref<const VectorType>;
+public:	
+	using Scalar = T;
+	using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+	using VectorRef = Eigen::Ref<Vector>;
+	using VectorConstRef = Eigen::Ref<const Vector>;
 
-public:
 	// A = Tanh(Z)
-	inline void operator()(VectorConstRefType Z, VectorRefType A) const  {
+	inline void operator()(VectorConstRef Z, VectorRef A) const  {
 		A.array() = Z.array().tanh();
 	}
 
@@ -114,9 +124,9 @@ public:
 	// A = Tanh(Z)
 	// J = dA / dZ
 	// G = J * F
-	inline void ApplyJacobian(VectorConstRefType /*Z*/, VectorConstRefType A,
-			VectorConstRefType F,
-			VectorRefType G) const  {
+	inline void ApplyJacobian(VectorConstRef /*Z*/, VectorConstRef A,
+			VectorConstRef F,
+			VectorRef G) const  {
 		G.array() = F.array() * (1. - A.array() * A.array());
 	}
 
@@ -131,15 +141,14 @@ template<typename T>
 class Sigmoid
 {
 	static_assert(!is_complex_type<T>::value, "Sigmoid now only supports real parameters");
-
-	using ScalarType = T;
-	using VectorType = Eigen::Matrix<T, Eigen::Dynamic, 1>;
-	using VectorRefType = Eigen::Ref<VectorType>;
-	using VectorConstRefType = Eigen::Ref<const VectorType>;
-
 public:
+	using Scalar = T;
+	using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+	using VectorRef = Eigen::Ref<Vector>;
+	using VectorConstRef = Eigen::Ref<const Vector>;
+
 	// A = Sigmoid(Z)
-	inline void operator()(VectorConstRefType Z, VectorRefType A) const  {
+	inline void operator()(VectorConstRef Z, VectorRef A) const  {
 		A.array() = Z.array().exp();
 		A.array().inverse();
 		A.array() += 1.;
@@ -150,15 +159,20 @@ public:
 	// A = Sigmoid(Z)
 	// J = dA / dZ
 	// G = J * F
-	inline void ApplyJacobian(VectorConstRefType /*Z*/, VectorConstRefType A,
-			VectorConstRefType F,
-			VectorRefType G) const  {
+	inline void ApplyJacobian(VectorConstRef /*Z*/, VectorConstRef A,
+			VectorConstRef /*F*/,
+			VectorRef G) const  {
 		G.array() = (1. - A.array() ) * A.array();
 	}
 
 	std::string name() const
 	{
 		return "Sigmoid";
+	}
+
+	template<class Archive>
+	void serialize(Archive& /*ar*/)
+	{
 	}
 };
 
@@ -167,19 +181,20 @@ class ReLU;
 
 //for complex T
 template<typename T>
-class ReLU<T, std::enable_if_t<is_complex_type<T>::value > > 
+class ReLU<T, typename std::enable_if<is_complex_type<T>::value>::type > 
 {
-	using ScalarType = T;
-	using VectorType = Eigen::Matrix<T, Eigen::Dynamic, 1>;
-	using VectorRefType = Eigen::Ref<VectorType>;
-	using VectorConstRefType = Eigen::Ref<const VectorType>;
-
-	const double theta1_ = std::atan(1) * 3;
-	const double theta2_ = -std::atan(1);
-
 public:
+	using Scalar = T;
+	using RealScalar = remove_complex_t<Scalar>;
+	using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+	using VectorRef = Eigen::Ref<Vector>;
+	using VectorConstRef = Eigen::Ref<const Vector>;
+
+	constexpr static RealScalar theta1_ = 3*M_PI/4;
+	constexpr static RealScalar theta2_ = -M_PI/4;
+
 	// A = ReLU(Z)
-	inline void operator()(VectorConstRefType Z, VectorRefType A) const  {
+	inline void operator()(VectorConstRef Z, VectorRef A) const  {
 		for (int i = 0; i < Z.size(); ++i) {
 			A(i) =
 				(std::arg(Z(i)) < theta1_) && (std::arg(Z(i)) > theta2_) ? Z(i) : 0.0;
@@ -190,9 +205,9 @@ public:
 	// A = ReLU(Z)
 	// J = dA / dZ = I
 	// G = J * F = F
-	inline void ApplyJacobian(VectorConstRefType Z, VectorConstRefType /*A*/,
-			VectorConstRefType F,
-			VectorRefType G) const  {
+	inline void ApplyJacobian(VectorConstRef Z, VectorConstRef /*A*/,
+			VectorConstRef F,
+			VectorRef G) const  {
 		for (int i = 0; i < Z.size(); ++i) {
 			G(i) =
 				(std::arg(Z(i)) < theta1_) && (std::arg(Z(i)) > theta2_) ? F(i) : 0.0;
@@ -203,19 +218,24 @@ public:
 	{
 		return "ReLU";
 	}
+
+	template<class Archive>
+	void serialize(Archive& /*ar*/)
+	{
+	}
 };
 //For real T
 template<typename T>
-class ReLU<T, std::enable_if_t<!is_complex_type<T>::value> >
+class ReLU<T, typename std::enable_if<!is_complex_type<T>::value>::type >
 {
-	using ScalarType = T;
-	using VectorType = Eigen::Matrix<T, Eigen::Dynamic, 1>;
-	using VectorRefType = Eigen::Ref<VectorType>;
-	using VectorConstRefType = Eigen::Ref<const VectorType>;
-
 public:
+	using Scalar = T;
+	using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+	using VectorRef = Eigen::Ref<Vector>;
+	using VectorConstRef = Eigen::Ref<const Vector>;
+
 	// A = ReLU(Z)
-	inline void operator()(VectorConstRefType Z, VectorRefType A) const  {
+	inline void operator()(VectorConstRef Z, VectorRef A) const  {
 		for (int i = 0; i < Z.size(); ++i) {
 			A(i) = std::max(Z(i), T{0.0});
 		}
@@ -225,9 +245,9 @@ public:
 	// A = ReLU(Z)
 	// J = dA / dZ = I
 	// G = J * F = F
-	inline void ApplyJacobian(VectorConstRefType Z, VectorConstRefType /*A*/,
-			VectorConstRefType F,
-			VectorRefType G) const  
+	inline void ApplyJacobian(VectorConstRef Z, VectorConstRef /*A*/,
+			VectorConstRef F,
+			VectorRef G) const  
 	{
 		for (int i = 0; i < Z.size(); ++i) {
 			G(i) = Z(i)>0?F(i):T{0.0};
@@ -239,6 +259,10 @@ public:
 		return "ReLU";
 	}
 
+	template<class Archive>
+	void serialize(Archive& /*ar*/)
+	{
+	}
 };
 
 template<typename T, typename Enable = void>
@@ -246,25 +270,26 @@ class LeakyReLU;
 
 //for complex T
 template<typename T>
-class LeakyReLU<T, std::enable_if_t<is_complex_type<T>::value>>
+class LeakyReLU<T, typename std::enable_if<is_complex_type<T>::value>::type>
 {
-	using ScalarType = T;
-	using VectorType = Eigen::Matrix<T, Eigen::Dynamic, 1>;
-	using VectorRefType = Eigen::Ref<VectorType>;
-	using VectorConstRefType = Eigen::Ref<const VectorType>;
-
-	const double theta1_ = std::atan(1) * 3;
-	const double theta2_ = -std::atan(1);
-	double negativeSlope_ = 0.3;
-
 public:
-	LeakyReLU(const double negativeSlope = 0.3)
+	using Scalar = T;
+	using RealScalar = remove_complex_t<Scalar>;
+	using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+	using VectorRef = Eigen::Ref<Vector>;
+	using VectorConstRef = Eigen::Ref<const Vector>;
+
+	constexpr static RealScalar theta1_ = 3*M_PI/4;
+	constexpr static RealScalar theta2_ = -M_PI/4;
+	RealScalar negativeSlope_;
+
+	LeakyReLU(const RealScalar negativeSlope = 0.1)
 		: negativeSlope_{negativeSlope}
 	{
 	}
 
 	// A = LeakyReLU(Z)
-	inline void operator()(VectorConstRefType Z, VectorRefType A) const  {
+	inline void operator()(VectorConstRef Z, VectorRef A) const  {
 		for (int i = 0; i < Z.size(); ++i) {
 			A(i) =
 				(std::arg(Z(i)) < theta1_) && (std::arg(Z(i)) > theta2_) ? Z(i) : negativeSlope_*Z(i);
@@ -275,9 +300,9 @@ public:
 	// A = LeakyReLU(Z)
 	// J = dA / dZ = I
 	// G = J * F = F
-	inline void ApplyJacobian(VectorConstRefType Z, VectorConstRefType /*A*/,
-			VectorConstRefType F,
-			VectorRefType G) const  
+	inline void ApplyJacobian(VectorConstRef Z, VectorConstRef /*A*/,
+			VectorConstRef F,
+			VectorRef G) const  
 	{
 		for (int i = 0; i < Z.size(); ++i) {
 			G(i) =
@@ -289,25 +314,32 @@ public:
 	{
 		return "LeakyReLU";
 	}
+
+	template<class Archive>
+	void serialize(Archive& ar)
+	{
+		ar(negativeSlope_);
+	}
 };
+
 //For real T
 template<typename T>
-class LeakyReLU<T, std::enable_if_t<!is_complex_type<T>::value>>
+class LeakyReLU<T, typename std::enable_if<!is_complex_type<T>::value>::type>
 {
-	using ScalarType = T;
-	using VectorType = Eigen::Matrix<T, Eigen::Dynamic, 1>;
-	using VectorRefType = Eigen::Ref<VectorType>;
-	using VectorConstRefType = Eigen::Ref<const VectorType>;
-	
-	double negativeSlope_;
-
 public:
-	LeakyReLU(const double negativeSlope = 0.3)
+	using Scalar = T;
+	using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+	using VectorRef = Eigen::Ref<Vector>;
+	using VectorConstRef = Eigen::Ref<const Vector>;
+	
+	Scalar negativeSlope_;
+
+	LeakyReLU(const Scalar negativeSlope = 0.1)
 		: negativeSlope_{negativeSlope}
 	{
 	}
 	// A = LeakyReLU(Z)
-	inline void operator()(VectorConstRefType Z, VectorRefType A) const  {
+	inline void operator()(VectorConstRef Z, VectorRef A) const  {
 		for (int i = 0; i < Z.size(); ++i) {
 			A(i) = std::max(Z(i), T{negativeSlope_*Z(i)});
 		}
@@ -317,9 +349,9 @@ public:
 	// A = LeakyReLU(Z)
 	// J = dA / dZ = I
 	// G = J * F = F
-	inline void ApplyJacobian(VectorConstRefType Z, VectorConstRefType /*A*/,
-			VectorConstRefType F,
-			VectorRefType G) const  
+	inline void ApplyJacobian(VectorConstRef Z, VectorConstRef /*A*/,
+			VectorConstRef F,
+			VectorRef G) const  
 	{
 		for (int i = 0; i < Z.size(); ++i) {
 			G(i) = Z(i)>0?F(i):T{negativeSlope_*F(i)};
@@ -330,25 +362,29 @@ public:
 	{
 		return "LeakyReLU";
 	}
-
+	template<class Archive>
+	void serialize(Archive& ar)
+	{
+		ar(negativeSlope_);
+	}
 };
 
 template<typename T>
 class HardTanh
 {
-	static_assert(!is_complex_type<T>::value, "T must be a real type for HardTanh");
-	using ScalarType = T;
-	using VectorType = Eigen::Matrix<T, Eigen::Dynamic, 1>;
-	using VectorRefType = Eigen::Ref<VectorType>;
-	using VectorConstRefType = Eigen::Ref<const VectorType>;
-	
 public:
+	static_assert(!is_complex_type<T>::value, "T must be a real type for HardTanh");
+	using Scalar = T;
+	using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+	using VectorRef = Eigen::Ref<Vector>;
+	using VectorConstRef = Eigen::Ref<const Vector>;
+	
 	HardTanh()
 	{
 	}
 
 	// A = hardtanh(Z)
-	inline void operator()(VectorConstRefType Z, VectorRefType A) const  
+	inline void operator()(VectorConstRef Z, VectorRef A) const  
 	{
 		using std::abs;
 		for (int i = 0; i < Z.size(); ++i) 
@@ -361,8 +397,8 @@ public:
 	// A = hardtanh(Z)
 	// J = dA / dZ = I
 	// G = J * F = F
-	inline void ApplyJacobian(VectorConstRefType Z, VectorConstRefType /*A*/,
-			VectorConstRefType F, VectorRefType G) const  
+	inline void ApplyJacobian(VectorConstRef Z, VectorConstRef /*A*/,
+			VectorConstRef F, VectorRef G) const  
 	{
 		using std::abs;
 		for (int i = 0; i < Z.size(); ++i) {
@@ -374,24 +410,29 @@ public:
 	{
 		return "HardTanh";
 	}
+
+	template<class Archive>
+	void serialize(Archive& /*ar*/)
+	{
+	}
 };
 
 template<typename T>
 class SoftShrink
 {
-	static_assert(!is_complex_type<T>::value, "T must be a real type for SoftShrink");
-	using ScalarType = T;
-	using VectorType = Eigen::Matrix<T, Eigen::Dynamic, 1>;
-	using VectorRefType = Eigen::Ref<VectorType>;
-	using VectorConstRefType = Eigen::Ref<const VectorType>;
-	
 public:
+	static_assert(!is_complex_type<T>::value, "T must be a real type for SoftShrink");
+	using Scalar = T;
+	using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+	using VectorRef = Eigen::Ref<Vector>;
+	using VectorConstRef = Eigen::Ref<const Vector>;
+	
 	SoftShrink()
 	{
 	}
 
 	// A = softshrink(Z)
-	inline void operator()(VectorConstRefType Z, VectorRefType A) const  
+	inline void operator()(VectorConstRef Z, VectorRef A) const  
 	{
 		using std::abs;
 		for (int i = 0; i < Z.size(); ++i) 
@@ -404,8 +445,8 @@ public:
 	// A = softshrink(Z)
 	// J = dA / dZ = I
 	// G = J * F = F
-	inline void ApplyJacobian(VectorConstRefType Z, VectorConstRefType /*A*/,
-			VectorConstRefType F, VectorRefType G) const  
+	inline void ApplyJacobian(VectorConstRef Z, VectorConstRef /*A*/,
+			VectorConstRef F, VectorRef G) const  
 	{
 		using std::abs;
 		for (int i = 0; i < Z.size(); ++i) {
@@ -417,27 +458,33 @@ public:
 	{
 		return "SoftShrink";
 	}
+
+	template<class Archive>
+	void serialize(Archive& /*ar*/)
+	{
+	}
+
 };
 
 template<typename T>
 class LeakyHardTanh
 {
-	static_assert(!is_complex_type<T>::value, "T must be a real type for SoftShrink");
-	using ScalarType = T;
-	using VectorType = Eigen::Matrix<T, Eigen::Dynamic, 1>;
-	using VectorRefType = Eigen::Ref<VectorType>;
-	using VectorConstRefType = Eigen::Ref<const VectorType>;
-
-	double outsideSlope_;
-	
 public:
-	LeakyHardTanh(double outsideSlope = 0.01)
+	static_assert(!is_complex_type<T>::value, "T must be a real type for SoftShrink");
+	using Scalar = T;
+	using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+	using VectorRef = Eigen::Ref<Vector>;
+	using VectorConstRef = Eigen::Ref<const Vector>;
+
+	Scalar outsideSlope_;
+	
+	LeakyHardTanh(Scalar outsideSlope = 0.01)
 		: outsideSlope_{outsideSlope}
 	{
 	}
 
 	// A = leakyhardtanh(Z)
-	inline void operator()(VectorConstRefType Z, VectorRefType A) const  
+	inline void operator()(VectorConstRef Z, VectorRef A) const  
 	{
 		using std::abs;
 		for (int i = 0; i < Z.size(); ++i) 
@@ -452,8 +499,8 @@ public:
 	// A = Z
 	// J = dA / dZ = I
 	// G = J * F = F
-	inline void ApplyJacobian(VectorConstRefType Z, VectorConstRefType /*A*/,
-			VectorConstRefType F, VectorRefType G) const  
+	inline void ApplyJacobian(VectorConstRef Z, VectorConstRef /*A*/,
+			VectorConstRef F, VectorRef G) const  
 	{
 		using std::abs;
 		for (int i = 0; i < Z.size(); ++i) {
@@ -465,25 +512,31 @@ public:
 	{
 		return "LeakyHardTanh";
 	}
+
+	template<class Archive>
+	void serialize(Archive& ar)
+	{
+		ar(outsideSlope_);
+	}
 };
 
 
 template<typename T>
 class SoftSign
 {
-	static_assert(!is_complex_type<T>::value, "T must be a real type for SoftSign");
-	using ScalarType = T;
-	using VectorType = Eigen::Matrix<T, Eigen::Dynamic, 1>;
-	using VectorRefType = Eigen::Ref<VectorType>;
-	using VectorConstRefType = Eigen::Ref<const VectorType>;
-	
 public:
+	static_assert(!is_complex_type<T>::value, "T must be a real type for SoftSign");
+	using Scalar = T;
+	using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+	using VectorRef = Eigen::Ref<Vector>;
+	using VectorConstRef = Eigen::Ref<const Vector>;
+	
 	SoftSign()
 	{
 	}
 
 	// A = softsign(Z)
-	inline void operator()(VectorConstRefType Z, VectorRefType A) const  
+	inline void operator()(VectorConstRef Z, VectorRef A) const  
 	{
 		A.array() = Z.array()/(Z.array().abs()+1.0);
 	}
@@ -492,8 +545,8 @@ public:
 	// A = softsign(Z)
 	// J = dA / dZ = I
 	// G = J * F = F
-	inline void ApplyJacobian(VectorConstRefType Z, VectorConstRefType A,
-			VectorConstRefType F, VectorRefType G) const  
+	inline void ApplyJacobian(VectorConstRef Z, VectorConstRef /*A*/,
+			VectorConstRef F, VectorRef G) const  
 	{
 		G.array() = (1.0+Z.array().abs()).square().inverse()*F.array();
 	}
@@ -503,6 +556,10 @@ public:
 		return "SoftSign";
 	}
 
+	template<class Archive>
+	void serialize(Archive& /*ar*/)
+	{
+	}
 };
 }//namsepace activation
 

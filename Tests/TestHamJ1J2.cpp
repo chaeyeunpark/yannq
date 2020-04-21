@@ -2,9 +2,9 @@
 #include "catch.hpp"
 
 #include "HamiltonianHelper.hpp"
-#include "Hamiltonians/XXXJ1J2.hpp"
+#include "Hamiltonians/J1J2.hpp"
 
-TEST_CASE("Test Hamiltonian XXXJ1J2 with SignRule", "[XXXJ1J2]")
+TEST_CASE("Test Hamiltonian J1J2 with SignRule", "[J1J2]")
 {
 	constexpr int N = 12;
 	const double deltas[] = {-1.0, 0.0, 1.0, 2.0};
@@ -13,7 +13,7 @@ TEST_CASE("Test Hamiltonian XXXJ1J2 with SignRule", "[XXXJ1J2]")
 	for(auto delta: deltas)
 	for(auto sign: signs)
 	{
-		XXXJ1J2 ham(N, 1.0, delta, sign);
+		J1J2 ham(N, 1.0, delta, sign);
 		
 		for(uint32_t col = 0; col < (1<<N); col++)
 		{
@@ -43,7 +43,7 @@ TEST_CASE("Test Stoquasity of XXX with SignRule", "[XXZJ1J2][Sto]")
 	std::default_random_engine re{rd()};
 	constexpr int N = 12;
 
-	XXXJ1J2 ham(N, 1.0, 0.0, true);
+	J1J2 ham(N, 1.0, 0.0, true);
 	
 	double s = 0;
 	for(uint32_t col = 0; col < (1<<N); col++)

@@ -18,7 +18,7 @@ TEMPLATE_TEST_CASE("Test FullyConnected serialization", "[FullyConnected][serial
 	
 	using Machine = yannq::FullyConnected<TestType>;
 
-	for(bool useBias: {true,false})
+	for(bool useBias: {true, false})
 	{
 		for(int inputDim : {4,5,6,7,8})
 		{

@@ -38,7 +38,8 @@ tbb::concurrent_vector<uint32_t> parallelConstructBasis(BasisType&& basis, std::
 template<class BasisType>
 inline tbb::concurrent_vector<uint32_t> parallelConstructBasis(BasisType&& basis)
 {
-	using IteratorType = std::result_of_t<decltype(&std::decay_t<BasisType>::begin)(BasisType)>;
+	using DecayedBasisType = typename std::decay<BasisType>::type;
+	using IteratorType = typename std::result_of<decltype(&DecayedBasisType::begin)(BasisType)>::type;
 	return parallelConstructBasis(basis, 
 			typename std::iterator_traits<IteratorType>::iterator_category());
 }

@@ -47,8 +47,10 @@ struct BasisJzIterator
 };
 }//namspace yannq
 
+namespace std
+{
 template<>
-struct std::iterator_traits<yannq::BasisJzIterator>
+struct iterator_traits<yannq::BasisJzIterator>
 {
 	using difference_type = void;
 	using value_type = uint32_t;
@@ -56,6 +58,7 @@ struct std::iterator_traits<yannq::BasisJzIterator>
 	using reference = uint32_t&;
 	using iterator_category = std::forward_iterator_tag;
 };
+}// namespace std
 
 namespace yannq
 {

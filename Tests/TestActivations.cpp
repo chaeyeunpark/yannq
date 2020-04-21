@@ -19,31 +19,31 @@ TEMPLATE_PRODUCT_TEST_CASE("Test ActivationLayer by activations", "[layer][activ
 {
 	using std::abs;
 	using Catch::Matchers::Floating::WithinAbsMatcher;
-	using T = double;
-	using VectorType = typename AbstractLayer<T>::VectorType;
-	using MatrixType = typename AbstractLayer<T>::MatrixType;
-	using VectorRefType = typename AbstractLayer<T>::VectorRefType;
-	using VectorConstRefType = typename AbstractLayer<T>::VectorConstRefType;
+	using T = typename TestType::Scalar;
+	using Vector = typename AbstractLayer<T>::Vector;
+	using Matrix = typename AbstractLayer<T>::Matrix;
+	using VectorRef = typename AbstractLayer<T>::VectorRef;
+	using VectorConstRef = typename AbstractLayer<T>::VectorConstRef;
 
 	auto inSize = 20u;
 	auto layer = ActivationLayer<T, TestType>();
 
 	for(int i = 0; i < 100; i++)
 	{
-		VectorType input = 2.0*VectorType::Random(inSize);
-		VectorType output(inSize);
-		VectorType dout = VectorType::Random(inSize);
-		VectorType din(inSize);
+		Vector input = 2.0*Vector::Random(inSize);
+		Vector output(inSize);
+		Vector dout = Vector::Random(inSize);
+		Vector din(inSize);
 
-		auto t = VectorType(10);
+		auto t = Vector(10);
 		layer.forward(input,output);
 		layer.backprop(input, output, dout, din, t);
 		
-		VectorType din_num = ndiff_in(layer, input, inSize)*dout;
+		Vector din_num = ndiff_in(layer, input, inSize)*dout;
 
-		VectorType diff = din - din_num;
+		Vector diff = din - din_num;
 
-		if(diff.norm()/inSize > 1e-6)
+		if(diff.norm()/inSize > 1e-4)
 		{
 			std::cout << "input: " << input.transpose() << std::endl;
 			std::cout << "dout: " <<dout.transpose() << std::endl;
@@ -51,7 +51,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Test ActivationLayer by activations", "[layer][activ
 			std::cout << "din_num: " << din_num.transpose() << std::endl;
 		}
 		REQUIRE_THAT(diff.norm()/inSize,
-				WithinAbsMatcher(0.,1e-6));
+				WithinAbsMatcher(0.,1e-4));
 	}
 }
 
@@ -59,29 +59,38 @@ TEMPLATE_PRODUCT_TEST_CASE("Test ActivationLayer by activations", "[layer][activ
 {
 	using std::abs;
 	using Catch::Matchers::Floating::WithinAbsMatcher;
-	using T = std::complex<double>;
-	using VectorType = typename AbstractLayer<T>::VectorType;
-	using MatrixType = typename AbstractLayer<T>::MatrixType;
-	using VectorRefType = typename AbstractLayer<T>::VectorRefType;
-	using VectorConstRefType = typename AbstractLayer<T>::VectorConstRefType;
+	using T = typename TestType::Scalar;
+	using Vector = typename AbstractLayer<T>::Vector;
+	using Matrix = typename AbstractLayer<T>::Matrix;
+	using VectorRef = typename AbstractLayer<T>::VectorRef;
+	using VectorConstRef = typename AbstractLayer<T>::VectorConstRef;
 
 	auto inSize = 20u;
 	auto layer = ActivationLayer<T, TestType>();
 
 	for(int i = 0; i < 100; i++)
 	{
-		VectorType input = 2.0*VectorType::Random(inSize);
-		VectorType output(inSize);
-		VectorType dout = VectorType::Random(inSize);
-		VectorType din(inSize);
+		Vector input = 2.0*Vector::Random(inSize);
+		Vector output(inSize);
+		Vector dout = Vector::Random(inSize);
+		Vector din(inSize);
 
-		auto t = VectorType(10);
+		auto t = Vector(10);
 		layer.forward(input,output);
 		layer.backprop(input, output, dout, din, t);
 
-		T diff = input.adjoint()*din;
-		diff -= (input.adjoint()*ndiff_in(layer, input, inSize)*dout).value();
-		REQUIRE_THAT(abs(diff)/inSize,
-				WithinAbsMatcher(0.,1e-6));
+		Vector din_num = ndiff_in(layer, input, inSize)*dout;
+
+		Vector diff = din - din_num;
+
+		if(diff.norm()/inSize > 1e-4)
+		{
+			std::cout << "input: " << input.transpose() << std::endl;
+			std::cout << "dout: " <<dout.transpose() << std::endl;
+			std::cout << "din: " << din.transpose() << std::endl;
+			std::cout << "din_num: " << din_num.transpose() << std::endl;
+		}
+		REQUIRE_THAT(diff.norm()/inSize,
+				WithinAbsMatcher(0.,1e-4));
 	}
 }

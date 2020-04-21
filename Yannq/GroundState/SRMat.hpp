@@ -20,23 +20,23 @@ template<typename Machine, typename Hamiltonian>
 class SRMat
 {
 public:
-	using ScalarType = typename Machine::ScalarType;
-	using RealScalarType = typename remove_complex<ScalarType>::type;
+	using Scalar = typename Machine::Scalar;
+	using RealScalar = typename remove_complex<Scalar>::type;
 
-	using MatrixType = typename Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>;
-	using VectorType = typename Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
-	using RealMatrixType = typename Eigen::Matrix<RealScalarType, Eigen::Dynamic, Eigen::Dynamic>;
-	using RealVectorType = typename Eigen::Matrix<RealScalarType, Eigen::Dynamic, 1>;
+	using Matrix = typename Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
+	using Vector = typename Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
+	using RealMatrix = typename Eigen::Matrix<RealScalar, Eigen::Dynamic, Eigen::Dynamic>;
+	using RealVector = typename Eigen::Matrix<RealScalar, Eigen::Dynamic, 1>;
 private:
-	int n_;
+	uint32_t n_;
 
 	const Machine& qs_;
 	const Hamiltonian& ham_;
 	
 	FisherMatrix<Machine> fisher_;
-	Energy<ScalarType, Hamiltonian> energy_;
+	Energy<Scalar, Hamiltonian> energy_;
 
-	VectorType energyGrad_;
+	Vector energyGrad_;
 
 public:
 	//! \param qs Machine that describes quantum states
@@ -74,40 +74,40 @@ public:
 	}
 
 	//! return \f$\langle \nabla_{\theta} \psi_\theta(\sigma) \rangle\f$ 
-	const VectorType& oloc() const&
+	const Vector& oloc() const&
 	{
 		return fisher_.oloc();
 	}
-	VectorType oloc() &&
+	Vector oloc() &&
 	{
 		return fisher_.oloc();
 	}
 
-	MatrixType corrMat() 
+	Matrix corrMat() 
 	{
 		return fisher_.corrMat();
 	}
 
-	RealScalarType eloc() const
+	RealScalar eloc() const
 	{
 		return std::real(energy_.eloc());
 	}
 
-	ScalarType elocVar() const
+	Scalar elocVar() const
 	{
 		return std::real(energy_.elocVar());
 	}
 	
-	const VectorType& energyGrad() const&
+	const Vector& energyGrad() const&
 	{
 		return energyGrad_;
 	}
-	VectorType energyGrad() &&
+	Vector energyGrad() &&
 	{
 		return energyGrad_;
 	}
 
-	VectorType apply(const VectorType& v) const
+	Vector apply(const Vector& v) const
 	{
 		return fisher_.apply(v);
 	}
@@ -118,7 +118,7 @@ public:
 	 * \param shift \f$ \epsilon \f$ that controls regularization
 	 * \param tol tolerance for CG solver
 	 */
-	VectorType solveCG(double shift, double tol = 1e-4)
+	Vector solveCG(RealScalar shift, RealScalar tol = 1e-4)
 	{
 		fisher_.setShift(shift);
 		Eigen::ConjugateGradient<
@@ -135,11 +135,11 @@ public:
 	 * We solve \f$ (S + \epsilon \mathbb{1})v = f \f$ where \f$ f \f$ is the gradient of the energy expectation values. 
 	 * \param shift \f$ \epsilon \f$ that controls regularization
 	 */
-	VectorType solveExact(double shift)
+	Vector solveExact(RealScalar shift)
 	{
-		MatrixType mat = fisher_.corrMat();
-		mat += shift*MatrixType::Identity(mat.rows(),mat.cols());
-		Eigen::LLT<MatrixType> llt{mat};
+		Matrix mat = fisher_.corrMat();
+		mat += shift*Matrix::Identity(mat.rows(),mat.cols());
+		Eigen::LLT<Matrix> llt{mat};
 		return llt.solve(energyGrad_);
 	}
 

@@ -101,3 +101,42 @@ TEST_CASE("Test translational invariance of forward", "[layer][conv1d][forward]"
 		}
 	}
 }
+
+TEST_CASE("Test get/set/update params", "[layer][conv1d][params]")
+{
+	using namespace Eigen;
+	using Catch::Matchers::Floating::WithinAbsMatcher;
+	std::random_device rd;
+	std::default_random_engine re{rd()};
+
+	const int inSize = 20;
+
+	const int channels[] = {1,2,4,8,12};
+
+	for(const int kernelSize: {3,5,7})
+	{
+		for(const int inChannels: channels)
+		{
+			for(const int outChannels: channels)
+			{
+				const int outSize = outChannels*inSize;
+				auto conv1 = yannq::Conv1D<double>(inChannels, outChannels, kernelSize);
+				auto conv2 = yannq::Conv1D<double>(inChannels, outChannels, kernelSize);
+				conv1.randomizeParams(re, 0.01);
+				conv2.randomizeParams(re, 0.01);
+
+				REQUIRE(conv1 != conv2);
+
+				auto par1 = conv1.getParams();
+				conv2.setParams(par1);
+
+				REQUIRE(conv1 == conv2);
+
+				conv2.setParams(Eigen::VectorXd::Zero(conv1.paramDim()));
+				conv2.updateParams(par1);
+
+				REQUIRE(conv1 == conv2);
+			}
+		}
+	}
+}

@@ -17,14 +17,17 @@
 #ifndef YANNQ_ACTIVATIONLAYER_HH
 #define YANNQ_ACTIVATIONLAYER_HH
 
-#include <Eigen/Dense>
 #include <complex>
 #include <fstream>
 #include <random>
 #include <vector>
+#include <tuple>
+#include <type_traits>
+
+#include <Eigen/Dense>
+
 #include "AbstractLayer.hpp"
 #include "activations.hpp"
-
 
 /**
  * Misc: Because of bugs in Intel C compiler (ICC), constexpr static member 
@@ -40,18 +43,27 @@ class ActivationLayer
 	: public AbstractLayer<T> 
 {
 public:
-	using ScalarType = T;
-	using VectorType = typename AbstractLayer<T>::VectorType;
-	using MatrixType = typename AbstractLayer<T>::MatrixType;
-	using VectorRefType = typename AbstractLayer<T>::VectorRefType;
-	using VectorConstRefType = typename AbstractLayer<T>::VectorConstRefType;
+	using Scalar = T;
+	using Vector = typename AbstractLayer<T>::Vector;
+	using Matrix = typename AbstractLayer<T>::Matrix;
+	using VectorRef = typename AbstractLayer<T>::VectorRef;
+	using VectorConstRef = typename AbstractLayer<T>::VectorConstRef;
 
 private:
 
 	Activation f_;  
 
 public:
-	template<typename ...Ts>
+	ActivationLayer()
+	{
+	}
+
+	template<typename ...Ts, 
+		typename disable_if<
+            std::is_same<
+                typename std::remove_reference<typename get_nth_type<0, Ts...>::type>::type,
+                ActivationLayer<T, Activation>
+			>::value, int>::type = 0>
 	ActivationLayer(Ts&&... args)
 		: f_(std::forward<Ts>(args)...)
 	{
@@ -68,25 +80,19 @@ public:
 		return std::string("Activation Layer");
 	}
 	
-	/*
-	bool operator==(const AbstractLayer<T>& rhs) const override
+	bool operator==(const ActivationLayer& rhs) const
 	{
-		if(name() != rhs.name())
-			return false;
-		const ActivationLayer& r = 
-			dynamic_cast<const ActivationLayer<T, Activation> &>(rhs);
-		return f_ == r.f_;
+		return f_.name() == rhs.f_.name();
 	}
-	*/
 
 	uint32_t paramDim() const override { return 0; }
 
-	VectorType getParams() const override
+	Vector getParams() const override
 	{
-		return VectorType{};
+		return Vector{};
 	}
 
-	void setParams(VectorConstRefType pars) override
+	void setParams(VectorConstRef pars) override
 	{
 		(void)pars;
 	}
@@ -97,17 +103,17 @@ public:
 	}
 
 	// Feedforward
-	void forward(const VectorConstRefType& input, VectorRefType output) override 
+	void forward(const VectorConstRef& input, VectorRef output) override 
 	{
 		assert(input.size() == output.size());
 		f_.operator()(input, output);
 	}
 
 	// Computes derivative.
-	void backprop(const VectorConstRefType& prev_layer_output,
-			const VectorConstRefType& this_layer_output,
-			const VectorConstRefType& dout,
-			VectorRefType din, VectorRefType /*der*/) override 
+	void backprop(const VectorConstRef& prev_layer_output,
+			const VectorConstRef& this_layer_output,
+			const VectorConstRef& dout,
+			VectorRef din, VectorRef /*der*/) override 
 	{
 		din.resize(prev_layer_output.size());
 		f_.ApplyJacobian(prev_layer_output, this_layer_output, dout, din);
@@ -120,6 +126,12 @@ public:
 		layerpar["activation"] = f_.name();
 
 		return layerpar;
+	}
+
+	template<class Archive>
+	void serialize(Archive& ar)
+	{
+		ar(f_);
 	}
 };
 

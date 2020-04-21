@@ -110,8 +110,8 @@ public:
 	{
 		using Clock = std::chrono::high_resolution_clock;
 		using namespace yannq;
-		using MatrixT = typename MachineType::MatrixType;
-		using VectorT = typename MachineType::VectorType;
+		using Matrix = typename MachineType::Matrix;
+		using Vector = typename MachineType::Vector;
 
 		if(!this->threadsInitiialized_)
 			this->initializeThreads();
@@ -129,8 +129,8 @@ public:
 		if(nSamplesDiscard == -1)
 			nSamplesDiscard = int(0.1*nSamples);
 
-		ObsAvg<VectorT> gradAvg(beta1_, VectorT::Zero(dim));
-		ObsAvg<MatrixT> fisherAvg(beta2_, MatrixT::Zero(dim,dim));
+		ObsAvg<Vector> gradAvg(beta1_, Vector::Zero(dim));
+		ObsAvg<Matrix> fisherAvg(beta2_, Matrix::Zero(dim,dim));
 
 		//These should be changed into structured binding for C++17
 		double lambdaIni, lambdaDecay, lambdaMin;
@@ -169,7 +169,7 @@ public:
 			double currE = srm.eloc();
 			
 			double lambda = std::max(lambdaIni*pow(lambdaDecay,ll), lambdaMin);
-			VectorT v;
+			Vector v;
 			double cgErr;
 
 			if(useCG_)
@@ -182,13 +182,13 @@ public:
 				gradAvg.update(srm.energyGrad());
 				fisherAvg.update(srm.corrMat());
 				auto fisher = fisherAvg.getAvg();
-				fisher += lambda*MatrixT::Identity(dim,dim);
-				Eigen::LLT<MatrixT> llt{fisher};
+				fisher += lambda*Matrix::Identity(dim,dim);
+				Eigen::LLT<Matrix> llt{fisher};
 				v = llt.solve(gradAvg.getAvg());
 				cgErr = 0;
 			}
 
-			VectorT optV = this->opt_->getUpdate(v);
+			Vector optV = this->opt_->getUpdate(v);
 
 			auto slv_dur = std::chrono::duration_cast<std::chrono::milliseconds>
 				(Clock::now() - slv_start).count();

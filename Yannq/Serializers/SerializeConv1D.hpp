@@ -12,7 +12,7 @@ CEREAL_CLASS_VERSION(yannq::Conv1D<long double>, 1);
 namespace cereal
 {
 template<class Archive, typename T>
-void save(Archive & ar, const yannq::Conv1D<T>& m, const uint32_t version)
+void save(Archive & ar, const yannq::Conv1D<T>& m, const uint32_t /*version*/)
 { 
 	nlohmann::json desc = m.desc();
 	ar(desc["use_bias"].get<bool>(),
@@ -20,12 +20,12 @@ void save(Archive & ar, const yannq::Conv1D<T>& m, const uint32_t version)
 			desc["output_channels"].get<int>(), 
 			desc["kernel_size"].get<int>(),
 			desc["stride"].get<int>());
-	typename yannq::Conv1D<T>::VectorType pars = m.getParams();
+	typename yannq::Conv1D<T>::Vector pars = m.getParams();
 	ar(pars);
 }
 
 template<class Archive, typename T>
-void load(Archive & ar, yannq::Conv1D<T>& m, const uint32_t version)
+void load(Archive & ar, yannq::Conv1D<T>& m, const uint32_t /*version*/)
 { 
 	assert(false); // No default constructor or suitable modifier
 }
@@ -36,14 +36,14 @@ struct LoadAndConstruct<yannq::Conv1D<T> >
 	template<class Archive>
 	static void load_and_construct(Archive& ar,
 			cereal::construct<yannq::Conv1D<T> >& construct,
-			uint32_t const version)
+			uint32_t const /*version*/)
 	{
 		bool useBias;
 		int inChannels, outChannels, kernelSize, stride;
 		ar(useBias, inChannels, outChannels, kernelSize, stride);
 
 		construct(inChannels, outChannels, kernelSize, stride, useBias);
-		typename yannq::Conv1D<T>::VectorType pars;
+		typename yannq::Conv1D<T>::Vector pars;
 		ar(pars);
 		construct->setParams(pars);
 	}

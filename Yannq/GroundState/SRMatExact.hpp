@@ -20,48 +20,48 @@ template<typename Machine>
 class SRMatExact
 {
 public:
-	using ScalarType = typename Machine::ScalarType;
-	using RealScalarType = typename remove_complex<ScalarType>::type;
+	using Scalar = typename Machine::Scalar;
+	using RealScalar = typename remove_complex<Scalar>::type;
 
-	using MatrixType = typename Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>;
-	using VectorType = typename Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
+	using Matrix = typename Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
+	using Vector = typename Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
 
 private:
 	const uint32_t n_;
 	const Machine& qs_;
 	tbb::concurrent_vector<uint32_t> basis_;
 
-	Eigen::SparseMatrix<RealScalarType> ham_;
+	Eigen::SparseMatrix<RealScalar> ham_;
 
-	MatrixType deltas_;
-	MatrixType deltasPsis_;
-	VectorType oloc_;
-	VectorType grad_;
+	Matrix deltas_;
+	Matrix deltasPsis_;
+	Vector oloc_;
+	Vector grad_;
 
-	RealScalarType energy_;
-	RealScalarType energyVar_;
+	RealScalar energy_;
+	RealScalar energyVar_;
 
 public:
 
-	RealScalarType eloc() const
+	RealScalar eloc() const
 	{
 		return energy_;
 	}
 
-	RealScalarType elocVar() const
+	RealScalar elocVar() const
 	{
 		return energyVar_;
 	}
 
 	void constructExact()
 	{
-		VectorType st = getPsi(qs_, basis_, true);
+		Vector st = getPsi(qs_, basis_, true);
 
-		VectorType k = ham_*st;
+		Vector k = ham_*st;
 
-		std::complex<double> t = st.adjoint()*k;
+		Scalar t = st.adjoint()*k;
 		energy_ = std::real(t);
-		energyVar_ = static_cast<std::complex<double> >(k.adjoint()*k).real();
+		energyVar_ = static_cast<Scalar>(k.adjoint()*k).real();
 		energyVar_ -= energy_*energy_;
 		
 		deltas_ = constructDeltaExact(qs_, basis_);
@@ -72,34 +72,34 @@ public:
 		grad_ -= t*oloc_.conjugate();
 	}
 
-	const VectorType& oloc() const&
+	const Vector& oloc() const&
 	{
 		return oloc_;
 	}
-	VectorType oloc() &&
+	Vector oloc() &&
 	{
 		return oloc_;
 	}
 
-	MatrixType corrMat() const
+	Matrix corrMat() const
 	{
-		MatrixType res = deltas_.adjoint()*deltasPsis_;
+		Matrix res = deltas_.adjoint()*deltasPsis_;
 		res -= oloc_.conjugate()*oloc_.transpose();
 		return res;
 	}
 
-	const VectorType& energyGrad() const&
+	const Vector& energyGrad() const&
 	{
 		return grad_;
 	}
-	VectorType erengyGrad() &&
+	Vector erengyGrad() &&
 	{
 		return grad_;
 	}
 
-	VectorType apply(const VectorType& rhs)
+	Vector apply(const Vector& rhs)
 	{
-		VectorType res = deltas_.adjoint()*(deltasPsis_*rhs);
+		Vector res = deltas_.adjoint()*(deltasPsis_*rhs);
 		res -= oloc_.conjugate()*(oloc_.transpose()*rhs);
 		return res;
 	}
@@ -114,7 +114,8 @@ public:
 			basis_.emplace_back(elt);
 		});
 		tbb::parallel_sort(basis_.begin(), basis_.end());
-		ham_ = edp::constructSubspaceMat<double>(std::forward<ColFunc>(col), basis_);
+		ham_ = edp::constructSubspaceMat<RealScalar>
+			(std::forward<ColFunc>(col), basis_);
 	}
 };
 } //namespace yannq

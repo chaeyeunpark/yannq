@@ -21,15 +21,18 @@ public:
 	}
 
 	template<class StateValue, class RandomEngine>
-	void localSweep(StateValue& sv, double beta, RandomEngine& re) const noexcept
+	void localSweep(StateValue& sv, typename StateValue::RealScalar beta, 
+			RandomEngine& re) const noexcept
 	{
-		std::uniform_real_distribution<double> urd(0.0, 1.0);
+		using RealScalar = typename StateValue::RealScalar;
+
+		std::uniform_real_distribution<RealScalar> urd(0.0, 1.0);
 		std::uniform_int_distribution<int> uid_(0,n_-1);
 		for(int sidx = 0; sidx < n_*nSweep_; sidx++)
 		{
 			int toFlip = uid_(re);
-			double p = std::min(1.0,exp(beta*2.0*sv.logRatioRe(toFlip)));
-			double u = urd(re);
+			RealScalar p = std::min(1.0,exp(beta*2.0*sv.logRatioRe(toFlip)));
+			RealScalar u = urd(re);
 			if(u < p)//accept
 			{
 				sv.flip(toFlip);

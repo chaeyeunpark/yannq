@@ -12,11 +12,15 @@ namespace yannq
 template<class Machine, class RandomEngine, class StateValue, class Sweeper>
 class SamplerPT
 {
+public:
+	using Scalar = typename Machine::Scalar;
+	using RealScalar = typename Machine::RealScalar;
+
 private:
 	const Machine& qs_;
-	const int n_;
+	const uint32_t n_;
 	const uint32_t numChain_;
-	std::vector<double> betas_;
+	std::vector<RealScalar> betas_;
 
 	std::vector<RandomEngine> re_;
 	Sweeper& sweeper_;
@@ -29,9 +33,9 @@ public:
 		re_(numChain, RandomEngine{}),
 		sweeper_(sweeper)
 	{
-		for(int idx = 0; idx < numChain; idx++)
+		for(uint32_t idx = 0; idx < numChain; idx++)
 		{
-			betas_.emplace_back( double(numChain - idx)/numChain );
+			betas_.emplace_back( RealScalar(numChain - idx)/numChain );
 		}
 	}
 
@@ -65,13 +69,15 @@ public:
 	void mixChains()
 	{
 		using std::real;
-		tbb::enumerable_thread_specific<std::uniform_real_distribution<double> > urd(0.0,1.0);
+		tbb::enumerable_thread_specific<
+			std::uniform_real_distribution<RealScalar> > urd(0.0,1.0);
+
 		tbb::parallel_for(0u, numChain_, 2u,
 			[&](uint32_t idx)
 		{
-			double p = exp((betas_[idx+1]-betas_[idx])*2.0*
+			RealScalar p = exp((betas_[idx+1]-betas_[idx])*2.0*
 					sv_[idx+1].logRatioRe(sv_[idx]));
-			double u = urd.local()(re_[idx]);
+			RealScalar u = urd.local()(re_[idx]);
 			if(u < p)
 			{
 				std::swap(sv_[idx+1],sv_[idx]);
@@ -80,9 +86,9 @@ public:
 		tbb::parallel_for(1u, numChain_-1, 2u, 
 			[&](uint32_t idx)
 		{
-			double p = exp((betas_[idx+1]-betas_[idx])*2.0*
+			RealScalar p = exp((betas_[idx+1]-betas_[idx])*2.0*
 					sv_[idx+1].logRatioRe(sv_[idx]));
-			double u = urd.local()(re_[idx]);
+			RealScalar u = urd.local()(re_[idx]);
 			if(u < p)
 			{
 				std::swap(sv_[idx+1],sv_[idx]);
@@ -101,7 +107,7 @@ public:
 	}
 
 
-	auto sampling(int n_sweeps, int n_therm)
+	auto sampling(uint32_t n_sweeps, uint32_t n_therm)
 	{
 		using std::norm;
 		using std::pow;
@@ -109,7 +115,7 @@ public:
 		using std::exp;
 
 		//Thermalizing phase
-		for(int n = 0; n < n_therm; n++)
+		for(uint32_t n = 0; n < n_therm; n++)
 		{
 			sweep();
 			mixChains();
@@ -118,7 +124,7 @@ public:
 
 		std::vector<DataT> res;
 		res.reserve(n_sweeps);
-		for(int ll = 0; ll < n_sweeps; ll++)
+		for(uint32_t ll = 0; ll < n_sweeps; ll++)
 		{
 			sweep();
 			mixChains();

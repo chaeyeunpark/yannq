@@ -1,5 +1,5 @@
 #pragma once
-
+#include "Machines/AmplitudePhase.hpp"
 #include "AbstractRunner.hpp"
 #include "GroundState/NGDExact.hpp"
 
@@ -10,21 +10,21 @@ class RunAmplitudePhaseExact
 	: public AbstractRunner<AmplitudePhase, RandomEngine, RunAmplitudePhaseExact<RandomEngine> >
 {
 public:
-	using ScalarType = typename AmplitudePhase::ScalarType;
+	using Scalar = typename AmplitudePhase::Scalar;
 	using MachineType = AmplitudePhase;
 
-	using ReScalarType = typename MachineType::ReScalarType;
-	using CxScalarType = typename MachineType::CxScalarType;
+	using RealScalar = Scalar;
+	using ComplexScalar = typename MachineType::ComplexScalar;
 
-	using ReMatrixType = typename MachineType::ReMatrixType;
-	using ReVectorType = typename MachineType::ReVectorType;
+	using RealMatrix = typename MachineType::RealMatrix;
+	using RealVector = typename MachineType::RealVector;
 
-	using CxMatrixType = typename MachineType::CxMatrixType;
-	using CxVectorType = typename MachineType::CxVectorType;
+	using ComplexMatrix = typename MachineType::ComplexMatrix;
+	using ComplexVector = typename MachineType::ComplexVector;
 
 public:
 	RunAmplitudePhaseExact(const uint32_t N, const int alpha, bool useBias, 
-			FeedForward<ScalarType>&& phase,
+			FeedForward<Scalar>&& phase,
 			std::ostream& logger)
 		: AbstractRunner<AmplitudePhase, RandomEngine, RunAmplitudePhaseExact<RandomEngine>>
 		  	(logger, N, N*alpha, useBias, std::move(phase))
@@ -76,21 +76,21 @@ public:
 
 			ngdex.constructExact();
 
-			ReScalarType currE = ngdex.eloc();
+			RealScalar currE = ngdex.eloc();
 			auto grad = ngdex.energyGrad();
-			ReVectorType v(this->qs_.getDim());
+			RealVector v(this->qs_.getDim());
 
 			{
 				auto corrMatAmp = ngdex.corrMatAmp();
 				double lambda = std::max(lambdaIni*pow(lambdaDecay,ll), lambdaMin);
-				corrMatAmp += lambda*ReMatrixType::Identity(dimAmp, dimAmp);
+				corrMatAmp += lambda*RealMatrix::Identity(dimAmp, dimAmp);
 				Eigen::LLT<Eigen::MatrixXd> llt(corrMatAmp);
 				v.head(dimAmp) = llt.solve(grad.head(dimAmp));
 			}
 			{
 				auto corrMatPhase = ngdex.corrMatPhase();
 				double lambda = std::max(lambdaIni*pow(lambdaDecay,ll), lambdaMin);
-				corrMatPhase += lambda*ReMatrixType::Identity(dimPhase, dimPhase);
+				corrMatPhase += lambda*RealMatrix::Identity(dimPhase, dimPhase);
 				Eigen::LLT<Eigen::MatrixXd> llt(corrMatPhase);
 				v.tail(dimPhase) = llt.solve(grad.tail(dimPhase));
 			}

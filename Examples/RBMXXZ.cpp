@@ -35,6 +35,8 @@ int main(int argc, char** argv)
 	fin >> paramIn;
 	fin.close();
 
+	const int numChains = 16;
+
 	const int N = paramIn.at("N").get<int>();
 	const int alpha = paramIn.at("alpha").get<int>();
 	const double delta = paramIn.at("delta").get<double>();
@@ -49,10 +51,10 @@ int main(int argc, char** argv)
 			<< "\t" << smp_dur << "\t" << slv_dur << std::endl;
 	};
 
-	auto runner = RunRBM<ValT>(N, alpha, true, std::cerr);
+	RunRBM<ValT> runner(N, alpha, true, std::cerr);
 	runner.initializeRandom(0.01);
 	runner.setLambda(1.0, 0.9, 1e-4);
-	runner.setIterParams(10, 100);
+	runner.setIterParams(40, 100);
 	runner.setOptimizer(paramIn["Optimizer"]);
 	runner.setSolverParams(useCG, 1e-3);
 
@@ -68,6 +70,9 @@ int main(int argc, char** argv)
 		sampler.randomizeSigma(N/2);
 	};
 
-	runner.run<SwapSweeper, false>(callback, randomizer, std::move(ham), 2000);
+	SwapSweeper sweeper{N};
+	auto sampler = runner.createSamplerPT(sweeper, numChains);
+
+	runner.run(sampler, callback, randomizer, std::move(ham), 2000);
 	return 0;
 }

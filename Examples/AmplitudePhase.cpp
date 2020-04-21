@@ -1,7 +1,7 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 
-#include "Hamiltonians/XXXJ1J2.hpp"
+#include "Hamiltonians/J1J2.hpp"
 #include "Machines/AmplitudePhase.hpp"
 #include "Machines/layers/layers.hpp"
 #include "Machines/FeedForward.hpp"
@@ -56,13 +56,13 @@ int main(int argc, char* argv[])
 
 	std::cout << ff.summary() << std::endl;
 
-	XXXJ1J2 ham(N, 1.0, j2, true);
+	J1J2 ham(N, 1.0, j2, true);
 	auto callback = [](int ll, double currE, double nGrad, double nv)
 	{
 		std::cout << ll << "\t" << currE << "\t" << nGrad << "\t" << nv << std::endl;
 	};
 
-	auto runner = RunAmplitudePhaseExact(N, alpha, false, std::move(ff), std::cerr);
+	RunAmplitudePhaseExact<> runner(N, alpha, false, std::move(ff), std::cerr);
 
 	runner.initializeRandom(0.01);
 	runner.setLambda(10.0, 0.9, 1e-3);

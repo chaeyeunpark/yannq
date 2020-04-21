@@ -17,18 +17,20 @@
 
 namespace yannq {
 /** Convolutional layer with spin 1/2 hidden units.
- Important: In order for this to work correctly, VectorType and MatrixType must
+ Important: In order for this to work correctly, Vector and Matrix must
  be column major.
  */
 template<typename T>
 class Conv1D : public AbstractLayer<T> {
-	static_assert(!AbstractLayer<T>::MatrixType::IsRowMajor, "MatrixType must be column-major");
+	static_assert(!AbstractLayer<T>::Matrix::IsRowMajor, "Matrix must be column-major");
 
 public:
-	using VectorType = Eigen::Matrix<T, Eigen::Dynamic, 1>;
-	using MatrixType = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
-	using VectorRefType = Eigen::Ref<VectorType>;
-	using VectorConstRefType = Eigen::Ref<const VectorType>;
+	using Scalar = T;
+	using RealScalar = remove_complex_t<T>;
+	using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+	using Matrix = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
+	using VectorRef = Eigen::Ref<Vector>;
+	using VectorConstRef = Eigen::Ref<const Vector>;
 
 private:
 	const bool useBias_;  // boolean to turn or off bias
@@ -41,8 +43,8 @@ private:
 	
 	const uint32_t npar_;          // number of parameters in layer
 
-	MatrixType kernel_;  // Weight parameters, W((inChannels_ * kernelSize)x(outChannels))
-	VectorType bias_;     // Bias parameters, b(outChannels)
+	Matrix kernel_;  // Weight parameters, W((inChannels_ * kernelSize)x(outChannels))
+	Vector bias_;     // Bias parameters, b(outChannels)
 
 	static uint32_t numParams(bool useBias, const uint32_t inChannels,
 			const uint32_t outChannels, const uint32_t kernelSize)
@@ -88,10 +90,15 @@ public:
 			return res && (bias_ == rhs.bias_);
 	}
 
+	bool operator!=(const Conv1D& rhs) const
+	{
+		return !(*this == rhs);
+	}
+
 	std::string name() const override { return "Convolutional 1D Layer"; }
 
 	template<class RandomEngine>
-	void randomizeParams(RandomEngine&& re, double sigma)
+	void randomizeParams(RandomEngine&& re, RealScalar sigma)
 	{
 		setParams(randomVector<T>(std::forward<RandomEngine>(re), sigma, npar_));
 	}
@@ -101,45 +108,34 @@ public:
 		return (inputDim / stride_ / inChannels_) * outChannels_; 
 	}
 
-	VectorType getParams() const override 
+	Vector getParams() const override 
 	{
-		VectorType pars(npar_);
+		Vector pars(npar_);
+		pars.head(kernel_.size()) = Eigen::Map<const Vector>(kernel_.data(), kernel_.size());
 		if(useBias_)
 		{
-			pars.head(outChannels_) = bias_;
-			pars.segment(outChannels_, kernel_.size()) = 
-				Eigen::Map<const VectorType>(kernel_.data(), kernel_.rows()*kernel_.cols());
-		}
-		else
-		{
-			pars = Eigen::Map<const VectorType>(kernel_.data(), kernel_.rows()*kernel_.cols());
+			pars.tail(outChannels_) = bias_;
 		}
 		return pars;
 	}
 
-	void setParams(VectorConstRefType pars) override 
+	void setParams(VectorConstRef pars) override 
 	{
+		assert(pars.size() == npar_);
+		Eigen::Map<Vector>(kernel_.data(), kernel_.size()) = pars.head(kernel_.size());
 		if(useBias_)
 		{
-			bias_ = pars.head(outChannels_);
-			kernel_ = Eigen::Map<const MatrixType>(pars.data() + outChannels_, kernel_.rows(), kernel_.cols());
-		}
-		else
-		{
-			kernel_ = Eigen::Map<const MatrixType>(pars.data(), kernel_.rows(), kernel_.cols());
+			bias_ = pars.tail(outChannels_);
 		}
 	}
 
-	void updateParams(VectorConstRefType ups) override
+	void updateParams(VectorConstRef ups) override
 	{
+		assert(ups.size() == npar_);
+		Eigen::Map<Vector>(kernel_.data(), kernel_.size()) += ups.head(kernel_.size());
 		if(useBias_)
 		{
-			bias_ += ups.head(outChannels_);
-			kernel_ += Eigen::Map<const MatrixType>(ups.data() + outChannels_, kernel_.rows(), kernel_.cols());
-		}
-		else
-		{
-			kernel_ += Eigen::Map<const MatrixType>(ups.data(), kernel_.rows(), kernel_.cols());
+			bias_ += ups.tail(outChannels_);
 		}
 	}
 
@@ -148,7 +144,7 @@ public:
 	 * @input: inChannels*size
 	 * @output: outChannels*size
 	 */
-	void forward(const VectorConstRefType& input, VectorRefType output) override 
+	void forward(const VectorConstRef& input, VectorRef output) override 
 	{
 		assert(input.size() % inChannels_ == 0);
 		uint32_t inSize = input.size() / inChannels_;
@@ -177,11 +173,11 @@ public:
 		}
 	}
 
-	void backprop(const VectorConstRefType& prev_layer_output,
-			const VectorConstRefType& this_layer_output,
-			const VectorConstRefType& dout, 
-			VectorRefType din,
-			VectorRefType der) override
+	void backprop(const VectorConstRef& prev_layer_output,
+			const VectorConstRef& /*this_layer_output*/,
+			const VectorConstRef& dout, 
+			VectorRef din,
+			VectorRef der) override
 	{
 		assert(prev_layer_output.size() % inChannels_ == 0);
 		uint32_t inSize = prev_layer_output.size() / inChannels_;
@@ -200,19 +196,9 @@ public:
 			din(((r*stride_+ki-kernelSize_/2+inSize)%inSize) + ic*inSize) 
 				+= kernel_(ki + ic*kernelSize_, oc)*dout[r + oc*outSize];
 		}
-		
-		uint32_t k = 0;
-		if(useBias_)// accumulate bias difference
-		{
-			for (uint32_t oc = 0; oc < outChannels_; oc++)
-			for (uint32_t r = 0; r < outSize; r ++) 
-			{
-				der(oc) += dout(r + oc*outSize);
-			}
-			k += outChannels_;
-		}
 
-		MatrixType dw(inChannels_*kernelSize_, outChannels_);
+		// weight der
+		Matrix dw(inChannels_*kernelSize_, outChannels_);
 		dw.setZero();
 
 		// accumulate weight difference
@@ -228,7 +214,17 @@ public:
 			}
 		}
 		dw.resize(dw.rows()*dw.cols(),1);
-		der.segment(k, kernel_.rows()*kernel_.cols()) = std::move(dw);
+		der.head(kernel_.size()) = std::move(dw);
+		
+		uint32_t k = kernel_.size();
+		if(useBias_)// accumulate bias difference
+		{
+			for (uint32_t oc = 0; oc < outChannels_; oc++)
+			for (uint32_t r = 0; r < outSize; r ++) 
+			{
+				der(oc + k) += dout(r + oc*outSize);
+			}
+		}
 	}
 
 	uint32_t fanIn() override

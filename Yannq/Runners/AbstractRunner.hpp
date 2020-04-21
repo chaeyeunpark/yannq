@@ -7,7 +7,7 @@
 #include <nlohmann/json.hpp>
 #include <ios>
 
-#if defined(__GNUC__) && (__GNUC__ <= 7)
+#if __cpluscplus < 201703L
 #include <experimental/filesystem>
 #else
 #include <filesystem>
@@ -23,7 +23,7 @@ class AbstractRunner
 public:
 	using json = nlohmann::json;
 
-#if defined(__GNUC__) && (__GNUC__ <= 7)
+#if __cpluscplus < 201703L
 	using path = std::experimental::filesystem::path;
 #else
 	using path = std::filesystem::path;
@@ -49,7 +49,7 @@ private:
 	tbb::task_scheduler_init init_;
 
 protected:
-	std::unique_ptr<yannq::Optimizer<typename MachineType::ScalarType> > opt_;
+	std::unique_ptr<yannq::Optimizer<typename MachineType::Scalar> > opt_;
 
 	template<typename ...Ts>
 	AbstractRunner(std::ostream& logger, Ts&&... args)
@@ -130,7 +130,7 @@ public:
 
 	void setOptimizer(const json& optParam)
 	{
-		opt_ = std::move(yannq::OptimizerFactory<typename MachineType::ScalarType>::getInstance().createOptimizer(optParam));
+		opt_ = std::move(yannq::OptimizerFactory<typename MachineType::Scalar>::getInstance().createOptimizer(optParam));
 	}
 
 	void setIterParams(const int maxIter, const int saveWfPer)

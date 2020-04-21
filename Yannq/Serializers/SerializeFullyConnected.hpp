@@ -12,18 +12,18 @@ CEREAL_CLASS_VERSION(yannq::FullyConnected<long double>, 1);
 namespace cereal
 {
 template<class Archive, typename T>
-void save(Archive & ar, const yannq::FullyConnected<T>& m, const uint32_t version)
+void save(Archive & ar, const yannq::FullyConnected<T>& m, const uint32_t /*version*/)
 { 
 	nlohmann::json desc = m.desc();
 	ar(desc["use_bias"].get<bool>(),
 			desc["input_dim"].get<int>(),
 			desc["output_dim"].get<int>());
-	typename yannq::FullyConnected<T>::VectorType pars = m.getParams();
+	typename yannq::FullyConnected<T>::Vector pars = m.getParams();
 	ar(pars);
 }
 
 template<class Archive, typename T>
-void load(Archive & ar, yannq::FullyConnected<T>& m, const uint32_t version)
+void load(Archive & ar, yannq::FullyConnected<T>& m, const uint32_t /*version*/)
 { 
 	assert(false); // No default constructor or suitable modifier
 }
@@ -34,14 +34,14 @@ struct LoadAndConstruct<yannq::FullyConnected<T> >
 	template<class Archive>
 	static void load_and_construct(Archive& ar,
 			cereal::construct<yannq::FullyConnected<T> >& construct,
-			uint32_t const version)
+			uint32_t const /*version*/)
 	{
 		bool useBias;
 		int inputDim, outputDim;
 		ar(useBias, inputDim, outputDim);
 
 		construct(inputDim, outputDim, useBias);
-		typename yannq::FullyConnected<T>::VectorType pars;
+		typename yannq::FullyConnected<T>::Vector pars;
 		ar(pars);
 		construct->setParams(pars);
 	}

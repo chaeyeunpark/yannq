@@ -18,7 +18,7 @@ CEREAL_CLASS_VERSION(yannq::RBM<std::complex<long double>>, 1);
 namespace cereal
 {
 template<class Archive, typename T>
-void save(Archive & ar, const yannq::RBM<T>& m, uint32_t const version)
+void save(Archive & ar, const yannq::RBM<T>& m, uint32_t const /*version*/)
 { 
 	bool useBias = m.useBias();
 	ar(useBias);
@@ -30,7 +30,7 @@ void save(Archive & ar, const yannq::RBM<T>& m, uint32_t const version)
 }
 
 template<class Archive, typename T>
-void load(Archive & ar, yannq::RBM<T>& m, uint32_t const version)
+void load(Archive & ar, yannq::RBM<T>& m, uint32_t const /*version*/)
 { 
 	bool useBias;
 	ar(useBias);
@@ -41,12 +41,12 @@ void load(Archive & ar, yannq::RBM<T>& m, uint32_t const version)
 	ar(N, M);
 	m.resize(N, M);
 
-	typename yannq::RBM<T>::MatrixType W;
+	typename yannq::RBM<T>::Matrix W;
 	ar(W);
 	m.setW(W);
 	if(!useBias)
 		return ;
-	typename yannq::RBM<T>::VectorType A, B;
+	typename yannq::RBM<T>::Vector A, B;
 	ar(A, B);
 	m.setA(A);
 	m.setB(B);
@@ -56,7 +56,7 @@ template <typename T>
 struct LoadAndConstruct<yannq::RBM<T> >
 {
 	template<class Archive>
-	static void load_and_construct(Archive& ar, cereal::construct<yannq::RBM<T> >& construct,  uint32_t const version)
+	static void load_and_construct(Archive& ar, cereal::construct<yannq::RBM<T> >& construct,  uint32_t const /*version*/)
 	{
 		bool useBias;
 		ar(useBias);

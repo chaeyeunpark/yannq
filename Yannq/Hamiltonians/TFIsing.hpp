@@ -1,5 +1,4 @@
-#ifndef HAMILTONIANS_TFISING_HPP
-#define HAMILTONIANS_TFISING_HPP
+#pragma once
 #include <Eigen/Eigen>
 #include <nlohmann/json.hpp>
 
@@ -28,9 +27,9 @@ public:
 	}
 	
 	template<class State>
-	typename State::T operator()(const State& smp) const
+	typename State::Scalar operator()(const State& smp) const
 	{
-		typename State::T s = 0.0;
+		typename State::Scalar s = 0.0;
 		//Nearest-neighbor
 		for(int i = 0; i < n_; i++)
 		{
@@ -66,4 +65,3 @@ public:
 		return res;
 	}
 };
-#endif//HAMILTONIANS_TFISING_HPP

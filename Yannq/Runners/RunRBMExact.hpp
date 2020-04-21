@@ -1,6 +1,4 @@
-#ifndef YANNQ_RUNNERS_RUNRBMEXACT_HPP
-#define YANNQ_RUNNERS_RUNRBMEXACT_HPP
-
+#pragma once
 #include "AbstractRunner.hpp"
 #include "Supervised/OverlapOptimizerExact.hpp"
 #include "GroundState/SRMatExact.hpp"
@@ -13,8 +11,8 @@ class RunRBMExact
 {
 public:
 	using MachineType = RBM<T>;
-	using MatrixType = typename MachineType::MatrixType;
-	using VectorType = typename MachineType::VectorType;
+	using Matrix = typename MachineType::Matrix;
+	using Vector = typename MachineType::Vector;
 
 public:
 	RunRBMExact(const uint32_t N, const int alpha, bool useBias, std::ostream& logger)
@@ -67,7 +65,7 @@ public:
 			double currE = srex.eloc();
 			auto corrMat = srex.corrMat();
 			double lambda = std::max(lambdaIni*pow(lambdaDecay,ll), lambdaMin);
-			corrMat += lambda*MatrixType::Identity(dim,dim);
+			corrMat += lambda*Matrix::Identity(dim,dim);
 			Eigen::LLT<Eigen::MatrixXcd> llt(corrMat);
 
 			auto grad = srex.energyGrad();
@@ -82,7 +80,7 @@ public:
 	}
 
 	template<class Callback, class Basis>
-	void runSupervised(Callback&& callback, Basis&& basis, const VectorType& st)
+	void runSupervised(Callback&& callback, Basis&& basis, const Vector& st)
 	{
 		using std::pow;
 		using std::max;
@@ -126,7 +124,7 @@ public:
 
 			double lambda = std::max(lambdaIni*pow(lambdaDecay,ll), lambdaMin);
 			auto corrMat = ovex.corrMat();
-			corrMat += lambda*MatrixType::Identity(dim,dim);
+			corrMat += lambda*Matrix::Identity(dim,dim);
 			Eigen::LLT<Eigen::MatrixXcd> llt(corrMat);
 			auto grad = ovex.calcLogGrad();
 			auto v = llt.solve(grad);
@@ -142,4 +140,3 @@ public:
 	}
 };
 } //namespace yannq
-#endif//YANNQ_RUNNERS_RUNRBMEXACT_HPP

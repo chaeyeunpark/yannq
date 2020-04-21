@@ -51,7 +51,7 @@ int main(int argc, char** argv)
 			<< "\t" << smp_dur << "\t" << slv_dur << std::endl;
 	};
 
-	auto runner = RunRBM<ValT>(N, alpha, true, std::cerr);
+	RunRBM<ValT> runner(N, alpha, true, std::cerr);
 	runner.initializeRandom(0.01);
 	runner.setIterParams(2000, 100);
 	runner.setOptimizer(paramIn["Optimizer"]);
