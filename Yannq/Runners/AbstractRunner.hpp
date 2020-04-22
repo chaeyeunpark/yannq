@@ -165,7 +165,6 @@ public:
 		j["SR"] = SR;
 		j["numThreads"] = Eigen::nbThreads();
 		j["machine"] = qs_.params();
-		j["sampler"] = "Exact";
 
 		return j;
 	}
