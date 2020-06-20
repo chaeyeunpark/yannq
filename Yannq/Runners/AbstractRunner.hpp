@@ -166,7 +166,14 @@ public:
 		j["numThreads"] = Eigen::nbThreads();
 		j["machine"] = qs_.params();
 
+		j.update(getAdditionalParams());
+
 		return j;
+	}
+
+	json getAdditionalParams() const
+	{
+		return static_cast<const Derived&>(*this).getAdditionalParams();
 	}
 
 	template<typename ...Ts>

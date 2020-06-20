@@ -3,6 +3,7 @@
 #include <vector>
 #include <random>
 #include <complex>
+#include <nlohmann/json.hpp>
 
 #include <tbb/tbb.h>
 
@@ -33,6 +34,15 @@ public:
 		{
 			betas_.emplace_back( double(numChain - idx)/numChain );
 		}
+	}
+
+	nlohmann::json desc() const
+	{
+		nlohmann::json res;
+		res["name"] = "SamplerPT";
+		res["num_chains"] = numChain_;
+		res["sweeper"] = sweeper_.name();
+		return res;
 	}
 
 	void initializeRandomEngine()

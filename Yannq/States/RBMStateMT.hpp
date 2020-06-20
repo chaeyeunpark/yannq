@@ -237,20 +237,21 @@ public:
 	}
 };
 
-template<typename ScalarType>
+template<typename T>
 struct RBMStateValueMT
-	: public RBMStateObjMT<ScalarType, RBMStateValueMT<ScalarType> >
+	: public RBMStateObjMT<T, RBMStateValueMT<T> >
 {
 private:
 	Eigen::VectorXi sigma_;
-	typename RBM<ScalarType>::VectorType theta_;
+	typename RBM<T>::VectorType theta_;
 
 public:
+	using ScalarType = T;
 	using Machine = RBM<ScalarType>;
 	using Vector = typename Machine::VectorType;
 
 	RBMStateValueMT(const Machine& qs, Eigen::VectorXi&& sigma) noexcept
-		: RBMStateObjMT<ScalarType, RBMStateValueMT<ScalarType> >(qs), 
+		: RBMStateObjMT<T, RBMStateValueMT<T> >(qs), 
 		sigma_(std::move(sigma))
 	{
 		theta_ = this->qs_.calcTheta(sigma_);

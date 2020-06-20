@@ -16,6 +16,11 @@ public:
 	{
 	}
 
+	std::string name() const
+	{
+		return "Swap Sweeper";
+	}
+
 	template<class StateValue, class RandomEngine>
 	void localSweep(StateValue& sv, double beta, RandomEngine& re) noexcept
 	{

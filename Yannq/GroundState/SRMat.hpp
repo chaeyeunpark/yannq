@@ -25,6 +25,8 @@ public:
 
 	using MatrixType = typename Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>;
 	using VectorType = typename Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
+	using VectorRefType = Eigen::Ref<VectorType>;
+	using VectorConstRefType = Eigen::Ref<const VectorType>;
 	using RealMatrixType = typename Eigen::Matrix<RealScalarType, Eigen::Dynamic, Eigen::Dynamic>;
 	using RealVectorType = typename Eigen::Matrix<RealScalarType, Eigen::Dynamic, 1>;
 private:
@@ -128,7 +130,24 @@ public:
 		cg.compute(fisher_);
 		cg.setTolerance(tol);
 		return cg.solve(energyGrad_);
+	
 	}
+
+	/**
+	 * Solve S^{-1}vec using conjugate gradient method
+	 */
+	VectorType solveCG(const VectorConstRefType& vec, double shift, double tol = 1e-4)
+	{
+		fisher_.setShift(shift);
+		Eigen::ConjugateGradient<
+			FisherMatrix<Machine>,
+			Eigen::Lower|Eigen::Upper,
+			Eigen::IdentityPreconditioner> cg;
+		cg.compute(fisher_);
+		cg.setTolerance(tol);
+		return cg.solve(vec);
+	}
+
 
 	/*! \brief Solve the optimizing vector by solving the linear equation exactly..
 	 *

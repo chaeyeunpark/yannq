@@ -4,6 +4,7 @@
 #include <memory>
 #include <complex>
 
+#include <nlohmann/json.hpp>
 #include "Utilities/Utility.hpp"
 namespace yannq
 {
@@ -11,17 +12,25 @@ template<class Machine, class RandomEngine, class StateValue, class Sweeper>
 class Sampler
 {
 private:
-	int n_;
-	Machine& qs_;
+	uint32_t n_;
+	const Machine& qs_;
 	std::unique_ptr<StateValue> sv_;
 
 	RandomEngine re_;
 	Sweeper& sweeper_;
 
 public:
-	Sampler(Machine& qs, Sweeper& sweeper)
+	Sampler(const Machine& qs, Sweeper& sweeper)
 		: n_(qs.getN()), qs_(qs), sweeper_(sweeper)
 	{
+	}
+
+	nlohmann::json desc() const
+	{
+		nlohmann::json res;
+		res["name"] = "Sampler";
+		res["sweeper"] = sweeper_.name();
+		return res;
 	}
 
 	void initializeRandomEngine()

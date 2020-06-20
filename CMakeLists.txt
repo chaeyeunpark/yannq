@@ -157,6 +157,10 @@ add_executable(RBMTFI "Examples/RBMTFI.cpp")
 add_dependencies(RBMTFI libcereal_untar)
 target_link_libraries(RBMTFI stdc++fs)
 
+add_executable(RBMTFI2 "Examples/RBMTFI2.cpp")
+add_dependencies(RBMTFI2 libcereal_untar)
+target_link_libraries(RBMTFI2 stdc++fs)
+
 add_executable(RBMXXZ "Examples/RBMXXZ.cpp")
 add_dependencies(RBMXXZ libcereal_untar)
 target_link_libraries(RBMXXZ stdc++fs)
