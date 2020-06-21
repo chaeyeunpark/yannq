@@ -15,11 +15,11 @@ template<typename T>
 class FeedForward
 {
 public:
-	using ScalarType = T;
-	using VectorType = Eigen::Matrix<T, Eigen::Dynamic, 1>;
-	using MatrixType = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
-	using VectorRefType = Eigen::Ref<VectorType>;
-	using VectorConstRefType = Eigen::Ref<const VectorType>;
+	using Scalar = T;
+	using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+	using Matrix = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
+	using VectorRef = Eigen::Ref<Vector>;
+	using VectorConstRef = Eigen::Ref<const Vector>;
 
 private:
 	std::vector<std::unique_ptr<AbstractLayer<T>>> layers_;
@@ -54,6 +54,8 @@ public:
 			case InitializationMode::He:
 				return sqrt(2.0/(fanIn));
 			}
+			assert(false);
+			return 0.0;
 		};
 
 		for(auto& layer: layers_)
@@ -83,10 +85,10 @@ public:
 		return npar_;
 	}
 
-	VectorType getParams() const
+	Vector getParams() const
 	{
 		uint32_t k = 0;
-		VectorType par(npar_);
+		Vector par(npar_);
 		for(auto& layer: layers_)
 		{
 			par.segment(k, layer->paramDim()) = layer->getParams();
@@ -106,7 +108,17 @@ public:
 		return ss.str();
 	}
 
-	void setParams(VectorConstRefType pars)
+	nlohmann::json desc() const
+	{
+		nlohmann::json res;
+		for(const auto& layer: layers_)
+		{
+			res.push_back( layer->desc() );
+		}
+		return res;
+	}
+
+	void setParams(VectorConstRef pars)
 	{
 		assert(pars.size() == npar_);
 		uint32_t k = 0;
@@ -117,7 +129,7 @@ public:
 		}
 	}
 
-	void updateParams(VectorConstRefType ups)
+	void updateParams(VectorConstRef ups)
 	{
 		assert(ups.size() == npar_);
 		uint32_t k = 0;
@@ -136,12 +148,12 @@ public:
 		layers_.clear();
 	}
 
-	ScalarType forward(const Eigen::VectorXi& sigma) const
+	Scalar forward(const Eigen::VectorXi& sigma) const
 	{
-		VectorType input = sigma.template cast<T>();
+		Vector input = sigma.template cast<T>();
 		for(auto& layer: layers_)
 		{
-			VectorType output(layer->outputDim(input.size()));
+			Vector output(layer->outputDim(input.size()));
 			layer->forward(input, output);
 			input = std::move(output);
 		}
@@ -149,19 +161,19 @@ public:
 		return input(0);
 	}
 
-	ScalarType forward(const std::vector<VectorType>& data) const
+	Scalar forward(const std::vector<Vector>& data) const
 	{
 		return data.back()(0);
 	}
 
-	std::vector<VectorType> makeData(const Eigen::VectorXi& sigma) const
+	std::vector<Vector> makeData(const Eigen::VectorXi& sigma) const
 	{
-		std::vector<VectorType> res;
-		VectorType input = sigma.template cast<T>();
+		std::vector<Vector> res;
+		Vector input = sigma.template cast<T>();
 		res.push_back(input);
 		for(auto& layer: layers_)
 		{
-			VectorType output(layer->outputDim(input.size()));
+			Vector output(layer->outputDim(input.size()));
 			layer->forward(input, output);
 			res.push_back(output);
 			input = std::move(output);
@@ -170,18 +182,18 @@ public:
 		return res;
 	}
 
-	VectorType backward(const std::vector<VectorType>& data) const
+	Vector backward(const std::vector<Vector>& data) const
 	{
 		assert(data.size() == layers_.size() + 1);
 
-		VectorType dw(npar_);
-		VectorType dout(1);
+		Vector dw(npar_);
+		Vector dout(1);
 		dout[0] = 1.;
 		uint32_t k = npar_;
 		for(int32_t idx = layers_.size() - 1; idx >= 0; --idx)
 		{
-			VectorType din(data[idx].size());
-			VectorType der(layers_[idx]->paramDim());
+			Vector din(data[idx].size());
+			Vector der(layers_[idx]->paramDim());
 			layers_[idx]->backprop(data[idx], data[idx+1], dout, din, der);
 
 			dout = std::move(din);

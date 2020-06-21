@@ -14,7 +14,7 @@ public:
 	using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
 	using RealVector = Eigen::Matrix<RealT, Eigen::Dynamic, 1>;
 
-	virtual nlohmann::json params() const = 0; 
+	virtual nlohmann::json desc() const = 0; 
 
 	virtual Vector getUpdate(const Vector& grad) = 0;
 

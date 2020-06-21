@@ -33,29 +33,30 @@ namespace yannq {
 template<typename T>
 class FullyConnected : public AbstractLayer<T> 
 {
-	using VectorType = typename AbstractLayer<T>::VectorType;
-	using MatrixType = typename AbstractLayer<T>::MatrixType;
-	using VectorRefType = typename AbstractLayer<T>::VectorRefType;
-	using VectorConstRefType = typename AbstractLayer<T>::VectorConstRefType;
+public:
+	using Scalar = T;
+	using Vector = typename AbstractLayer<T>::Vector;
+	using Matrix = typename AbstractLayer<T>::Matrix;
+	using VectorRef = typename AbstractLayer<T>::VectorRef;
+	using VectorConstRef = typename AbstractLayer<T>::VectorConstRef;
 
+private:
 	bool useBias_;
 
 	uint32_t inputDim_;        // input size
 	uint32_t outputDim_;       // output size
 	uint32_t npar_;           // number of parameters in layer
 
-	MatrixType weight_;  // Weight parameters, W(in_size x out_size)
-	VectorType bias_;    // Bias parameters, b(out_size x 1)
+	Matrix weight_;  // Weight parameters, W(in_size x out_size)
+	Vector bias_;    // Bias parameters, b(out_size x 1)
 	// Note that input of this layer is also the output of
 	// previous layer
-
-	constexpr static char name_[] = "Fully Connected Layer";
-
+	
 public:
 	/// Constructor
-	FullyConnected(const uint32_t input_size, const uint32_t output_size,
+	FullyConnected(const uint32_t inputDim, const uint32_t outputDim,
 			const bool useBias = false)
-		: useBias_(useBias), inputDim_(input_size), outputDim_(output_size) 
+		: useBias_(useBias), inputDim_(inputDim), outputDim_(outputDim) 
 	{
 		weight_.resize(inputDim_, outputDim_);
 
@@ -68,20 +69,37 @@ public:
 		bias_.setZero();
 	}
 
-	std::string name() const override { return name_; }
+	FullyConnected(const FullyConnected& ) = default;
+	FullyConnected(FullyConnected&& ) = default;
 
-	nlohmann::json to_json() const override {
-		nlohmann::json layerpar;
-		layerpar["Name"] = "FullyConnected";
-		layerpar["UseBias"] = useBias_;
-		layerpar["Inputs"] = inputDim_;
-		layerpar["Outputs"] = outputDim_;
+	FullyConnected& operator=(const FullyConnected&) = default;
+	FullyConnected& operator=(FullyConnected&&) = default;
 
-		return layerpar;
+	bool operator==(const FullyConnected& rhs) const
+	{
+		return (weight_ == rhs.weight_) && (bias_ == rhs.bias_);
+	}
+	
+	bool operator!=(const FullyConnected& rhs) const
+	{
+		return !(*this == rhs);
+	}
+
+
+	std::string name() const override { return "Fully Connected Layer"; }
+
+	nlohmann::json desc() const override 
+	{
+		nlohmann::json res;
+		res["name"] = name();
+		res["use_bias"] = useBias_;
+		res["input_dim"] = inputDim_;
+		res["output_dim"] = outputDim_;
+		return res;
 	}
 
 	template<class RandomEngine>
-	void randomizeParams(RandomEngine&& re, double sigma)
+	void randomizeParams(RandomEngine&& re, remove_complex_t<Scalar> sigma)
 	{
 		setParams(randomVector<T>(std::forward<RandomEngine>(re), sigma, npar_));
 	}
@@ -91,52 +109,45 @@ public:
 	uint32_t inputDim() const { return inputDim_; }
 
 	uint32_t outputDim(uint32_t inputDim) const override {
+		(void)inputDim;
 		assert(inputDim == inputDim_);
 		return outputDim_; 
 	}
 
-	VectorType getParams() const override 
+	Vector getParams() const override 
 	{
-		VectorType res(npar_);
-		if (useBias_) {
-			res.head(outputDim_) = Eigen::Map<const VectorType>(bias_.data(), outputDim_);
-			res.segment(outputDim_, inputDim_*outputDim_) = Eigen::Map<const VectorType>(weight_.data(), inputDim_*outputDim_);
-		}
-		else
+		Vector res(npar_);
+		res.head(inputDim_*outputDim_) = Eigen::Map<const Vector>(weight_.data(), inputDim_*outputDim_); 
+
+		if (useBias_) 
 		{
-			res = Eigen::Map<const VectorType>(weight_.data(), inputDim_*outputDim_); 
+			res.tail(outputDim_) = Eigen::Map<const Vector>(bias_.data(), outputDim_);
 		}
 		return res;
 	}
 
-	void setParams(VectorConstRefType pars) override 
+	void setParams(VectorConstRef pars) override 
 	{
+		Eigen::Map<Vector>(weight_.data(), inputDim_*outputDim_) = 
+			pars.head(inputDim_*outputDim_);
 		if (useBias_)
 		{
-			bias_ = Eigen::Map<const VectorType>(pars.data(), outputDim_);
-			weight_ = Eigen::Map<const MatrixType>(pars.data()+outputDim_, inputDim_, outputDim_);
-		}
-		else
-		{
-			weight_ = Eigen::Map<const MatrixType>(pars.data(), inputDim_, outputDim_);
+			bias_ = pars.segment(inputDim_*outputDim_, outputDim_);
 		}
 	}
 
-	void updateParams(VectorConstRefType ups) override
+	void updateParams(VectorConstRef ups) override
 	{
+		Eigen::Map<Vector>(weight_.data(), inputDim_*outputDim_) += 
+			ups.head(inputDim_*outputDim_);
 		if (useBias_)
 		{
-			bias_ += ups.head(outputDim_);
-			weight_ += Eigen::Map<const MatrixType>(ups.data()+outputDim_, inputDim_, outputDim_);
-		}
-		else
-		{
-			weight_ += Eigen::Map<const MatrixType>(ups.data(), inputDim_, outputDim_);
+			bias_ += ups.segment(inputDim_*outputDim_, outputDim_);
 		}
 	}
 
 	// Feedforward
-	void forward(const VectorConstRefType& input, VectorRefType output) override 
+	void forward(const VectorConstRef& input, VectorRef output) override 
 	{
 		if(useBias_)
 			output = bias_;
@@ -146,24 +157,22 @@ public:
 	}
 
 	// Computes derivative.
-	void backprop(const VectorConstRefType& prev_layer_output,
-			const VectorConstRefType& this_layer_output,
-			const VectorConstRefType& dout,
-			VectorRefType din, VectorRefType der) override 
+	void backprop(const VectorConstRef& prev_layer_output,
+			const VectorConstRef& /*this_layer_output*/,
+			const VectorConstRef& dout,
+			VectorRef din, VectorRef der) override 
 	{
 		// dout = d(L) / d(z)
 		// Derivative for bias, d(L) / d(b) = d(L) / d(z)
-		int k = 0;
-
-		if (useBias_) {
-			der.segment(0, outputDim_) = dout;
-			k += outputDim_;
-		}
-
+		//
 		// Derivative for weights, d(L) / d(W) = [d(L) / d(z)] * in'
-		Eigen::Map<MatrixType> der_w{der.data() + k, inputDim_, outputDim_};
+		Eigen::Map<Matrix> der_w{der.data(), inputDim_, outputDim_};
 
 		der_w.noalias() = prev_layer_output * dout.transpose();
+
+		if (useBias_) {
+			der.tail(outputDim_) = dout;
+		}
 
 		// Compute d(L) / d_in = W * [d(L) / d(z)]
 		din.noalias() = weight_ * dout;
@@ -178,8 +187,7 @@ public:
 		return outputDim_;
 	}
 };
-template<typename T>
-constexpr char FullyConnected<T>::name_[];
+
 }  // namespace yannq
 
 #endif

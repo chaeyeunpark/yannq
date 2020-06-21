@@ -45,7 +45,7 @@ class HamState
 private:
 	uint32_t sigma_;
 public:
-	using T = HamExp;
+	using Scalar = HamExp;
 
 	HamState(uint32_t sigma)
 		: sigma_(sigma)

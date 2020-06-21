@@ -22,7 +22,7 @@ private:
 
 public:
 
-	nlohmann::json params() const
+	nlohmann::json desc() const
 	{
 		return nlohmann::json
 		{

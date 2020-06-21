@@ -16,8 +16,8 @@ protected:
 	const AmplitudePhase& qs_;
 
 public:
-	using ScalarType = typename AmplitudePhase::ScalarType;
-	using CxScalarType = typename AmplitudePhase::CxScalarType;
+	using Scalar = typename AmplitudePhase::Scalar;
+	using CxScalar = typename AmplitudePhase::CxScalar;
 
 	using PhaseDataType = typename AmplitudePhase::PhaseDataType;
 
@@ -49,14 +49,14 @@ public:
 		return static_cast<Derived*>(this)->getPhaseData();
 	}
 	
-	ScalarType logRatioRe(int k) const //calc psi(sigma ^ k) / psi(sigma)
+	Scalar logRatioRe(int k) const //calc psi(sigma ^ k) / psi(sigma)
 	{
 		return getAmplitudeState().logRatio(k)/2.0;
 	}
 
-	CxScalarType logRatio(int k) const //calc psi(sigma ^ k) / psi(sigma)
+	CxScalar logRatio(int k) const //calc psi(sigma ^ k) / psi(sigma)
 	{
-		CxScalarType res;
+		CxScalar res;
 		res.real(getAmplitudeState().logRatio(k)/2.0);
 		Eigen::VectorXi flipped = getSigma();
 		flipped(k) *= -1;
@@ -65,19 +65,19 @@ public:
 		return res;
 	}
 
-	inline CxScalarType ratio(int k) const //calc psi(sigma ^ k) / psi(sigma)
+	inline CxScalar ratio(int k) const //calc psi(sigma ^ k) / psi(sigma)
 	{
 		return std::exp(logRatio(k));
 	}
 	
-	ScalarType logRatioRe(int k, int l) const //calc psi(sigma ^ k ^ l)/psi(sigma)
+	Scalar logRatioRe(int k, int l) const //calc psi(sigma ^ k ^ l)/psi(sigma)
 	{
 		return getAmplitudeState().logRatio(k,l)/2.0;
 	}
 
-	CxScalarType logRatio(int k, int l) const //calc psi(sigma ^ k ^ l)/psi(sigma)
+	CxScalar logRatio(int k, int l) const //calc psi(sigma ^ k ^ l)/psi(sigma)
 	{
-		CxScalarType res;
+		CxScalar res;
 		res.real(getAmplitudeState().logRatio(k,l)/2.0);
 		Eigen::VectorXi flipped = static_cast<Derived*>(this)->getSigma();
 		flipped(k) *= -1;
@@ -87,21 +87,21 @@ public:
 		return res;
 	}
 
-	inline CxScalarType ratio(int k, int l) const
+	inline CxScalar ratio(int k, int l) const
 	{
 		return std::exp(logRatio(k,l));
 	}
 
 	template<std::size_t N>
-	ScalarType logRatioRe(const std::array<int, N>& v) const
+	Scalar logRatioRe(const std::array<int, N>& v) const
 	{
 		return getAmplitudeState().logRatio(v)/2.0;
 	}
 
 	template<std::size_t N>
-	CxScalarType logRatio(const std::array<int, N>& v) const
+	CxScalar logRatio(const std::array<int, N>& v) const
 	{
-		CxScalarType res;
+		CxScalar res;
 		res.real(getAmplitudeState().logRatio(v)/2.0);
 		Eigen::VectorXi flipped = static_cast<Derived*>(this)->getSigma();
 		for(int k : v)
@@ -130,9 +130,9 @@ public:
 	using AmplitudeDataType = AmplitudePhase::AmplitudeDataType;
 	using PhaseDataType = AmplitudePhase::PhaseDataType;
 	using AmplitudeStateType = RBMStateValue<AmplitudePhase::AmplitudeMachine>;
-	using VectorType = typename AmplitudePhase::VectorType;
-	using ScalarType = AmplitudePhaseStateObj<AmplitudePhaseStateValue>::ScalarType;
-	using CxScalarType = AmplitudePhaseStateObj<AmplitudePhaseStateValue>::CxScalarType;
+	using Vector = typename AmplitudePhase::Vector;
+	using Scalar = AmplitudePhaseStateObj<AmplitudePhaseStateValue>::Scalar;
+	using CxScalar = AmplitudePhaseStateObj<AmplitudePhaseStateValue>::CxScalar;
 
 	AmplitudePhaseStateValue(const AmplitudePhase& qs, Eigen::VectorXi&& sigma) noexcept
 		: AmplitudePhaseStateObj<AmplitudePhaseStateValue>(qs), 
@@ -209,9 +209,9 @@ public:
 	}
 
 	using AmplitudePhaseStateObj<AmplitudePhaseStateValue>::logRatio;
-	CxScalarType logRatio(const AmplitudePhaseStateValue& other)
+	CxScalar logRatio(const AmplitudePhaseStateValue& other)
 	{
-		CxScalarType res;
+		CxScalar res;
 		res.real(ampState_.logRatio(other)/2.0);
 		res.imag(M_PI*(qs_.phaseForward(phaseData_) -
 					qs_.phaseForward(other.getSigma())));
@@ -243,7 +243,7 @@ class AmplitudePhaseStateRef
 	: public AmplitudePhaseStateObj<AmplitudePhaseStateRef>
 {
 public:
-	using VectorType = typename Machine::VectorType;
+	using Vector = typename Machine::Vector;
 private:
 	const RBMStateRef<AmplitudePhase::AmplitudeMachine> ampState_;
 	const AmplitudePhase::PhaseDataType& phaseData_;
@@ -251,9 +251,9 @@ public:
 	using AmplitudeDataType = AmplitudePhase::AmplitudeDataType;
 	using PhaseDataType = AmplitudePhase::PhaseDataType;
 	using AmplitudeStateType = RBMStateRef<AmplitudePhase::AmplitudeMachine>;
-	using VectorType = typename AmplitudePhase::VectorType;
-	using ScalarType = AmplitudePhaseStateObj<AmplitudePhaseStateValue>::ScalarType;
-	using CxScalarType = AmplitudePhaseStateObj<AmplitudePhaseStateValue>::CxScalarType;
+	using Vector = typename AmplitudePhase::Vector;
+	using Scalar = AmplitudePhaseStateObj<AmplitudePhaseStateValue>::Scalar;
+	using CxScalar = AmplitudePhaseStateObj<AmplitudePhaseStateValue>::CxScalar;
 
 	AmplitudePhaseStateRef(const AmplitudePhase& qs, const AmplitudeDataType& ampData, const PhaseDataType& phaseData) noexcept
 		: AmplitudePhaseStateObj<AmplitudePhaseStateRef>(qs), 

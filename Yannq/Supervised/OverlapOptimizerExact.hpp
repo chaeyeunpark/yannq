@@ -17,27 +17,29 @@ template<class Machine>
 class OverlapOptimizerExact
 {
 public:
-	using ScalarType = typename Machine::ScalarType;
-	using RealScalarType = typename yannq::remove_complex<ScalarType>::type;
-	using VectorType = typename Machine::VectorType;
-	using MatrixType = typename Machine::MatrixType;
+	using Scalar = typename Machine::Scalar;
+	using RealScalar = typename yannq::remove_complex<Scalar>::type;
+	using Vector = typename Machine::Vector;
+	using Matrix = typename Machine::Matrix;
 
 private:
 	const int n_;
 	const Machine& qs_;
 	tbb::concurrent_vector<uint32_t> basis_;
 
-	VectorType target_;
+	Vector target_;
 
-	MatrixType deltas_;
-	MatrixType psiDeltas_;
-	VectorType ovs_;
-	VectorType oloc_;
-	ScalarType ov_;
+	Matrix deltas_;
+	Matrix psiDeltas_;
+	Vector ovs_;
+	Vector oloc_;
+	Scalar ov_;
 
 public:
-	template<class BasisType, std::enable_if_t<
-		!std::is_same_v<BasisType, tbb::concurrent_vector<uint32_t>>, int> = 0>
+	template<class BasisType, typename disable_if<
+		std::is_same<typename std::remove_reference<BasisType>::type,
+		tbb::concurrent_vector<uint32_t>>::value,
+		int>::type = 0>
 	explicit OverlapOptimizerExact(const Machine& qs, BasisType&& basis)
 		: n_(qs.getN()), qs_(qs)
 	{
@@ -49,7 +51,7 @@ public:
 	{
 	}
 
-	void setTarget(VectorType v)
+	void setTarget(Vector v)
 	{
 		assert(basis_.size() == v.size());
 
@@ -57,12 +59,12 @@ public:
 	}
 
 
-	const VectorType& getTarget() const&
+	const Vector& getTarget() const&
 	{
 		return target_;
 	}
 
-	VectorType getTarget() &&
+	Vector getTarget() &&
 	{
 		return target_;
 	}
@@ -81,7 +83,7 @@ public:
 	{
 		using std::conj;
 
-		VectorType st = getPsi(qs_, basis_, true);
+		Vector st = getPsi(qs_, basis_, true);
 
 		deltas_ = constructDeltaExact(qs_, basis_);
 
@@ -92,38 +94,38 @@ public:
 	}
 	
 	//! return -\nabla_{\theta^*} \log |\langle \Phi | \psi_\theta \rangle|^2
-	VectorType calcLogGrad() const
+	Vector calcLogGrad() const
 	{
-		VectorType res = oloc().conjugate();
-		VectorType r1 = ovs_.transpose()*deltas_.conjugate();
+		Vector res = oloc().conjugate();
+		Vector r1 = ovs_.transpose()*deltas_.conjugate();
 		res -= r1/ov_;
 
 		return res;
 	}
-	VectorType calcGrad() const
+	Vector calcGrad() const
 	{
-		VectorType res = oloc().conjugate()*std::norm(ov_);
+		Vector res = oloc().conjugate()*std::norm(ov_);
 		res -= ovs_.transpose()*deltas_.conjugate()*conj(ov_);
 		return res;
 	}
 	
-	VectorType oloc() const
+	Vector oloc() const
 	{
 		return oloc_;
 	}
 
-	MatrixType corrMat() const
+	Matrix corrMat() const
 	{
-		MatrixType res = deltas_.adjoint()*psiDeltas_;
+		Matrix res = deltas_.adjoint()*psiDeltas_;
 		return res - oloc_.conjugate()*oloc_.transpose();
 	}
 	/**
 	 * 
 	 */
-	MatrixType uncenteredCorrMat() const
+	Matrix uncenteredCorrMat() const
 	{
-		MatrixType res = deltas_.adjoint()*psiDeltas_;
-		//MatrixType ob = ovs_.conjugate().asDiagonal()*deltas_/std::conj(ov_);
+		Matrix res = deltas_.adjoint()*psiDeltas_;
+		//Matrix ob = ovs_.conjugate().asDiagonal()*deltas_/std::conj(ov_);
 		//res -= ob.adjoint()*ob;
 		return res;
 	}
@@ -132,7 +134,7 @@ public:
 	/**
 	 * return squared fidelity: |\langle \psi_\theta | \phi \rangle|^2
 	 */
-	double fidelity() const
+	RealScalar fidelity() const
 	{
 		using std::norm;
 		return norm(ov_);

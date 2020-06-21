@@ -7,7 +7,7 @@
 #include <nlohmann/json.hpp>
 #include <ios>
 
-#if defined(__GNUC__) && (__GNUC__ <= 7)
+#if __cpluscplus < 201703L
 #include <experimental/filesystem>
 #else
 #include <filesystem>
@@ -17,21 +17,20 @@
 #include "Serializers/SerializeRBM.hpp"
 namespace yannq
 {
-template<typename T, class RandomEngine, class Derived>
+template<class Machine, class RandomEngine, class Derived>
 class AbstractRunner
 {
 public:
-	using MachineT = yannq::RBM<T>;
 	using json = nlohmann::json;
 
-#if defined(__GNUC__) && (__GNUC__ <= 7)
+#if __cpluscplus < 201703L
 	using path = std::experimental::filesystem::path;
 #else
 	using path = std::filesystem::path;
 #endif
 
 protected:
-	MachineT qs_;
+	Machine qs_;
 	std::ostream& logger_;
 	RandomEngine re_;
 
@@ -50,16 +49,19 @@ private:
 	tbb::task_scheduler_init init_;
 
 protected:
-	std::unique_ptr<yannq::Optimizer<T> > opt_;
+	std::unique_ptr<yannq::Optimizer<typename Machine::Scalar> > opt_;
 
-public:
-	AbstractRunner(const uint32_t N, const int alpha, bool useBias, std::ostream& logger)
-		: qs_(N, alpha*N, useBias), logger_{logger},
+	template<typename ...Ts>
+	AbstractRunner(std::ostream& logger, Ts&&... args)
+		: qs_(std::forward<Ts>(args)...), logger_{logger},
 		init_(tbb::task_scheduler_init::deferred)
 	{
 		std::random_device rd;
 		re_.seed(rd());
 	}
+
+
+public:
 
 	std::ostream& logger()
 	{
@@ -114,7 +116,7 @@ public:
 
 		std::fstream in(filePath, ios::binary | ios::in);
 		cereal::BinaryInputArchive ia(in);
-		std::unique_ptr<MachineT> qsLoad{nullptr};
+		std::unique_ptr<Machine> qsLoad{nullptr};
 		ia(qsLoad);
 		qs_ = *qsLoad;
 	}
@@ -128,7 +130,7 @@ public:
 
 	void setOptimizer(const json& optParam)
 	{
-		opt_ = std::move(yannq::OptimizerFactory<T>::getInstance().createOptimizer(optParam));
+		opt_ = std::move(yannq::OptimizerFactory<typename Machine::Scalar>::getInstance().createOptimizer(optParam));
 	}
 
 	void setIterParams(const int maxIter, const int saveWfPer)
@@ -142,11 +144,11 @@ public:
 		return {maxIter_, saveWfPer_};
 	}
 
-	const MachineT& getQs() const &
+	const Machine& getQs() const &
 	{
 		return qs_;
 	}
-	MachineT getQs() && 
+	Machine getQs() && 
 	{
 		return qs_;
 	}
@@ -154,7 +156,7 @@ public:
 	json getParams() const
 	{
 		json j;
-		j["Optimizer"] = opt_->params();
+		j["Optimizer"] = opt_->desc();
 		
 		json SR = 
 		{
@@ -164,7 +166,7 @@ public:
 		};
 		j["SR"] = SR;
 		j["numThreads"] = Eigen::nbThreads();
-		j["machine"] = qs_.params();
+		j["machine"] = qs_.desc();
 
 		j.update(getAdditionalParams());
 

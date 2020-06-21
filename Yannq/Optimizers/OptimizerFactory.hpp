@@ -8,8 +8,8 @@
 #include "Optimizers/SGD.hpp"
 #include "Optimizers/Adam.hpp"
 #include "Optimizers/AdaMax.hpp"
-#include "Optimizers/AdaDelta.hpp"
-#include "Optimizers/ModifiedAdam.hpp"
+//#include "Optimizers/AdaDelta.hpp"
+//#include "Optimizers/ModifiedAdam.hpp"
 #include "Optimizers/RMSProp.hpp"
 
 #include "Utilities/Utility.hpp"
@@ -47,23 +47,23 @@ private:
 	{
 		resiterOptimizer<SGD<T> >("SGD");
 
-		resiterOptimizer<AdaDelta<T> >("AdaDelta");
+		//resiterOptimizer<AdaDelta<T> >("AdaDelta");
 		resiterOptimizer<RMSProp<T> >("RMSProp");
 		resiterOptimizer<Adam<T> >("Adam");
 		resiterOptimizer<AdaMax<T> >("AdaMax");
 
-		resiterOptimizer<AdaDelta<typename remove_complex<T>::type> >("AdaDeltaReal");
+		//resiterOptimizer<AdaDelta<typename remove_complex<T>::type> >("AdaDeltaReal");
 		resiterOptimizer<RMSProp<typename remove_complex<T>::type> >("RMSPropReal");
 		resiterOptimizer<Adam<typename remove_complex<T>::type> >("AdamReal");
 		resiterOptimizer<AdaMax<typename remove_complex<T>::type> >("AdaMaxReal");
 
 
-		resiterOptimizerGeometry<AdaDelta<T> >("AdaDelta");
+		//resiterOptimizerGeometry<AdaDelta<T> >("AdaDelta");
 		resiterOptimizerGeometry<RMSProp<T> >("RMSProp");
 		resiterOptimizerGeometry<Adam<T> >("Adam");
 		resiterOptimizerGeometry<AdaMax<T> >("AdaMax");
 
-		resiterOptimizerGeometry<AdaDelta<typename remove_complex<T>::type> >("AdaDeltaReal");
+		//resiterOptimizerGeometry<AdaDelta<typename remove_complex<T>::type> >("AdaDeltaReal");
 		resiterOptimizerGeometry<RMSProp<typename remove_complex<T>::type> >("RMSPropReal");
 		resiterOptimizerGeometry<Adam<typename remove_complex<T>::type> >("AdamReal");
 		resiterOptimizerGeometry<AdaMax<typename remove_complex<T>::type> >("AdaMaxReal");

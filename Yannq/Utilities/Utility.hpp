@@ -37,7 +37,7 @@ inline typename std::enable_if<is_complex_type<T>::value, T>::type logCosh(T x)
 }
 
 template<typename T>
-std::enable_if_t<!is_complex_type<T>::value, T> real(const T& v)
+typename std::enable_if<!is_complex_type<T>::value, T>::type real(const T& v)
 {
 	return v;
 }
@@ -117,8 +117,9 @@ Eigen::VectorXi randomSigma(int n, int nup, RandomEngine& re)
 	std::shuffle(sigma.begin(), sigma.end(), re);
 	return Eigen::Map<Eigen::VectorXi>(sigma.data(), n);
 }
+
 //! generate a vector that the binary representation is val.
-Eigen::VectorXi toSigma(int length, unsigned long long int val)
+Eigen::VectorXi toSigma(int length, uint32_t val)
 {
 	Eigen::VectorXi res(length);
 	for(int i = 0; i < length; i++)
@@ -141,8 +142,9 @@ long long int toValue(const Eigen::VectorXi& sigma)
 
 
 //! for complex type T, generate a vector filled with samples from normal distribution.
-template<typename T, class RandomEngine, std::enable_if_t<is_complex_type<T>::value, int> = 0 >
-Eigen::Matrix<T, Eigen::Dynamic, 1> randomVector(RandomEngine&& re, double sigma, std::size_t nelt)
+template<typename T, class RandomEngine, typename std::enable_if<is_complex_type<T>::value, int>::type = 0 >
+Eigen::Matrix<T, Eigen::Dynamic, 1> randomVector(RandomEngine&& re, 
+		remove_complex_t<T> sigma, std::size_t nelt)
 {
 	Eigen::Matrix<T, Eigen::Dynamic, 1> res(nelt);
 	std::normal_distribution<typename remove_complex<T>::type> dist(0.0, sigma);
@@ -153,8 +155,9 @@ Eigen::Matrix<T, Eigen::Dynamic, 1> randomVector(RandomEngine&& re, double sigma
 	return res;
 }
 //! for real type T, generate a vector filled with samples from normal distribution.
-template<typename T, class RandomEngine, std::enable_if_t<!is_complex_type<T>::value, int> = 0 >
-Eigen::Matrix<T, Eigen::Dynamic, 1> randomVector(RandomEngine&& re, double sigma, std::size_t nelt)
+template<typename T, class RandomEngine, typename std::enable_if<!is_complex_type<T>::value, int>::type = 0 >
+Eigen::Matrix<T, Eigen::Dynamic, 1> randomVector(RandomEngine&& re, 
+		remove_complex_t<T> sigma, std::size_t nelt)
 {
 	Eigen::Matrix<T, Eigen::Dynamic, 1> res(nelt);
 	std::normal_distribution<T> dist(0.0, sigma);

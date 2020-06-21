@@ -14,8 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef YANNQ_ABSTRACTLAYER_HH
-#define YANNQ_ABSTRACTLAYER_HH
+#pragma once
 
 #include <complex>
 #include <fstream>
@@ -33,11 +32,11 @@ namespace yannq {
 template<typename T>
 class AbstractLayer {
 public:
-	using ScalarType = T;
-	using VectorType = Eigen::Matrix<T, Eigen::Dynamic, 1>;
-	using MatrixType = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
-	using VectorRefType = Eigen::Ref<VectorType>;
-	using VectorConstRefType = Eigen::Ref<const VectorType>;
+	using Scalar = T;
+	using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+	using Matrix = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
+	using VectorRef = Eigen::Ref<Vector>;
+	using VectorConstRef = Eigen::Ref<const Vector>;
 
 	/**
 	  Member function returning the name of the layer.
@@ -61,16 +60,16 @@ public:
 	  @param pars is where the layer parameters are written into.
 	  @param start_idx is the index of the vector pars to start writing from.
 	  */
-	virtual VectorType getParams() const = 0;
+	virtual Vector getParams() const = 0;
 
 	/**
 	  Member function setting the current set of parameters in the layer.
 	  @param pars is where the layer parameters are to be read from.
 	  @param start_idx is the index of the vector pars to start reading from.
 	  */
-	virtual void setParams(VectorConstRefType pars) = 0;
+	virtual void setParams(VectorConstRef pars) = 0;
 
-	virtual void updateParams(VectorConstRefType pars) { (void)pars; return ; }
+	virtual void updateParams(VectorConstRef pars) { (void)pars; return ; }
 
 
 	/**
@@ -78,10 +77,12 @@ public:
 	  @param input a constant reference to the input to the layer
 	  @param output reference to the output vector. Must have the size of outputDim. 
 	  */
-	virtual void forward(const VectorConstRefType& input, VectorRefType output) = 0;
+	virtual void forward(const VectorConstRef& input, VectorRef output) = 0;
 
 	/**
 	  Member function to perform backpropagation to compute derivates.
+	  Internal stride of din and der must be 1.
+
 	  @param prev_layer_output a constant reference to the output from previous
 	  layer.
 	  @param this_layer_output a constant reference to the output from the current
@@ -94,19 +95,17 @@ public:
 	  @param der a constant reference to the derivatives wrt to the parameters in
 	  the machine.
 	*/
-	virtual void backprop(const VectorConstRefType& prev_layer_output,
-			const VectorConstRefType& this_layer_output,
-			const VectorConstRefType& dout, 
-			VectorRefType din,
-			VectorRefType der) = 0;
+	virtual void backprop(const VectorConstRef& prev_layer_output,
+			const VectorConstRef& this_layer_output,
+			const VectorConstRef& dout, 
+			VectorRef din,
+			VectorRef der) = 0;
 
-	virtual nlohmann::json to_json() const = 0;
+	virtual nlohmann::json desc() const = 0;
 
 	/**
 	  destructor
 	  */
 	virtual ~AbstractLayer() {}
 };
-}  // namespace netket
-
-#endif
+}  // namespace yannq

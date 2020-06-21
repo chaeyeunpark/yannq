@@ -41,10 +41,10 @@ public:
 //! \ingroup Runners
 template<typename T, class RandomEngine = std::default_random_engine>
 class RunRBM
-	: public AbstractRunner<T, RandomEngine, RunRBM<T, RandomEngine>>
+	: public AbstractRunner<RBM<T>, RandomEngine, RunRBM<T, RandomEngine>>
 {
 public:
-	using MachineT = typename AbstractRunner<T, RandomEngine, RunRBM<T, RandomEngine>>::MachineT;
+	using Machine = RBM<T>;
 
 private:
 	bool useCG_ = false;
@@ -56,8 +56,8 @@ private:
 public:
 	RunRBM(const unsigned int N, const unsigned int alpha,
 			bool useBias, std::ostream& logger)
-		: AbstractRunner<T, RandomEngine, RunRBM<T, RandomEngine>>
-		  	(N, alpha, useBias, logger)
+		: AbstractRunner<RBM<T>, RandomEngine, RunRBM<T, RandomEngine>>
+		  	(logger, N, /* M = */alpha*N, useBias)
 	{
 	}
 
@@ -91,13 +91,13 @@ public:
 	template<class Sweeper> 
 	auto createSampler(Sweeper& sweeper, uint32_t nTmps, uint32_t nChainsPer) const
 	{
-		return SamplerMT<MachineT, std::default_random_engine, RBMStateValue<T>, Sweeper>(this->qs_, nTmps, nChainsPer, sweeper);
+		return SamplerMT<Machine, std::default_random_engine, RBMStateValue<T>, Sweeper>(this->qs_, nTmps, nChainsPer, sweeper);
 	}
 	
 	template<class Iterable>
 	auto createSamplerExact(Iterable&& basis) const
 	{
-		return ExactSampler<MachineT, std::default_random_engine>(this->qs_, std::forward<Iterable>(basis));
+		return ExactSampler<Machine, std::default_random_engine>(this->qs_, std::forward<Iterable>(basis));
 	}
 	
 	/** \brief Run the calculation
@@ -118,15 +118,15 @@ public:
 	{
 		using Clock = std::chrono::high_resolution_clock;
 		using namespace yannq;
-		using MatrixT = typename MachineT::MatrixType;
-		using VectorT = typename MachineT::VectorType;
+		using Matrix = typename Machine::Matrix;
+		using Vector = typename Machine::Vector;
 
 		if(!this->threadsInitiialized_)
 			this->initializeThreads();
 		if(!this->weightsInitialized_)
 			this->initializeRandom();
 
-		SRMat<MachineT,Hamiltonian> srm(this->qs_, std::forward<Hamiltonian>(ham));
+		SRMat<Machine,Hamiltonian> srm(this->qs_, std::forward<Hamiltonian>(ham));
 		
 		sampler.initializeRandomEngine();
 
@@ -137,8 +137,8 @@ public:
 		if(nSweepsDiscard == -1)
 			nSweepsDiscard = int(0.1*nSweeps);
 
-		ObsAvg<VectorT> gradAvg(beta1_, VectorT::Zero(dim));
-		ObsAvg<MatrixT> fisherAvg(beta2_, MatrixT::Zero(dim,dim));
+		ObsAvg<Vector> gradAvg(beta1_, Vector::Zero(dim));
+		ObsAvg<Matrix> fisherAvg(beta2_, Matrix::Zero(dim,dim));
 
 		//These should be changed into structured binding for C++17
 		double lambdaIni, lambdaDecay, lambdaMin;
@@ -157,7 +157,7 @@ public:
 				sprintf(fileName, "w%04d.dat",ll);
 				std::fstream out(fileName, std::ios::binary | std::ios::out);
 				{
-					auto qsToSave = std::make_unique<MachineT>(this->qs_);
+					auto qsToSave = std::make_unique<Machine>(this->qs_);
 					cereal::BinaryOutputArchive oa(out);
 					oa(qsToSave);
 				}
@@ -167,7 +167,8 @@ public:
 			//Sampling
 			auto smp_start = Clock::now();
 			auto sr = sampler.sampling(nSweeps, nSweepsDiscard);
-			auto smp_dur = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - smp_start).count();
+			auto smp_dur = std::chrono::duration_cast<std::chrono::milliseconds>
+				(Clock::now() - smp_start).count();
 
 			this->logger() << "Number of samples: " << sr.size() << std::endl;
 
@@ -178,11 +179,11 @@ public:
 			double currE = srm.eloc();
 			
 			double lambda = std::max(lambdaIni*pow(lambdaDecay,ll), lambdaMin);
-			VectorT v;
+			Vector v;
 			double cgErr;
 
 			gradAvg.update(srm.energyGrad());
-			VectorT grad = gradAvg.getAvg();
+			Vector grad = gradAvg.getAvg();
 
 			if(useCG_ && (beta2_ == 0.0))
 			{
@@ -194,15 +195,16 @@ public:
 				gradAvg.update(srm.energyGrad());
 				fisherAvg.update(srm.corrMat());
 				auto fisher = fisherAvg.getAvg();
-				fisher += lambda*MatrixT::Identity(dim,dim);
-				Eigen::LLT<MatrixT> llt{fisher};
+				fisher += lambda*Matrix::Identity(dim,dim);
+				Eigen::LLT<Matrix> llt{fisher};
 				v = llt.solve(grad);
 				cgErr = 0;
 			}
 
-			VectorT optV = this->opt_->getUpdate(v);
+			Vector optV = this->opt_->getUpdate(v);
 
-			auto slv_dur = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - slv_start).count();
+			auto slv_dur = std::chrono::duration_cast<std::chrono::milliseconds>
+				(Clock::now() - slv_start).count();
 
 			double nv = v.norm();
 

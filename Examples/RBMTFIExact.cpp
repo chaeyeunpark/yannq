@@ -25,8 +25,6 @@ int main(int argc, char** argv)
 	std::random_device rd;
 	std::default_random_engine re(rd());
 
-	tbb::task_scheduler_init init(8);
-
 	std::cout << std::setprecision(8);
 
 	using ValT = std::complex<double>;
@@ -53,7 +51,7 @@ int main(int argc, char** argv)
 		std::cout << ll << "\t" << currE << "\t" << nv << std::endl;
 	};
 
-	auto runner = RunRBMExact<ValT>(N, alpha, true, std::cerr);
+	RunRBMExact<ValT> runner(N, alpha, true, std::cerr);
 	runner.initializeRandom(0.01);
 	runner.setIterParams(20, 0);
 	runner.setOptimizer(paramIn["Optimizer"]);

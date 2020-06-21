@@ -1,7 +1,11 @@
 #ifndef YANNQ_SAMPLER_EXACTSAMPLER_HPP
 #define YANNQ_SAMPLER_EXACTSAMPLER_HPP
-#include <Machines/Machines.hpp>
 #include <vector>
+
+#include <Machines/Machines.hpp>
+#include <Utilities/Utility.hpp>
+
+namespace yannq {
 template<class Machine, class RandomEngine>
 class ExactSampler
 {
@@ -45,7 +49,7 @@ public:
 		tbb::queuing_mutex rMutex;
 		res.reserve(n_sweeps);
 		tbb::parallel_for(0u, n_sweeps,
-			[&](uint32_t idx)
+			[&](uint32_t sweep_idx)
 		{
 			double r;
 			{
@@ -56,10 +60,10 @@ public:
 			auto idx = std::distance(accum.begin(), iter);
 			auto data = qs_.makeData(toSigma(n_, basis_[idx]));
 			res.emplace_back(data);
-		}
+		});
 		return res;
 	}
 
 };
-
+} //namespace yannq
 #endif//YANNQ_SAMPLER_EXACTSAMPLER_HPP

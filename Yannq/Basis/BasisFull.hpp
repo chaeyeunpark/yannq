@@ -11,8 +11,10 @@ namespace yannq
 struct BasisFullIterator;
 }
 
+namespace std
+{
 template<>
-struct std::iterator_traits<yannq::BasisFullIterator>
+struct iterator_traits<yannq::BasisFullIterator>
 {
 	using difference_type = int32_t;
 	using value_type = uint32_t;
@@ -20,6 +22,7 @@ struct std::iterator_traits<yannq::BasisFullIterator>
 	using reference = uint32_t&;
 	using iterator_category = std::random_access_iterator_tag;
 };
+}// namespace std
 
 namespace yannq
 {
@@ -55,10 +58,7 @@ struct BasisFullIterator
 		n_ -= rhs;
 		return *this;
 	}
-	uint32_t operator[](uint32_t idx)
-	{
-		return idx;
-	}
+
 
 	uint32_t operator*() const
 	{
@@ -140,6 +140,10 @@ public:
 	BasisFullIterator end()
 	{
 		return BasisFullIterator{(1u<<N_)};
+	}
+	uint32_t operator[](uint32_t idx)
+	{
+		return idx;
 	}
 	uint32_t size() const
 	{

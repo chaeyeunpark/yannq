@@ -27,8 +27,8 @@ template<class BasisType>
 tbb::concurrent_vector<uint32_t> parallelConstructBasis(BasisType&& basis, std::random_access_iterator_tag)
 {
 	tbb::concurrent_vector<uint32_t> res(basis.size(), 0u);
-	tbb::parallel_for(std::size_t(0u), basis.size()
-		[&](uint32_t idx)
+	tbb::parallel_for(std::size_t(0u), basis.size(),
+		[&](std::size_t idx)
 	{
 		res[idx] = basis[idx];
 	});
@@ -38,7 +38,8 @@ tbb::concurrent_vector<uint32_t> parallelConstructBasis(BasisType&& basis, std::
 template<class BasisType>
 inline tbb::concurrent_vector<uint32_t> parallelConstructBasis(BasisType&& basis)
 {
-	using IteratorType = std::result_of_t<decltype(&std::decay_t<BasisType>::begin)(BasisType)>;
+	using DecayedBasisType = typename std::decay<BasisType>::type;
+	using IteratorType = typename std::result_of<decltype(&DecayedBasisType::begin)(BasisType)>::type;
 	return parallelConstructBasis(basis, 
 			typename std::iterator_traits<IteratorType>::iterator_category());
 }

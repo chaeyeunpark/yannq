@@ -6,20 +6,22 @@
 #include <Utilities/Utility.hpp>
 #include <random>
 
+#include "LayerHelper.hpp"
+
 using namespace yannq;
 using namespace Eigen;
 
 template<typename T>
-typename yannq::AbstractLayer<T>::VectorType
+typename yannq::AbstractLayer<T>::Vector
 numerical_grad(yannq::FeedForward<T>& ff, const VectorXi& sigma)
 {
-	using VectorT = typename yannq::AbstractLayer<T>::VectorType;
-	using MatrixT = typename yannq::AbstractLayer<T>::MatrixType;
+	using Vector = typename yannq::AbstractLayer<T>::Vector;
+	using Matrix = typename yannq::AbstractLayer<T>::Matrix;
 
 	const double h = 1e-5;
 	
-	VectorT par = ff.getParams();
-	VectorT grad(par.size());
+	Vector par = ff.getParams();
+	Vector grad(par.size());
 	for(int i = 0; i < par.size(); i++)
 	{
 		T val = par(i);
@@ -46,24 +48,23 @@ TEMPLATE_TEST_CASE("test backward of FeedForward", "[feed_forward][backward]", d
 	std::default_random_engine re{rd()};
 	uint32_t inputSize = 20;
 
-	for(bool useBias: {false, true})
+	bool useBias = false;
+//	for(bool useBias: {false, true})
 	{
 		FeedForward<TestType> ff;
 		ff.template addLayer<Conv1D>(1, 12, 3, 1, useBias);
-		ff.template addLayer<ReLU>();
+		ff.template addLayer<Tanh>();
 		ff.template addLayer<Conv1D>(12, 10, 3, 1, useBias);
-		ff.template addLayer<ReLU>();
+		ff.template addLayer<Tanh>();
 		ff.template addLayer<Conv1D>(10, 8, 3, 1, useBias);
-		ff.template addLayer<ReLU>();
+		ff.template addLayer<Tanh>();
 		ff.template addLayer<Conv1D>(8, 6, 3, 1, useBias);
-		ff.template addLayer<ReLU>();
+		ff.template addLayer<Tanh>();
 		ff.template addLayer<Conv1D>(6, 4, 3, 1, useBias);
-		ff.template addLayer<ReLU>();
+		ff.template addLayer<Tanh>();
 		ff.template addLayer<Conv1D>(4, 2, 3, 1, useBias);
-		ff.template addLayer<ReLU>();
+		ff.template addLayer<Tanh>();
 		ff.template addLayer<FullyConnected>(inputSize*2, 1, useBias);
-		ff.template addLayer<LnCosh>();
-
 		ff.initializeRandom(re, 0.1);
 
 		for(int i = 0; i < 10; i++)
@@ -72,7 +73,7 @@ TEMPLATE_TEST_CASE("test backward of FeedForward", "[feed_forward][backward]", d
 			auto data = ff.makeData(input);
 			auto grad1 = ff.backward(data);
 			auto grad2 = numerical_grad(ff, input);
-			REQUIRE( (grad1 - grad2).norm()/grad1.size() < 1e-5);
+			REQUIRE( (grad1 - grad2).norm()/grad1.norm() < 1e-4);
 		}
 	}
 }

@@ -1,21 +1,23 @@
 #ifndef YANNQ_TESTS_LAYERHELPER_HPP
 #define YANNQ_TESTS_LAYERHELPER_HPP
-#include <Machines/layers/AbstractLayer.hpp>
 #include <Eigen/Dense>
 #include <sstream>
-#include "catch.hpp"
-template<typename T>
-typename yannq::AbstractLayer<T>::MatrixType 
-ndiff_in(yannq::AbstractLayer<T>& layer, const typename yannq::AbstractLayer<T>::VectorType& input, const int outSize)
-{
-	using VectorT = typename yannq::AbstractLayer<T>::VectorType;
-	using MatrixT = typename yannq::AbstractLayer<T>::MatrixType;
-	MatrixT mat(input.size(), outSize);
-	VectorT output1(outSize);
-	VectorT output2(outSize);
-	const double h = 1e-4;
 
-	VectorT inH = input;
+#include <Machines/layers/AbstractLayer.hpp>
+#include <Utilities/type_traits.hpp>
+
+template<typename T>
+typename yannq::AbstractLayer<T>::Matrix
+ndiff_in(yannq::AbstractLayer<T>& layer, const typename yannq::AbstractLayer<T>::Vector& input, const int outSize)
+{
+	using Vector = typename yannq::AbstractLayer<T>::Vector;
+	using Matrix = typename yannq::AbstractLayer<T>::Matrix;
+	Matrix mat(input.size(), outSize);
+	Vector output1(outSize);
+	Vector output2(outSize);
+	const typename yannq::remove_complex<T>::type h = 1e-5;
+
+	Vector inH = input;
 	for(int i = 0; i < input.size(); i++)
 	{
 		inH(i) += h;
@@ -28,17 +30,17 @@ ndiff_in(yannq::AbstractLayer<T>& layer, const typename yannq::AbstractLayer<T>:
 	return mat;
 }
 template<typename T>
-typename yannq::AbstractLayer<T>::MatrixType 
-ndiff_weight(yannq::AbstractLayer<T>& layer, const typename yannq::AbstractLayer<T>::VectorType& input, const int outSize)
+typename yannq::AbstractLayer<T>::Matrix
+ndiff_weight(yannq::AbstractLayer<T>& layer, const typename yannq::AbstractLayer<T>::Vector& input, const int outSize)
 {
-	using VectorT = typename yannq::AbstractLayer<T>::VectorType;
-	using MatrixT = typename yannq::AbstractLayer<T>::MatrixType;
-	MatrixT mat(layer.paramDim(), outSize);
-	VectorT output1(outSize);
-	VectorT output2(outSize);
-	const double h = 1e-4;
+	using Vector = typename yannq::AbstractLayer<T>::Vector;
+	using Matrix = typename yannq::AbstractLayer<T>::Matrix;
+	Matrix mat(layer.paramDim(), outSize);
+	Vector output1(outSize);
+	Vector output2(outSize);
+	const typename yannq::remove_complex<T>::type h = 1e-5;
 
-	VectorT wH = layer.getParams();
+	Vector wH = layer.getParams();
 	for(int i = 0; i < wH.size(); i++)
 	{
 		const auto val = wH(i);

@@ -1,23 +1,25 @@
-#ifndef YANNQ_OBSERVARBLES_CONSTRUCTDELTAEXACT_HPP
-#define YANNQ_OBSERVARBLES_CONSTRUCTDELTAEXACT_HPP
+#pragma once
 #include <Eigen/Dense>
 
 #include <tbb/tbb.h>
 
-template<class Machine, class RandomIterable>
-typename Machine::MatrixType constructDeltaExact(const Machine& qs, RandomIterable&& basis)
+#include "Utilities/Utility.hpp"
+namespace yannq
 {
-	using MatrixType = typename Machine::MatrixType;
+template<class Machine, class RandomIterable>
+typename Machine::Matrix constructDeltaExact(const Machine& qs, RandomIterable&& basis)
+{
+	using Matrix = typename Machine::Matrix;
 	using Range = tbb::blocked_range<std::size_t>;
 	const int N = qs.getN();
-	MatrixType deltas(basis.size(), qs.getDim());
+	Matrix deltas(basis.size(), qs.getDim());
 	deltas.setZero(basis.size(), qs.getDim());
 	if(basis.size() >= 32)
 	{
 		tbb::parallel_for(Range(std::size_t(0u), basis.size(), 8),
 			[&](const Range& r)
 		{
-			MatrixType tmp(r.end()-r.begin(), qs.getDim());
+			Matrix tmp(r.end()-r.begin(), qs.getDim());
 			uint32_t start = r.begin();
 			uint32_t end = r.end();
 			for(int l = 0; l < end-start; ++l)
@@ -37,5 +39,4 @@ typename Machine::MatrixType constructDeltaExact(const Machine& qs, RandomIterab
 	}
 	return deltas;
 }
-
-#endif//YANNQ_OBSERVARBLES_CONSTRUCTDELTAEXACT_HPP
+} //namespace yannq

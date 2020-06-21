@@ -25,7 +25,7 @@ uint32_t binomialCoeff(uint32_t n, uint32_t k)
 TEST_CASE("GenerateBasis", "[GenBas]")
 {
 	std::vector<uint32_t> basis;
-	for(auto t: BasisJz(10,3))
+	for(auto t: yannq::BasisJz(10,3))
 	{
 		basis.emplace_back(t);
 	}

@@ -4,7 +4,7 @@
 #include <complex>
 
 #include <tbb/tbb.h>
-
+#include "Utilities/Utility.hpp"
 namespace yannq
 {
 
@@ -12,8 +12,8 @@ template<class Machine, class RandomEngine, class StateValue, class Sweeper>
 class SamplerMT
 {
 public:
-	using Scalar = typename Machine::ScalarType;
-	using RealScalar = typename Machine::RealScalarType;
+	using Scalar = typename Machine::Scalar;
+	using RealScalar = typename Machine::RealScalar;
 
 private:
 	const Machine& qs_;
