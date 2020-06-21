@@ -9,6 +9,9 @@
 
 #include <Serializers/SerializeActivationLayers.hpp>
 
+//template void yannq::Identity<double>::serialize<cereal::BinaryInputArchive>( cereal::BinaryInputArchive & );
+//template void yannq::Identity<double>::serialize<cereal::BinaryOutputArchive>( cereal::BinaryOutputArchive & );
+
 TEMPLATE_PRODUCT_TEST_CASE("Test serialization of parameterless activation layers",
 		"[Activation][serialization]", (yannq::Identity, yannq::LnCosh, yannq::Tanh, yannq::Sigmoid, yannq::ReLU, yannq::HardTanh, yannq::SoftShrink, yannq::SoftSign), (double, float))
 {

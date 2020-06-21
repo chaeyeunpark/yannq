@@ -92,7 +92,7 @@ public:
 		return res;
 	}
 
-	Scalar ratio(int k, int l) const
+	inline Scalar ratio(int k, int l) const
 	{
 		return std::exp(logRatio(k,l));
 	}
@@ -274,13 +274,13 @@ public:
 	using RBMStateObj<Scalar, RBMStateValue<Scalar> >::logRatio;
 	
 
-	const Eigen::VectorXi& getSigma() const & { return sigma_; } 
-	Eigen::VectorXi getSigma() && { return std::move(sigma_); } 
+	inline const Eigen::VectorXi& getSigma() const & { return sigma_; } 
+	inline Eigen::VectorXi getSigma() && { return std::move(sigma_); } 
 
-	const Vector& getTheta() const & { return theta_; } 
-	Vector getTheta() && { return std::move(theta_); } 
+	inline const Vector& getTheta() const & { return theta_; } 
+	inline Vector getTheta() && { return std::move(theta_); } 
 
-	std::tuple<Eigen::VectorXi, Vector> data() const
+	inline std::tuple<Eigen::VectorXi, Vector> data() const
 	{
 		return std::make_tuple(sigma_, theta_);
 	}
@@ -316,17 +316,17 @@ public:
 		return theta_(j);
 	}
 
-	Eigen::VectorXi getSigma() const
+	inline Eigen::VectorXi getSigma() const
 	{
 		return sigma_;
 	}
 
-	const Vector& getTheta() const&
+	inline const Vector& getTheta() const&
 	{
 		return theta_;
 	}
 
-	Vector getTheta() &&
+	inline Vector getTheta() &&
 	{
 		return theta_;
 	}

@@ -132,7 +132,7 @@ public:
 		ObsAvg<Vector> gradAvg(beta1_, Vector::Zero(dim));
 		ObsAvg<Matrix> fisherAvg(beta2_, Matrix::Zero(dim,dim));
 
-		//These should be changed into structured binding for C++17
+		//These should be changed into structured binding in C++17
 		double lambdaIni, lambdaDecay, lambdaMin;
 		std::tie(lambdaIni, lambdaDecay, lambdaMin) 
 			= this->getLambdas();

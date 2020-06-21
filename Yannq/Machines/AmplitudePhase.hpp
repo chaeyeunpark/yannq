@@ -88,8 +88,7 @@ public:
 	void initializeRandom(RandomEngine& re, double sigma)
 	{
 		initializeAmplitudeRandom(re, sigma);
-		//phase_.initializeRandom(re, InitializationMode::Xavier);
-		phase_.initializeRandom(re, InitializationMode::LeCun);
+		phase_.initializeRandom(re, InitializationMode::Xavier);
 	}
 
 

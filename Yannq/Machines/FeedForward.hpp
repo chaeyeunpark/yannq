@@ -202,6 +202,13 @@ public:
 		}
 		return dw;
 	}
+
+	template <class Archive>
+	void serialize( Archive & ar )
+	{
+		ar( layers_ );
+		ar( npar_ );
+	}
 };
 }
 

@@ -188,15 +188,15 @@ public:
 
 	~RBM() = default;
 
-	T W(uint32_t j, uint32_t i) const
+	inline T W(uint32_t j, uint32_t i) const
 	{
 		return W_.coeff(j,i);
 	}
-	T A(uint32_t i) const
+	inline T A(uint32_t i) const
 	{
 		return a_.coeff(i);
 	}
-	T B(uint32_t j) const
+	inline T B(uint32_t j) const
 	{
 		return b_.coeff(j);
 	}

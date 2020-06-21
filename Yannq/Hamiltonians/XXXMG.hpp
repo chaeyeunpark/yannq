@@ -25,11 +25,11 @@ public:
 	}
 	
 	template<class State>
-	typename State::T operator()(const State& smp) const
+	typename State::Scalar operator()(const State& smp) const
 	{
 		constexpr double J1 = 1.0;
 		constexpr double J2 = 0.5;
-		typename State::T s = 0.0;
+		typename State::Scalar s = 0.0;
 
 		{
 			double yysign = -smp.sigmaAt(0)*smp.sigmaAt(1);

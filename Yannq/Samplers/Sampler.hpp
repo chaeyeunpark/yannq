@@ -41,7 +41,7 @@ public:
 
 	inline void sweep()
 	{
-		sweeper_.localSweep(*sv_, 1.0, re_);
+		sweeper_.sweep(*sv_, 1.0, re_);
 	}
 
 	auto sampling(int n_sweeps, int n_therm)

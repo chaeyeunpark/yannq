@@ -10,22 +10,23 @@ namespace yannq
 class LocalSweeper
 {
 private:
-	const int n_;
-	const int nSweep_;
+	const uint32_t n_;
+	const uint32_t nSweep_;
 
 public:
 
-	LocalSweeper(int n, int nSweep = 1) noexcept
+	LocalSweeper(uint32_t n, uint32_t nSweep = 1) noexcept
 		: n_(n), nSweep_(nSweep)
 	{
 	}
 
 	template<class StateValue, class RandomEngine>
-	void localSweep(StateValue& sv, typename StateValue::RealScalar beta, 
+	uint32_t sweep(StateValue& sv, typename StateValue::RealScalar beta, 
 			RandomEngine& re) const noexcept
 	{
 		using RealScalar = typename StateValue::RealScalar;
 
+		uint32_t acc = 0;
 		std::uniform_real_distribution<RealScalar> urd(0.0, 1.0);
 		std::uniform_int_distribution<int> uid_(0,n_-1);
 		for(int sidx = 0; sidx < n_*nSweep_; sidx++)
@@ -36,8 +37,10 @@ public:
 			if(u < p)//accept
 			{
 				sv.flip(toFlip);
+				++acc;
 			}
 		}
+		return acc;
 	}
 };
 } //NNQS

@@ -19,7 +19,7 @@ public:
 	}
 
 	template<class StateValue, class RandomEngine>
-	void localSweep(StateValue& sv, double beta, RandomEngine& re)
+	void sweep(StateValue& sv, double beta, RandomEngine& re)
 	{
 		using std::real;
 		std::uniform_real_distribution<> urd(0.0,1.0);

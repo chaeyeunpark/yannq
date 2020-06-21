@@ -113,9 +113,9 @@ public:
 	}
 	
 	template<class State>
-	typename State::T operator()(const State& smp) const
+	typename State::Scalar operator()(const State& smp) const
 	{
-		typename State::T s = 0.0;
+		typename State::Scalar s = 0.0;
 		constexpr std::complex<double> I(0.,1.);
 
 		for(auto &xx: xLinks())

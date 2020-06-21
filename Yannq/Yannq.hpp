@@ -21,6 +21,7 @@
 #include "Samplers/SamplerPT.hpp"
 #include "Samplers/LocalSweeper.hpp"
 #include "Samplers/SwapSweeper.hpp"
+#include "Samplers/ExactSampler.hpp"
 
 //Include GroundState
 #include  "GroundState/SRMat.hpp"

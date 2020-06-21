@@ -36,28 +36,23 @@ public:
 		using DataT = typename std::result_of_t<decltype(&Machine::makeData)(Machine, Eigen::VectorXi)>;
 
 		auto st = getPsi(qs_, basis_, false);
-		std::vector<double> accum(basis_.size()+1, 0.0);
+		std::vector<long double> accum(basis_.size()+1, 0.0);
 		accum[0] = 0.0;
 		for(uint32_t n = 1; n <= basis_.size(); n++)
 		{
 			accum[n] = accum[n-1] + std::norm(st(n-1));
 		}
 
-		std::uniform_real_distribution<> urd(0.0, accum[basis_.size()]);
+		tbb::enumerable_thread_specific<std::uniform_real_distribution<long double>> urd(0.0, accum[basis_.size()]);
 		accum[basis_.size()] += 1e-8;
 		tbb::concurrent_vector<DataT> res;
-		tbb::queuing_mutex rMutex;
 		res.reserve(n_sweeps);
 		tbb::parallel_for(0u, n_sweeps,
 			[&](uint32_t sweep_idx)
 		{
-			double r;
-			{
-				tbb::queuing_mutex::scoped_lock lock(rMutex);
-				r = urd(re_);
-			}
+			long double r  = urd.local()(re_);
 			auto iter = std::upper_bound(accum.begin(), accum.end(), r);
-			auto idx = std::distance(accum.begin(), iter);
+			auto idx = std::distance(accum.begin(), iter)-1;
 			auto data = qs_.makeData(toSigma(n_, basis_[idx]));
 			res.emplace_back(data);
 		});
