@@ -7,6 +7,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <Samplers/SamplerMT.hpp>
 #include <Runners/RunRBM.hpp>
 #include <Hamiltonians/TFIsing.hpp>
 
@@ -18,7 +19,8 @@ int main(int argc, char** argv)
 	using namespace yannq;
 	using nlohmann::json;
 
-	const int numChains = 16;
+	const int nTmp = 4;
+	const int K = 8;
 
 	std::random_device rd;
 	std::default_random_engine re(rd());
@@ -70,8 +72,9 @@ int main(int argc, char** argv)
 	};
 
 	LocalSweeper sweeper{N};
-	auto sampler = runner.createSamplerPT(sweeper, numChains);
+	SamplerMT<RBM<ValT>, std::default_random_engine, RBMStateValue<ValT>, LocalSweeper>
+		sampler(runner.getQs(), nTmp, K, sweeper);
 
-	runner.run(sampler, callback, randomizer, std::move(ham), 2000);
+	runner.run(sampler, callback, randomizer, std::move(ham), 2000, 200);
 	return 0;
 }

@@ -10,15 +10,23 @@ class RunRBMExact
 	: public AbstractRunner<RBM<T>, RandomEngine, RunRBMExact<T, RandomEngine> >
 {
 public:
-	using MachineType = RBM<T>;
-	using Matrix = typename MachineType::Matrix;
-	using Vector = typename MachineType::Vector;
+	using Machine = RBM<T>;
+	using Matrix = typename Machine::Matrix;
+	using Vector = typename Machine::Vector;
 
 public:
 	RunRBMExact(const uint32_t N, const int alpha, bool useBias, std::ostream& logger)
-		: AbstractRunner<MachineType, RandomEngine, RunRBMExact<T, RandomEngine>>
+		: AbstractRunner<Machine, RandomEngine, RunRBMExact<T, RandomEngine>>
 		  	(logger, N, N*alpha, useBias)
 	{
+	}
+
+	nlohmann::json getAdditionalParams() const
+	{
+		using json = nlohmann::json;
+		json j;
+		j["Runner"] = "RunRBMExact";
+		return j;
 	}
 
 	template<class Callback, class Basis, class Hamiltonian>
@@ -43,7 +51,7 @@ public:
 		int maxIter, saveWfPer;
 		std::tie(maxIter, saveWfPer) = this->getIterParams();
 
-		SRMatExact<MachineType> srex(this->qs_, std::forward<Basis>(basis), ham);
+		SRMatExact<Machine> srex(this->qs_, std::forward<Basis>(basis), ham);
 
 		for(int ll = 0; ll <= maxIter; ll++)
 		{
@@ -54,7 +62,7 @@ public:
 				sprintf(fileName, "w%04d.dat",ll);
 				std::fstream out(fileName, std::ios::binary | std::ios::out);
 				{
-					auto qsToSave = std::make_unique<MachineType>(this->qs_);
+					auto qsToSave = std::make_unique<Machine>(this->qs_);
 					cereal::BinaryOutputArchive oa(out);
 					oa(qsToSave);
 				}
@@ -101,7 +109,7 @@ public:
 		int maxIter, saveWfPer;
 		std::tie(maxIter, saveWfPer) = this->getIterParams();
 
-		OverlapOptimizerExact<MachineType> ovex(this->qs_, std::forward<Basis>(basis));
+		OverlapOptimizerExact<Machine> ovex(this->qs_, std::forward<Basis>(basis));
 
 		ovex.setTarget(st);
 
@@ -114,7 +122,7 @@ public:
 				sprintf(fileName, "w%04d.dat",ll);
 				std::fstream out(fileName, std::ios::binary | std::ios::out);
 				{
-					auto qsToSave = std::make_unique<MachineType>(this->qs_);
+					auto qsToSave = std::make_unique<Machine>(this->qs_);
 					cereal::BinaryOutputArchive oa(out);
 					oa(qsToSave);
 				}

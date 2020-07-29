@@ -16,10 +16,7 @@
 #include <Utilities/Exceptions.hpp>
 
 namespace yannq {
-/** Convolutional layer with spin 1/2 hidden units.
- Important: In order for this to work correctly, Vector and Matrix must
- be column major.
- */
+
 template<typename T>
 class Conv1D : public AbstractLayer<T> {
 	static_assert(!AbstractLayer<T>::Matrix::IsRowMajor, "Matrix must be column-major");

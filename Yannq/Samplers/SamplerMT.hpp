@@ -1,10 +1,12 @@
-#ifndef NNQS_SAMPLERS_SAMPLERPT_HPP
-#define NNQS_SAMPLERS_SAMPLERPT_HPP
+#pragma once
 #include <vector>
 #include <random>
 #include <complex>
 
+#include <nlohmann/json.hpp>
+
 #include <tbb/tbb.h>
+#include "Utilities/Utility.hpp"
 
 namespace yannq
 {
@@ -19,7 +21,7 @@ public:
 private:
 	const Machine& qs_;
 	const uint32_t n_;
-	const uint32_t nTmp_;
+	const uint32_t nTmps_;
 	const uint32_t nChainsPer_;
 
 	std::vector<RealScalar> betas_; //nTmp
@@ -33,25 +35,36 @@ private:
 public:
 	/**
 	 * @param qs quantum state to use
-	 * @param nTmp number of temperatures to use
+	 * @param nTmps number of temperatures to use
 	 * @nchainPer number of chains per each temperature
 	 * @sweeper Sweeper to use
 	 */
-	SamplerMT(const Machine& qs, uint32_t nTmp, uint32_t nChainsPer, Sweeper& sweeper)
-		: qs_{qs}, n_{qs.getN()}, nTmp_{nTmp}, nChainsPer_{nChainsPer},
+	SamplerMT(const Machine& qs, uint32_t nTmps, uint32_t nChainsPer, Sweeper& sweeper)
+		: qs_{qs}, n_{qs.getN()}, nTmps_{nTmps}, nChainsPer_{nChainsPer},
 		sweeper_{sweeper}
 	{
-		for(uint32_t idx = 0; idx < nTmp; idx++)
+		assert(((nTmps % 2) == 0) || (nTmps == 1));
+		for(uint32_t idx = 0; idx < nTmps; idx++)
 		{
-			betas_.emplace_back( RealScalar(nTmp - idx)/nTmp );
+			betas_.emplace_back( RealScalar(nTmps - idx)/nTmps );
 		}
 		for(uint32_t chainIdx = 0; chainIdx < nChainsPer; ++chainIdx)
 		{
-			for(uint32_t tmpIdx = 1; tmpIdx < nTmp-1; tmpIdx += 2)
+			for(uint32_t tmpIdx = 1; tmpIdx < nTmps-1; tmpIdx += 2)
 			{
-				mixOdds.emplace_back(nTmp*chainIdx+tmpIdx);
+				mixOdds.emplace_back(nTmps*chainIdx+tmpIdx);
 			}
 		}
+	}
+
+	nlohmann::json desc() const
+	{
+		nlohmann::json res;
+		res["name"] = "SamplerMT";
+		res["num_temps"] = nTmps_;
+		res["num_chains_per_each_temp"] = nChainsPer_;
+		res["sweeper"] = sweeper_.desc();
+		return res;
 	}
 
 	void initializeRandomEngine()
@@ -66,7 +79,8 @@ public:
 	void randomizeSigma()
 	{
 		sv_.clear();
-		for(uint32_t idx = 0u; idx < nTmp_*nChainsPer_; ++idx)
+
+		for(uint32_t idx = 0u; idx < nTmps_*nChainsPer_; ++idx)
 		{
 			sv_.emplace_back(qs_, randomSigma(n_, re_.local()));
 		}
@@ -75,7 +89,7 @@ public:
 	void randomizeSigma(int nup)
 	{
 		sv_.clear();
-		for(uint32_t idx = 0u; idx < nTmp_*nChainsPer_; ++idx)
+		for(uint32_t idx = 0u; idx < nTmps_*nChainsPer_; ++idx)
 		{
 			sv_.emplace_back(qs_, randomSigma(n_, nup, re_.local()));
 		}
@@ -83,7 +97,7 @@ public:
 
 	inline double beta(uint32_t idx) const
 	{
-		return betas_[idx % nTmp_];
+		return betas_[idx % nTmps_];
 	}
 
 	/**
@@ -92,10 +106,13 @@ public:
 	void mixChains()
 	{
 		using std::real;
+		if(nTmps_ == 1)
+			return ;
+
 		tbb::enumerable_thread_specific<
 			std::uniform_real_distribution<RealScalar> > urd(0.0,1.0);
 
-		tbb::parallel_for(0u, nTmp_*nChainsPer_, 2u,
+		tbb::parallel_for(0u, nTmps_*nChainsPer_, 2u,
 			[&](uint32_t idx)
 		{
 			RealScalar p = exp((beta(idx+1)-beta(idx))*2.0*
@@ -106,8 +123,8 @@ public:
 				std::swap(sv_[idx+1],sv_[idx]);
 			}
 		});
-		tbb::parallel_for(0u, mixOdds.size(), 
-			[&](uint32_t i)
+		tbb::parallel_for(std::size_t(0u), mixOdds.size(), 
+			[&](std::size_t i)
 		{
 			uint32_t idx = mixOdds[i];
 			RealScalar p = exp((beta(idx+1)-beta(idx))*2.0*
@@ -123,17 +140,17 @@ public:
 	void sweep()
 	{
 		using std::real;
-		tbb::parallel_for(0u, nTmp_*nChainsPer_,
+		tbb::parallel_for(0u, nTmps_*nChainsPer_,
 			[&](uint32_t idx)
 		{
-			sweeper_.sweep(sv_[idx], beta(idx), re_.local());
+			sweeper_.localSweep(sv_[idx], beta(idx), re_.local());
 		});
 	}
 
 	template<typename Container>
 	void appendData(Container& container)
 	{
-		tbb::parallel_for(0u, nTmp_*nChainsPer_, nTmp_, 
+		tbb::parallel_for(0u, nTmps_*nChainsPer_, nTmps_, 
 			[&](uint32_t idx)
 		{
 			container.emplace_back(sv_[idx].data());
@@ -172,4 +189,4 @@ public:
 	}
 };
 }
-#endif//NNQS_SAMPLERS_SAMPLERPT_HPP
+

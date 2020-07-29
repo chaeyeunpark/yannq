@@ -2,6 +2,5 @@
 /debug*
 /docs
 /.vscode
-/externals/nlohmann
-/externals/catch2.hpp
+/externals
 .ycm_extra_conf.py

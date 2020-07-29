@@ -91,6 +91,13 @@ public:
 		phase_.initializeRandom(re, InitializationMode::Xavier);
 	}
 
+	
+	template<typename RandomEngine>
+	void initializePhase(RandomEngine& re, InitializationMode mode = InitializationMode::LeCun)
+	{
+		phase_.initializeRandom(re, mode);
+	}
+
 
 	AmplitudeDataType makeAmpData(const Eigen::VectorXi& sigma) const
 	{

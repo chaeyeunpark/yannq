@@ -50,7 +50,7 @@ public:
 		return nlohmann::json
 		{
 			{"name", "RBM"},
-			{"useBias", true},
+			{"useBias", useBias_},
 			{"n", n_},
 			{"m", m_}
 		};

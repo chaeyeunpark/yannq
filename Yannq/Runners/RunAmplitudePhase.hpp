@@ -5,6 +5,9 @@
 
 namespace yannq
 {
+
+enum class Mode {AMP, PHASE, ALL};
+
 template<class RandomEngine = std::default_random_engine>
 class RunAmplitudePhaseExact
 	: public AbstractRunner<AmplitudePhase, RandomEngine, RunAmplitudePhaseExact<RandomEngine> >
@@ -30,9 +33,19 @@ public:
 		  	(logger, N, N*alpha, useBias, std::move(phase))
 	{
 	}
+	
+	void initializePhase()
+	{
+		(this->qs_).initializePhase(this->re_, InitializationMode::Xavier);
+	}
+
+	void initializeAmplitude(double sigma)
+	{
+		(this->qs_).initializeAmplitudeRandom(this->re_, sigma);
+	}
 
 	template<class Callback, class Basis, class Hamiltonian>
-	void run(Callback&& callback, Basis&& basis, Hamiltonian&& ham)
+	void run(Callback&& callback, Basis&& basis, Hamiltonian&& ham, Mode mode = Mode::ALL)
 	{
 		using std::pow;
 		using std::max;
@@ -78,8 +91,9 @@ public:
 
 			RealScalar currE = ngdex.eloc();
 			auto grad = ngdex.energyGrad();
-			RealVector v(this->qs_.getDim());
+			RealVector v = RealVector::Zero(this->qs_.getDim());
 
+			if ((mode == Mode::AMP) || (mode == Mode::ALL)) 
 			{
 				auto corrMatAmp = ngdex.corrMatAmp();
 				double lambda = std::max(lambdaIni*pow(lambdaDecay,ll), lambdaMin);
@@ -87,6 +101,7 @@ public:
 				Eigen::LLT<Eigen::MatrixXd> llt(corrMatAmp);
 				v.head(dimAmp) = llt.solve(grad.head(dimAmp));
 			}
+			if ((mode == Mode::PHASE) || (mode == Mode::ALL))
 			{
 				auto corrMatPhase = ngdex.corrMatPhase();
 				double lambda = std::max(lambdaIni*pow(lambdaDecay,ll), lambdaMin);

@@ -17,7 +17,7 @@
 #include "Serializers/SerializeRBM.hpp"
 namespace yannq
 {
-template<class MachineType, class RandomEngine, class Derived>
+template<class Machine, class RandomEngine, class Derived>
 class AbstractRunner
 {
 public:
@@ -30,7 +30,7 @@ public:
 #endif
 
 protected:
-	MachineType qs_;
+	Machine qs_;
 	std::ostream& logger_;
 	RandomEngine re_;
 
@@ -49,7 +49,7 @@ private:
 	tbb::task_scheduler_init init_;
 
 protected:
-	std::unique_ptr<yannq::Optimizer<typename MachineType::Scalar> > opt_;
+	std::unique_ptr<yannq::Optimizer<typename Machine::Scalar> > opt_;
 
 	template<typename ...Ts>
 	AbstractRunner(std::ostream& logger, Ts&&... args)
@@ -116,7 +116,7 @@ public:
 
 		std::fstream in(filePath, ios::binary | ios::in);
 		cereal::BinaryInputArchive ia(in);
-		std::unique_ptr<MachineType> qsLoad{nullptr};
+		std::unique_ptr<Machine> qsLoad{nullptr};
 		ia(qsLoad);
 		qs_ = *qsLoad;
 	}
@@ -130,7 +130,7 @@ public:
 
 	void setOptimizer(const json& optParam)
 	{
-		opt_ = std::move(yannq::OptimizerFactory<typename MachineType::Scalar>::getInstance().createOptimizer(optParam));
+		opt_ = std::move(yannq::OptimizerFactory<typename Machine::Scalar>::getInstance().createOptimizer(optParam));
 	}
 
 	void setIterParams(const int maxIter, const int saveWfPer)
@@ -144,11 +144,11 @@ public:
 		return {maxIter_, saveWfPer_};
 	}
 
-	const MachineType& getQs() const &
+	const Machine& getQs() const &
 	{
 		return qs_;
 	}
-	MachineType getQs() && 
+	Machine getQs() && 
 	{
 		return qs_;
 	}
@@ -156,7 +156,7 @@ public:
 	json getParams() const
 	{
 		json j;
-		j["Optimizer"] = opt_->params();
+		j["Optimizer"] = opt_->desc();
 		
 		json SR = 
 		{
@@ -167,9 +167,15 @@ public:
 		j["SR"] = SR;
 		j["numThreads"] = Eigen::nbThreads();
 		j["machine"] = qs_.desc();
-		j["sampler"] = "Exact";
+
+		j.update(getAdditionalParams());
 
 		return j;
+	}
+
+	json getAdditionalParams() const
+	{
+		return static_cast<const Derived&>(*this).getAdditionalParams();
 	}
 
 	template<typename ...Ts>

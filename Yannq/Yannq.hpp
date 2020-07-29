@@ -18,7 +18,7 @@
 
 //include Sampler
 #include "Samplers/Sampler.hpp"
-#include "Samplers/SamplerPT.hpp"
+#include "Samplers/SamplerMT.hpp"
 #include "Samplers/LocalSweeper.hpp"
 #include "Samplers/SwapSweeper.hpp"
 #include "Samplers/ExactSampler.hpp"

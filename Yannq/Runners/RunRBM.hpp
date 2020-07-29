@@ -44,7 +44,7 @@ class RunRBM
 	: public AbstractRunner<RBM<T>, RandomEngine, RunRBM<T, RandomEngine>>
 {
 public:
-	using MachineType = RBM<T>;
+	using Machine = RBM<T>;
 
 private:
 	bool useCG_ = false;
@@ -73,23 +73,31 @@ public:
 		beta2_ = beta2;
 	}
 
-	//if usePT
-	template<class Sweeper> 
-	auto createSamplerPT(Sweeper& sweeper, uint32_t numChains) const
+	nlohmann::json getAdditionalParams() const
 	{
-		return SamplerPT<MachineType, std::default_random_engine, RBMStateValue<T>, Sweeper>(this->qs_, numChains, sweeper);
+		using json = nlohmann::json;
+		json j;
+		j["use_cg"] = useCG_;
+		if(useCG_)
+			j["cg_tol"] = cgTol_;
+
+		j["momentum"] = json{
+			{"beta1", beta1_},
+			{"beta2", beta2_},
+		};
+		return j;
 	}
-	//if not usePT
+
 	template<class Sweeper> 
-	auto createSamplerMT(Sweeper& sweeper) const
+	auto createSampler(Sweeper& sweeper, uint32_t nTmps, uint32_t nChainsPer) const
 	{
-		return Sampler<MachineType, std::default_random_engine, RBMStateValueMT<T>, Sweeper>(this->qs_, sweeper);
+		return SamplerMT<Machine, std::default_random_engine, RBMStateValue<T>, Sweeper>(this->qs_, nTmps, nChainsPer, sweeper);
 	}
 	
 	template<class Iterable>
 	auto createSamplerExact(Iterable&& basis) const
 	{
-		return ExactSampler<MachineType, std::default_random_engine>(this->qs_, std::forward<Iterable>(basis));
+		return ExactSampler<Machine, std::default_random_engine>(this->qs_, std::forward<Iterable>(basis));
 	}
 	
 	/** \brief Run the calculation
@@ -102,32 +110,32 @@ public:
 	 * is given by (the epoch, estimated energy in this epoch, norm of the update, error from conjugate gradient solver, sampling duration, solving duration).
 	 * \param randomizer It is a functor that intiailize the sampler before each use.
 	 * \param ham The Hamiltonian we want to solve.
-	 * \param nSamples The number of samples we will use for each epoch. Default: the number of parameters of the machine.
-	 * \param nSamplesDiscard The number of samples we will discard before sampling. It is used for equilbration. Default: 0.1*nSamples.
+	 * \param nSweeps The number of samples we will use for each epoch. Default: the number of parameters of the machine.
+	 * \param nSweepsDiscard The number of samples we will discard before sampling. It is used for equilbration. Default: 0.1*nSweeps.
 	 */
 	template<class Sampler, class Callback, class SweeperRandomizer, class Hamiltonian>
-	void run(Sampler& sampler, Callback&& callback, SweeperRandomizer&& randomizer, Hamiltonian&& ham, int nSamples = -1, int nSamplesDiscard = -1)
+	void run(Sampler& sampler, Callback&& callback, SweeperRandomizer&& randomizer, Hamiltonian&& ham, int nSweeps = -1, int nSweepsDiscard = -1)
 	{
 		using Clock = std::chrono::high_resolution_clock;
 		using namespace yannq;
-		using Matrix = typename MachineType::Matrix;
-		using Vector = typename MachineType::Vector;
+		using Matrix = typename Machine::Matrix;
+		using Vector = typename Machine::Vector;
 
 		if(!this->threadsInitiialized_)
 			this->initializeThreads();
 		if(!this->weightsInitialized_)
 			this->initializeRandom();
 
-		SRMat<MachineType,Hamiltonian> srm(this->qs_, std::forward<Hamiltonian>(ham));
+		SRMat<Machine,Hamiltonian> srm(this->qs_, std::forward<Hamiltonian>(ham));
 		
 		sampler.initializeRandomEngine();
 
 		const int dim = this->getDim();
 
-		if(nSamples == -1)
-			nSamples = dim;
-		if(nSamplesDiscard == -1)
-			nSamplesDiscard = int(0.1*nSamples);
+		if(nSweeps == -1)
+			nSweeps = dim;
+		if(nSweepsDiscard == -1)
+			nSweepsDiscard = int(0.1*nSweeps);
 
 		ObsAvg<Vector> gradAvg(beta1_, Vector::Zero(dim));
 		ObsAvg<Matrix> fisherAvg(beta2_, Matrix::Zero(dim,dim));
@@ -141,15 +149,15 @@ public:
 
 		for(int ll = 0; ll <= maxIter; ll++)
 		{
-			this->logger() << "Epochs: " << ll << "\t# of samples:" << nSamples << 
-				"\t# of discard samples: " << nSamplesDiscard << std::endl;
+			this->logger() << "Epochs: " << ll << 
+				"\t# of discard samples: " << nSweepsDiscard << std::endl;
 			if((saveWfPer != 0) && (ll % saveWfPer == 0))
 			{
 				char fileName[30];
 				sprintf(fileName, "w%04d.dat",ll);
 				std::fstream out(fileName, std::ios::binary | std::ios::out);
 				{
-					auto qsToSave = std::make_unique<MachineType>(this->qs_);
+					auto qsToSave = std::make_unique<Machine>(this->qs_);
 					cereal::BinaryOutputArchive oa(out);
 					oa(qsToSave);
 				}
@@ -158,9 +166,11 @@ public:
 
 			//Sampling
 			auto smp_start = Clock::now();
-			auto sr = sampler.sampling(nSamples, nSamplesDiscard);
+			auto sr = sampler.sampling(nSweeps, nSweepsDiscard);
 			auto smp_dur = std::chrono::duration_cast<std::chrono::milliseconds>
 				(Clock::now() - smp_start).count();
+
+			this->logger() << "Number of samples: " << sr.size() << std::endl;
 
 			auto slv_start = Clock::now();
 
@@ -172,10 +182,13 @@ public:
 			Vector v;
 			double cgErr;
 
-			if(useCG_)
+			gradAvg.update(srm.energyGrad());
+			Vector grad = gradAvg.getAvg();
+
+			if(useCG_ && (beta2_ == 0.0))
 			{
-				v = srm.solveCG(lambda, cgTol_);
-				cgErr = (srm.apply(v)-srm.energyGrad()).norm();
+				v = srm.solveCG(grad, lambda, cgTol_);
+				cgErr = (srm.apply(v)-grad).norm();
 			}
 			else
 			{
@@ -184,7 +197,7 @@ public:
 				auto fisher = fisherAvg.getAvg();
 				fisher += lambda*Matrix::Identity(dim,dim);
 				Eigen::LLT<Matrix> llt{fisher};
-				v = llt.solve(gradAvg.getAvg());
+				v = llt.solve(grad);
 				cgErr = 0;
 			}
 

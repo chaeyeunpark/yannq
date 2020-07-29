@@ -40,7 +40,7 @@ public:
 		};
 	}
 
-	nlohmann::json params() const override
+	nlohmann::json desc() const override
 	{
 		return nlohmann::json
 		{
