@@ -1,6 +1,7 @@
-#ifndef NNQS_SAMPLERS_SWAPSWEEPER_HPP
-#define NNQS_SAMPLERS_SWAPSWEEPER_HPP
+#pragma once
+
 #include <random>
+#include <nlohmann/json.hpp>
 
 namespace yannq
 {
@@ -16,9 +17,12 @@ public:
 	{
 	}
 
-	std::string name() const
+	nlohmann::json desc() const
 	{
-		return "Swap Sweeper";
+		nlohmann::json res;
+		res["name"] = "Swap Sweeper";
+		res["num_sweeps_per"] = nSweep_;
+		return res;
 	}
 
 	template<class StateValue, class RandomEngine>
@@ -49,4 +53,3 @@ public:
 	}
 };
 } //NNQS
-#endif//NNQS_SAMPLERS_SWAPSWEEPER_HPP

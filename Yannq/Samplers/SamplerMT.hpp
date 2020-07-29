@@ -40,6 +40,7 @@ public:
 		: qs_{qs}, n_{qs.getN()}, nTmps_{nTmps}, nChainsPer_{nChainsPer},
 		sweeper_{sweeper}
 	{
+		assert(((nTmps % 2) == 0) || (nTmps == 1));
 		for(uint32_t idx = 0; idx < nTmps; idx++)
 		{
 			betas_.emplace_back( RealScalar(nTmps - idx)/nTmps );
@@ -59,7 +60,7 @@ public:
 		res["name"] = "SamplerMT";
 		res["num_temps"] = nTmps_;
 		res["num_chains_per_each_temp"] = nChainsPer_;
-		res["sweeper"] = sweeper_.name();
+		res["sweeper"] = sweeper_.desc();
 		return res;
 	}
 
@@ -101,6 +102,10 @@ public:
 	void mixChains()
 	{
 		using std::real;
+
+		if(nTmps_ == 1)
+			return ;
+
 		tbb::enumerable_thread_specific<
 			std::uniform_real_distribution<RealScalar> > urd(0.0,1.0);
 

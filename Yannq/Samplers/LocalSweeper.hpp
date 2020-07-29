@@ -1,8 +1,9 @@
-#ifndef NNQS_SAMPLERS_LOCALSWEEPER_HPP
-#define NNQS_SAMPLERS_LOCALSWEEPER_HPP
+#pragma once
 #include <cmath>
 #include <Eigen/Eigen>
 #include <random>
+
+#include <nlohmann/json.hpp>
 
 namespace yannq
 {
@@ -20,9 +21,12 @@ public:
 	{
 	}
 
-	std::string name() const
+	nlohmann::json desc() const
 	{
-		return "Local Sweeper";
+		nlohmann::json res;
+		res["name"] = "Local Sweeper";
+		res["num_sweep_per"] = nSweep_;
+		return res;
 	}
 
 	template<class StateValue, class RandomEngine>
@@ -46,4 +50,3 @@ public:
 	}
 };
 } //NNQS
-#endif//NNQS_SAMPLERS_LOCALSWEEPER_HPP

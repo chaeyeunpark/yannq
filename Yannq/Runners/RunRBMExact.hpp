@@ -21,6 +21,14 @@ public:
 	{
 	}
 
+	nlohmann::json getAdditionalParams() const
+	{
+		using json = nlohmann::json;
+		json j;
+		j["Runner"] = "RunRBMExact";
+		return j;
+	}
+
 	template<class Callback, class Basis, class Hamiltonian>
 	void run(Callback&& callback, Basis&& basis, Hamiltonian&& ham)
 	{
