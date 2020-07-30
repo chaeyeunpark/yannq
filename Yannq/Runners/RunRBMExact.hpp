@@ -23,14 +23,7 @@ public:
 
 	nlohmann::json getAdditionalParams() const
 	{
-<<<<<<< HEAD
-		using json = nlohmann::json;
-		json j;
-		j["Runner"] = "RunRBMExact";
-		return j;
-=======
 		return R"({"name": "RunRBMExact"})"_json;
->>>>>>> weight averaged added
 	}
 
 	template<class Callback, class Basis, class Hamiltonian>
