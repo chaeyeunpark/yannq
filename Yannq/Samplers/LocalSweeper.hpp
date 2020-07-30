@@ -38,7 +38,7 @@ public:
 		uint32_t acc = 0;
 		std::uniform_real_distribution<RealScalar> urd(0.0, 1.0);
 		std::uniform_int_distribution<int> uid_(0,n_-1);
-		for(int sidx = 0; sidx < n_*nSweep_; sidx++)
+		for(uint32_t sidx = 0; sidx < n_*nSweep_; sidx++)
 		{
 			int toFlip = uid_(re);
 			RealScalar p = std::min(1.0,exp(beta*2.0*sv.logRatioRe(toFlip)));

@@ -19,8 +19,8 @@ int main(int argc, char** argv)
 	using namespace yannq;
 	using nlohmann::json;
 
-	const int nTmp = 4;
-	const int K = 8;
+	const int nTmp = 16;
+	const int K = 1;
 
 	std::random_device rd;
 	std::default_random_engine re(rd());
@@ -39,7 +39,7 @@ int main(int argc, char** argv)
 	fin >> paramIn;
 	fin.close();
 
-	const int N = paramIn.at("N").get<int>();
+	const uint32_t N = paramIn.at("N").get<int>();
 	const int alpha = paramIn.at("alpha").get<int>();
 	const double h = paramIn.at("h").get<double>();
 	const bool useCG = paramIn.value("useCG", false);
@@ -55,7 +55,7 @@ int main(int argc, char** argv)
 
 	RunRBM<ValT> runner(N, alpha, true, std::cerr);
 	runner.initializeRandom(0.01);
-	runner.setIterParams(2000, 100);
+	runner.setIterParams(20, 0);
 	runner.setOptimizer(paramIn["Optimizer"]);
 	runner.setSolverParams(useCG, 1e-3);
 
@@ -72,8 +72,9 @@ int main(int argc, char** argv)
 	};
 
 	LocalSweeper sweeper{N};
-	SamplerMT<RBM<ValT>, std::default_random_engine, RBMStateValue<ValT>, LocalSweeper>
-		sampler(runner.getQs(), nTmp, K, sweeper);
+
+	auto sampler = SamplerMT<RBM<ValT>, RBMStateValue<ValT>, LocalSweeper>
+		(runner.getQs(), nTmp, K, sweeper);
 
 	runner.run(sampler, callback, randomizer, std::move(ham), 2000, 200);
 	return 0;

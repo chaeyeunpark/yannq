@@ -40,6 +40,7 @@ public:
 	using Vector = typename Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
 	using RealMatrix = typename Eigen::Matrix<RealScalar, Eigen::Dynamic, Eigen::Dynamic>;
 	using RealVector = typename Eigen::Matrix<RealScalar, Eigen::Dynamic, 1>;
+
 private:
 	uint32_t n_;
 
@@ -96,11 +97,22 @@ public:
 		deltas_ = deltas_.rowwise() - deltaMean_.transpose();
 	}
 
+	/**
+	 * \param weights normalized weights for each sigma
+	 * */
+	void finIter(const Eigen::Ref<const RealVector>& weights)
+	{
+		weights_ = weights;
+		deltaMean_ = weights.transpose()*deltas_;
+		deltas_ = deltas_.rowwise() - deltaMean_.transpose();
+	}
+
 	inline 
 	const Matrix& logDervs() const&
 	{
 		return deltas_;
 	}
+
 	inline 
 	Matrix logDervs() &&
 	{
@@ -121,7 +133,10 @@ public:
 	Matrix corrMat() const
 	{
 		int nsmp = deltas_.rows();
-		return (deltas_.adjoint() * deltas_)/nsmp;
+		if(weights_.size() == 0)
+			return (deltas_.adjoint() * deltas_)/nsmp;
+		else
+			return (deltas_.adjoint() * weights_.asDiagonal() * deltas_);
 	}
 
 	RealVector diagCorrMat() const
@@ -139,9 +154,14 @@ public:
 	typename Machine::Vector apply(const Rhs& rhs) const
 	{
 		assert(rhs.size() == qs_.getDim());
-		typename Machine::Vector r = deltas_*rhs;
+		Vector r = deltas_*rhs;
 
-		typename Machine::Vector res = deltas_.adjoint()*r/r.rows();
+		Vector res;
+		
+		if(weights_.size() == 0)
+			res = deltas_.adjoint()*r/r.rows();
+		else
+			res = deltas_.adjoint() * weights_.asDiagonal() * r;
 
 		return res + Scalar(shift_)*rhs;
 	}

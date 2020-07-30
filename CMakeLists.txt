@@ -11,7 +11,7 @@ endif()
 
 enable_testing()
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(LINK_WHAT_YOU_USE TRUE)
 set(BUILD_RPATH_USE_ORIGIN TRUE)
 

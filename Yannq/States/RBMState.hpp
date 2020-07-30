@@ -69,7 +69,7 @@ public:
 
 	/************************ logRatio for two spins **************************/
 
-	inline RealScalar logRatioRe(int k, int l)
+	inline RealScalar logRatioRe(int k, int l) const
 	{
 		return real(logRatio(k,l));
 	}
@@ -99,7 +99,7 @@ public:
 
 	/************************ logRatio for vector *****************************/
 
-	inline RealScalar logRatioRe(const std::vector<int>& v)
+	inline RealScalar logRatioRe(const std::vector<int>& v) const
 	{
 		return real(logRatio(v));
 	}
@@ -125,15 +125,20 @@ public:
 		return res;
 	}
 
+	inline Scalar ratio(const std::vector<int>& v) const
+	{
+		return std::exp(logRatio(v));
+	}
+
 	/********************* logRatio with another StateObj *********************/
 
-	inline RealScalar logRatioRe(const RBMStateObj<Scalar, Derived>& other)
+	inline RealScalar logRatioRe(const RBMStateObj<Scalar, Derived>& other) const
 	{
 		return real(logRatio(other));
 	}
 	
 	/// returns log[psi(other.sigma)] - log[psi(sigma)]
-	Scalar logRatio(const RBMStateObj<Scalar, Derived>& other)
+	Scalar logRatio(const RBMStateObj<Scalar, Derived>& other) const
 	{
 		Scalar res = (this->qs_.getA().transpose())*
 			(other.getSigma() - getSigma()).template cast<Scalar>();
@@ -212,6 +217,14 @@ public:
 		return *this;
 	}
 
+	/**
+	 * Update theta when the RBM changes
+	 */
+	void updateTheta()
+	{
+		theta_ = this->qs_.calcTheta(sigma_);
+	}
+
 	void setSigma(const Eigen::VectorXi& sigma)
 	{
 		sigma_ = sigma;
@@ -254,8 +267,7 @@ public:
 		sigma_(l) *= -1;
 	}
 
-	template<std::size_t N>
-	void flip(const std::array<int, N>& v)
+	void flip(const std::vector<int>& v)
 	{
 		for(int elt: v)
 		{

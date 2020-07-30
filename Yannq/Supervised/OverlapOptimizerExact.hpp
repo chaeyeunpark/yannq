@@ -3,9 +3,10 @@
 #include <Eigen/Dense>
 #include <limits>
 
-#include "Observables/ConstructDeltaExact.hpp"
 #include "Utilities/Utility.hpp"
 #include "Utilities/type_traits.hpp"
+#include "Observables/utils.hpp"
+#include "GroundState/SRMatExact.hpp"
 
 #include <iterator>
 #include <tbb/tbb.h>
@@ -85,7 +86,8 @@ public:
 
 		Vector st = getPsi(qs_, basis_, true);
 
-		deltas_ = constructDeltaExact(qs_, basis_);
+		SamplingResultExact srex(qs_, basis_);
+		deltas_ = constructDelta(qs_, srex);
 
 		psiDeltas_ = st.cwiseAbs2().asDiagonal()*deltas_; 
 		ovs_ = st.conjugate().cwiseProduct(target_);

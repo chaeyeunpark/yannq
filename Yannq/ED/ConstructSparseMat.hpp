@@ -4,9 +4,10 @@
 #include <tbb/tbb.h>
 namespace edp
 {
-	template<typename T, class ColFunc>
-	Eigen::SparseMatrix<T> constructSparseMat(uint64_t dim, ColFunc&& colFunc)
+	template< class ColFunc>
+	auto constructSparseMat(uint64_t dim, ColFunc&& colFunc)
 	{
+		using T = typename std::result_of_t<ColFunc(uint32_t)>::mapped_type;
 		using TripletT = Eigen::Triplet<T>;
 		std::vector<TripletT> tripletList;
 		tripletList.reserve(3*dim);
@@ -27,10 +28,11 @@ namespace edp
 	/**
 	 * @basis: Random access iterable container for the basis
 	 */
-	template<typename T, typename ColFunc, typename Iterable>
-	Eigen::SparseMatrix<T> constructSubspaceMat(ColFunc&& t, Iterable&& basis)
+	template<typename ColFunc, typename Iterable>
+	auto constructSubspaceMat(ColFunc&& t, Iterable&& basis)
 	{
 		const uint32_t n = basis.size();
+		using T = typename std::result_of_t<ColFunc(uint32_t)>::mapped_type;
 
 		using TripletT = Eigen::Triplet<T>;
 		tbb::concurrent_vector<TripletT> tripletList;

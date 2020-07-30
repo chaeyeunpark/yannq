@@ -168,14 +168,13 @@ public:
 		j["numThreads"] = Eigen::nbThreads();
 		j["machine"] = qs_.desc();
 
-		j.update(getAdditionalParams());
-
+		j.update(static_cast<const Derived&>(*this).getAdditionalParams());
 		return j;
 	}
 
 	json getAdditionalParams() const
 	{
-		return static_cast<const Derived&>(*this).getAdditionalParams();
+		static_assert("This function should be implemented in a derived class using CRTP.");
 	}
 
 	template<typename ...Ts>

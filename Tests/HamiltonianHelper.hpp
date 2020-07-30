@@ -1,6 +1,7 @@
-#ifndef YANNQ_TESTS_HAMILTONIAN_HPP
-#define YANNQ_TESTS_HAMILTONIAN_HPP
-
+#pragma once
+#include <map>
+#include <set>
+#include <cmath>
 class HamExp
 {
 public:
@@ -92,6 +93,7 @@ std::map<uint32_t, double> getColFromStates(Hamiltonian&& ham, uint32_t col)
 
 double diffMap(const std::map<uint32_t, double>& lhs, const std::map<uint32_t, double>& rhs)
 {
+	using std::pow;
 	std::set<uint32_t> keys;
 	for(auto p: lhs)
 	{
@@ -109,4 +111,3 @@ double diffMap(const std::map<uint32_t, double>& lhs, const std::map<uint32_t, d
 	return diff;
 }
 
-#endif//YANNQ_TESTS_HAMILTONIAN_HPP

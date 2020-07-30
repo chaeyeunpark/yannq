@@ -1,5 +1,4 @@
-#ifndef YANNQ_MACHINES_RBM_HPP
-#define YANNQ_MACHINES_RBM_HPP
+#pragma once
 #include <random>
 #include <bitset>
 #include <fstream>
@@ -32,6 +31,10 @@ public:
 	using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
 	using VectorRef = Eigen::Ref<Vector>;
 	using VectorConstRef = Eigen::Ref<const Vector>;
+
+	using RealVector = Eigen::Matrix<RealScalar, Eigen::Dynamic, 1>;
+	
+	using DataT = std::tuple<Eigen::VectorXi, Vector>;
 
 private:
 	uint32_t n_; //# of qubits
@@ -145,7 +148,7 @@ public:
 	{
 	}
 
-	void setW(const Eigen::Ref<Matrix>& m)
+	void setW(const Eigen::Ref<const Matrix>& m)
 	{
 		assert(m.rows() == W_.rows() && m.cols() == W_.cols());
 		W_ = m;
@@ -389,7 +392,7 @@ typename RBM<T>::Vector getPsi(const RBM<T>& qs, bool normalize)
 		[n, &qs, &psi](uint32_t idx)
 	{
 		auto s = toSigma(n, idx);
-		psi(idx) = qs.coeff(std::make_tuple(s, qs.calcTheta(s)));
+		psi(idx) = qs.coeff(qs.makeData(s));
 	});
 	if(normalize)
 		psi.normalize();
@@ -413,5 +416,3 @@ typename RBM<T>::Vector getPsi(const RBM<T>& qs, Iterable&& basis, bool normaliz
 	return psi;
 }
 }//namespace yannq
-
-#endif//YANNQ_MACHINES_RBM_HPP

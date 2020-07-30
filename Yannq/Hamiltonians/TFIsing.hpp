@@ -9,7 +9,6 @@ private:
 	double J_;
 	double h_;
 public:
-
 	TFIsing(int n, double J, double h)
 		: n_(n), J_(J), h_(h)
 	{

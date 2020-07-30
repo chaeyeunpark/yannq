@@ -108,11 +108,11 @@ Eigen::VectorXi randomSigma(int n, RandomEngine& re)
 template <typename RandomEngine>
 Eigen::VectorXi randomSigma(int n, int nup, RandomEngine& re)
 {
-	std::vector<int> sigma(n,1);
+	std::vector<int> sigma(n,-1);
 	//randomly initialize currSigma
 	for(int i = nup; i < n; i++)
 	{
-		sigma[i] = -1;
+		sigma[i] = 1;
 	}
 	std::shuffle(sigma.begin(), sigma.end(), re);
 	return Eigen::Map<Eigen::VectorXi>(sigma.data(), n);

@@ -11,7 +11,8 @@
 namespace yannq
 {
 
-template<class Machine, class RandomEngine, class StateValue, class Sweeper>
+template<class Machine, class StateValue, class Sweeper,
+	class RandomEngine = std::default_random_engine>
 class SamplerMT
 {
 public:
@@ -162,7 +163,7 @@ public:
 	 * \return a container that contains data of samples.
 	 * Total number of samples is nChainsPer_*nSweeps.
 	 */
-	auto sampling(uint32_t nSweeps, uint32_t nDiscard)
+	auto sample(uint32_t nSweeps, uint32_t nDiscard)
 	{
 		using std::norm;
 		using std::pow;

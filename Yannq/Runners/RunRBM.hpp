@@ -4,7 +4,6 @@
 #include "AbstractRunner.hpp"
 
 #include "Samplers/Sampler.hpp"
-#include "Samplers/SamplerPT.hpp"
 #include "Samplers/ExactSampler.hpp"
 
 namespace yannq
@@ -91,11 +90,11 @@ public:
 	template<class Sweeper> 
 	auto createSampler(Sweeper& sweeper, uint32_t nTmps, uint32_t nChainsPer) const
 	{
-		return SamplerMT<Machine, std::default_random_engine, RBMStateValue<T>, Sweeper>(this->qs_, nTmps, nChainsPer, sweeper);
+		return SamplerMT<Machine, RBMStateValue<T>, Sweeper>(this->qs_, nTmps, nChainsPer, sweeper);
 	}
 	
 	template<class Iterable>
-	auto createSamplerExact(Iterable&& basis) const
+	auto createExactSampler(Iterable&& basis) const
 	{
 		return ExactSampler<Machine, std::default_random_engine>(this->qs_, std::forward<Iterable>(basis));
 	}
@@ -174,7 +173,7 @@ public:
 
 			auto slv_start = Clock::now();
 
-			srm.constructFromSampling(sr);
+			srm.constructFromSamples(sr);
 
 			double currE = srm.eloc();
 			

@@ -6,7 +6,7 @@
 #include <Utilities/Utility.hpp>
 
 namespace yannq {
-template<class Machine, class RandomEngine>
+template<class Machine, class RandomEngine = std::default_random_engine>
 class ExactSampler
 {
 private:
