@@ -165,7 +165,7 @@ public:
 
 			//Sampling
 			auto smp_start = Clock::now();
-			auto sr = sampler.sampling(nSweeps, nSweepsDiscard);
+			auto sr = sampler.sample(nSweeps, nSweepsDiscard);
 			auto smp_dur = std::chrono::duration_cast<std::chrono::milliseconds>
 				(Clock::now() - smp_start).count();
 

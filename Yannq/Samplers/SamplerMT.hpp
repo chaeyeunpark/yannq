@@ -144,7 +144,7 @@ public:
 		tbb::parallel_for(0u, nTmps_*nChainsPer_,
 			[&](uint32_t idx)
 		{
-			sweeper_.localSweep(sv_[idx], beta(idx), re_.local());
+			sweeper_.sweep(sv_[idx], beta(idx), re_.local());
 		});
 	}
 
