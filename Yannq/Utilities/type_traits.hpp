@@ -18,18 +18,6 @@ template<typename T>
 using remove_complex_t = typename remove_complex<T>::type;
 
 
-template<typename T>
-struct is_reference_state_type: public std::false_type {};
-
-template<typename T>
-class MachineStateTypes
-{
-};
-template<typename T>
-class MachineStateTypesMT
-{
-};
-
 template<std::size_t N, typename T, typename... types>
 struct get_nth_type
 {

@@ -11,6 +11,8 @@
 
 #include "States/RBMState.hpp"
 
+#include "./utils.hpp"
+
 namespace yannq
 {
 

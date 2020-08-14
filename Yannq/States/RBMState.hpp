@@ -4,6 +4,7 @@
 #include "Machines/RBM.hpp"
 #include "Utilities/type_traits.hpp"
 #include "Utilities/Utility.hpp"
+#include "./utils.hpp"
 
 namespace yannq
 {
@@ -179,6 +180,7 @@ public:
 	using Scalar = T;
 	using RealScalar = typename remove_complex<Scalar>::type;
 	using Vector = typename RBM<Scalar>::Vector;
+	using Machine = RBM<Scalar>;
 
 private:
 	Eigen::VectorXi sigma_;
@@ -196,6 +198,11 @@ public:
 		: RBMStateObj<Scalar, RBMStateValue<Scalar> >(qs), sigma_(sigma)
 	{
 		theta_ = this->qs_.calcTheta(sigma_);
+	}
+
+	RBMStateValue(const RBM<Scalar>& qs, const Eigen::VectorXi& sigma, const Vector& theta) noexcept
+		: RBMStateObj<Scalar, RBMStateValue<Scalar> >(qs), sigma_{sigma}, theta_{theta}
+	{
 	}
 
 	RBMStateValue(const RBMStateValue<Scalar>& rhs) = default;
@@ -307,6 +314,7 @@ public:
 	using Scalar = T;
 	using RealScalar = typename remove_complex<Scalar>::type;
 	using Vector = typename RBM<Scalar>::Vector;
+	using Machine = RBM<Scalar>;
 
 private:
 	const Eigen::VectorXi& sigma_;

@@ -4,6 +4,7 @@
 #include <tbb/tbb.h>
 
 #include "Utilities/Utility.hpp"
+#include "States/utils.hpp"
 #include "Observables/Observable.hpp"
 
 namespace yannq

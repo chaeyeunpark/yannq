@@ -175,3 +175,6 @@ target_link_libraries(port_saved stdc++fs)
 
 add_executable(AmplitudePhase "Examples/AmplitudePhase.cpp")
 
+add_executable(rbm_to_npy "Examples/rbm_to_npy.cpp")
+target_link_directories(rbm_to_npy PUBLIC ~/local/lib)
+target_link_libraries(rbm_to_npy cnpy z stdc++fs)

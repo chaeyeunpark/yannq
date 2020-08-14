@@ -176,7 +176,7 @@ public:
 			sweep();
 			mixChains();
 		}
-		using DataT = typename std::result_of<decltype(&StateValue::data)(StateValue)>::type;
+		using DataT = typename Machine::DataT;
 
 		tbb::concurrent_vector<DataT> res;
 		res.reserve(nSweeps);

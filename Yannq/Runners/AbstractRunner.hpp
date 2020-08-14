@@ -96,7 +96,7 @@ public:
 		init_.initialize(numThreads);
 	}
 
-	void setLambda(double lambdaIni, double lambdaDecay, double lambdaMin)
+	void setLambda(double lambdaIni, double lambdaDecay = 1.0, double lambdaMin = 0.0)
 	{
 		lambdaIni_ = lambdaIni;
 		lambdaDecay_ = lambdaDecay;

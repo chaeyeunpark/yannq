@@ -175,9 +175,15 @@ public:
 		Vector res;
 		
 		if(weights_.size() == 0)
-			res = deltas_.adjoint()*r/r.rows();
+		{
+			r /= r.rows();
+			res = deltas_.adjoint()*r;
+		}
 		else
-			res = deltas_.adjoint() * weights_.asDiagonal() * r;
+		{
+			r.array() *= weights_.array();
+			res = deltas_.adjoint() * r;
+		}
 
 		return res + Scalar(shift_)*rhs;
 	}

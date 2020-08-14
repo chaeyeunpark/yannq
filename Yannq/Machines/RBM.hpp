@@ -131,7 +131,7 @@ public:
 		W_ = std::move(newW);
 	}
 
-	template<typename U>
+	template<typename U, std::enable_if_t<std::is_convertible_v<U, T> && !std::is_same_v<U, T>, int> = 0>
 	RBM(const RBM<U>& rhs)
 		: n_(rhs.getN()), m_(rhs.getM()), W_(rhs.getW()), a_(rhs.getA()), b_(rhs.getB())
 	{
@@ -170,11 +170,9 @@ public:
 		b_ = B;
 	}
 
-	template<typename U>
+	template<typename U, std::enable_if_t<std::is_convertible_v<U, T> && !std::is_same_v<U, T>, int> = 0>
 	RBM& operator=(const RBM<U>& rhs)
 	{
-		static_assert(std::is_convertible<U,T>::value, "U should be convertible to T");
-
 		if(this == &rhs)
 			return *this;
 
@@ -185,6 +183,44 @@ public:
 		W_ = rhs.W_;
 		a_ = rhs.a_;
 		b_ = rhs.b_;
+
+		return *this;
+	}
+
+	RBM& operator=(const RBM& rhs)
+	{
+		if(this == &rhs)
+			return *this;
+
+		n_ = rhs.n_;
+		m_ = rhs.m_;
+		useBias_ = rhs.useBias_;
+
+		W_ = rhs.W_;
+		a_ = rhs.a_;
+		b_ = rhs.b_;
+
+		return *this;
+	}
+
+
+
+
+	template<typename U>
+	RBM& operator=(RBM<U>&& rhs)
+	{
+		static_assert(std::is_convertible<U,T>::value, "U should be convertible to T");
+
+		if(this == &rhs)
+			return *this;
+
+		n_ = rhs.n_;
+		m_ = rhs.m_;
+		useBias_ = rhs.useBias_;
+
+		W_ = std::move(rhs.W_);
+		a_ = std::move(rhs.a_);
+		b_ = std::move(rhs.b_);
 
 		return *this;
 	}
