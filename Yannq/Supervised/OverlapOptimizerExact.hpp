@@ -5,8 +5,8 @@
 
 #include "Utilities/Utility.hpp"
 #include "Utilities/type_traits.hpp"
-#include "Observables/utils.hpp"
 #include "GroundState/SRMatExact.hpp"
+#include "GroundState/utils.hpp"
 
 #include <iterator>
 #include <tbb/tbb.h>

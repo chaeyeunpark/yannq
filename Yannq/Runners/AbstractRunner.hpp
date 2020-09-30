@@ -7,12 +7,7 @@
 #include <nlohmann/json.hpp>
 #include <ios>
 
-#if __cpluscplus < 201703L
-#include <experimental/filesystem>
-#else
-#include <filesystem>
-#endif
-
+#include "filesystem.hpp"
 #include "Yannq.hpp"
 #include "Serializers/SerializeRBM.hpp"
 namespace yannq
@@ -23,11 +18,7 @@ class AbstractRunner
 public:
 	using json = nlohmann::json;
 
-#if __cpluscplus < 201703L
-	using path = std::experimental::filesystem::path;
-#else
-	using path = std::filesystem::path;
-#endif
+	using path = fs::path;
 
 protected:
 	Machine qs_;

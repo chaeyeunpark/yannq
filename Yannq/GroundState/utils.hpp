@@ -9,19 +9,22 @@
 
 namespace yannq
 {
-template<class Machine, class SamplingResult>
-typename Machine::Matrix constructDelta(const Machine& qs, SamplingResult&& sr)
+template<class Machine, class SamplingResult, class Matrix>
+void constructDelta(const Machine& qs, SamplingResult&& sr, Matrix& deltas)
 {
 	using Matrix = typename Machine::Matrix;
+	using MatrixRowMajor = Eigen::Matrix<typename Machine::Scalar, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 	using Range = tbb::blocked_range<std::size_t>;
 
-	Matrix deltas(sr.size(), qs.getDim());
-	deltas.setZero(sr.size(), qs.getDim());
-	if(sr.size() >= 32)
+	//MatrixRowMajor deltas(sr.size(), qs.getDim());
+	deltas.resize(sr.size(), qs.getDim());
+	if(sr.size() >= 64)
 	{
-		tbb::parallel_for(Range(std::size_t(0u), sr.size(), 8),
+		tbb::affinity_partitioner ap;
+		tbb::parallel_for(Range(std::size_t(0u), sr.size()),
 			[&](const Range& r)
 		{
+		/*
 			Matrix tmp(r.end()-r.begin(), qs.getDim());
 			uint32_t start = r.begin();
 			uint32_t end = r.end();
@@ -31,7 +34,12 @@ typename Machine::Matrix constructDelta(const Machine& qs, SamplingResult&& sr)
 				//qs.makeData(toSigma(N, basis[l+start]))
 			}
 			deltas.block(start, 0, end-start, qs.getDim()) = tmp;
-		}, tbb::simple_partitioner());
+		*/
+			for(uint32_t l = r.begin(); l < r.end(); ++l)
+			{
+				deltas.row(l) = qs.logDeriv(sr[l]);
+			}
+		}, ap);
 	}
 	else
 	{
@@ -40,7 +48,7 @@ typename Machine::Matrix constructDelta(const Machine& qs, SamplingResult&& sr)
 			deltas.row(k) = qs.logDeriv(sr[k]);
 		}
 	}
-	return deltas;
+	//return deltas;
 }
 
 namespace detail

@@ -7,7 +7,7 @@
 
 #include "ED/ConstructSparseMat.hpp"
 #include "Utilities/Utility.hpp"
-#include "Observables/utils.hpp"
+#include "./utils.hpp"
 
 namespace yannq
 {
@@ -51,6 +51,7 @@ public:
 	using RealScalar = typename remove_complex<Scalar>::type;
 
 	using Matrix = typename Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
+	using MatrixRowMajor = typename Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 	using Vector = typename Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
 
 private:
@@ -80,6 +81,17 @@ public:
 		return energyVar_;
 	}
 
+	void clear()
+	{
+		deltas_ = Matrix{};
+		deltasPsis_ = Matrix{};
+		oloc_ = Vector{};
+		grad_ = Vector{};
+
+		energy_ = 0.0;
+		energyVar_ = 0.0;
+	}
+
 	void constructExact()
 	{
 		Vector st = getPsi(qs_, basis_, true);
@@ -92,7 +104,8 @@ public:
 		energyVar_ -= energy_*energy_;
 		
 		SamplingResultExact srex(qs_, basis_);
-		deltas_ = constructDelta(qs_, srex);
+		//deltas_ = constructDelta(qs_, srex);
+		constructDelta(qs_, srex, deltas_);
 
 		deltasPsis_ = st.cwiseAbs2().asDiagonal()*deltas_; 
 		oloc_ = deltasPsis_.colwise().sum();

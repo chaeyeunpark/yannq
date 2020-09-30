@@ -7,7 +7,7 @@
 
 #include "Utilities/Utility.hpp"
 #include "Observables/Energy.hpp"
-#include "Observables/utils.hpp"
+#include "./utils.hpp"
 
 namespace yannq
 {
@@ -92,7 +92,7 @@ public:
 		weights_.resize(0);
 		int nsmp = sr.size();
 
-		deltas_ = constructDelta(qs_, sr);
+		constructDelta(qs_, sr, deltas_);
 		constructObs(qs_, sr, energy_);
 
 		deltaMean_ = deltas_.colwise().mean();
@@ -107,7 +107,7 @@ public:
 	{
 		weights_ = weights;
 
-		deltas_ = constructDelta(qs_, sr);
+		constructDelta(qs_, sr, deltas_);
 		constructObsWeights(qs_, std::forward<SamplingResult>(sr), weights, energy_);
 
 		deltaMean_ = weights.transpose()*deltas_;

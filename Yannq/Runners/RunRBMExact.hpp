@@ -64,7 +64,7 @@ public:
 					oa(qsToSave);
 				}
 			}
-
+			srex.clear();
 			srex.constructExact();
 
 			double currE = srex.eloc();

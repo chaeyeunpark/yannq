@@ -34,7 +34,7 @@ public:
 		uint32_t acc = 0;
 		std::uniform_real_distribution<RealScalar> urd(0.0,1.0);
 		std::uniform_int_distribution<uint32_t> uid(0,n_-1);
-		uint32_t toSweep = n_*nSweep_;
+		const uint32_t toSweep = n_*nSweep_;
 		for(uint32_t sidx = 0; sidx < toSweep; sidx++)
 		{
 			int swap1 = uid(re);

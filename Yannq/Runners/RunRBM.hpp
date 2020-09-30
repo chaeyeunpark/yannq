@@ -52,6 +52,8 @@ private:
 	double beta1_ = 0.0;
 	double beta2_ = 0.0;
 
+	double gradClip_ = 0.0;
+
 public:
 	RunRBM(const unsigned int N, const unsigned int alpha,
 			bool useBias, std::ostream& logger)
@@ -70,6 +72,11 @@ public:
 	{
 		beta1_ = beta1;
 		beta2_ = beta2;
+	}
+
+	void setGradClip(double gradClip)
+	{
+		gradClip_ = gradClip;
 	}
 
 	nlohmann::json getAdditionalParams() const
@@ -200,12 +207,17 @@ public:
 				cgErr = 0;
 			}
 
+			double nv = v.norm();
+			if((gradClip_ != 0.0) && (nv > gradClip_))
+			{
+				v *= gradClip_/nv;
+			}
+
 			Vector optV = this->opt_->getUpdate(v);
 
 			auto slv_dur = std::chrono::duration_cast<std::chrono::milliseconds>
 				(Clock::now() - slv_start).count();
 
-			double nv = v.norm();
 
 			this->qs_.updateParams(optV);
 
