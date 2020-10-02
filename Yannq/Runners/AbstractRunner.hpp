@@ -1,5 +1,4 @@
-#ifndef YANNQ_RUNNERS_ABSTRACTRUNNER_HPP
-#define YANNQ_RUNNERS_ABSTRACTRUNNER_HPP
+#pragma once
 #include <random>
 #include <chrono>
 #include <cereal/cereal.hpp>
@@ -12,7 +11,7 @@
 #include "Serializers/SerializeRBM.hpp"
 namespace yannq
 {
-template<class Machine, class RandomEngine, class Derived>
+template<class Machine, class RandomEngine>
 class AbstractRunner
 {
 public:
@@ -21,14 +20,15 @@ public:
 	using path = fs::path;
 
 protected:
-	Machine qs_;
 	std::ostream& logger_;
 	RandomEngine re_;
+	Machine qs_;
 
-	bool threadsInitiialized_ = false;
-	bool weightsInitialized_ = false;
 
 private:
+	bool threadsInitialized_ = false;
+	bool machineInitialized_ = false;
+
 	double lambdaIni_ = 1e-3;
 	double lambdaDecay_ = 1.0;
 	double lambdaMin_ = 1e-4;
@@ -43,13 +43,15 @@ protected:
 	std::unique_ptr<yannq::Optimizer<typename Machine::Scalar> > opt_;
 
 	template<typename ...Ts>
-	AbstractRunner(std::ostream& logger, Ts&&... args)
-		: qs_(std::forward<Ts>(args)...), logger_{logger},
-		init_(tbb::task_scheduler_init::deferred)
+	AbstractRunner(std::ostream& logger, Ts... args)
+		: logger_{logger},
+		qs_(args...), init_(tbb::task_scheduler_init::deferred)
 	{
 		std::random_device rd;
 		re_.seed(rd());
 	}
+
+	virtual json getAdditionalParams() const = 0;
 
 
 public:
@@ -63,7 +65,7 @@ public:
 		return logger_;
 	}
 
-	uint32_t getDim()
+	uint32_t getDim() const
 	{
 		return qs_.getDim();
 	}
@@ -83,7 +85,7 @@ public:
 			logger_ << "Initialize with " << numThreads << " threads" << std::endl;
 		else
 			logger_ << "Automatic initialize tbb threads" << std::endl;
-		threadsInitiialized_ = true;
+		threadsInitialized_ = true;
 		init_.initialize(numThreads);
 	}
 
@@ -102,7 +104,7 @@ public:
 	void initializeFrom(const path& filePath)
 	{
 		using std::ios;
-		weightsInitialized_ = true;
+		machineInitialized_ = true;
 		logger_ << "Loading initial weights from " << filePath << std::endl;
 
 		std::fstream in(filePath, ios::binary | ios::in);
@@ -114,9 +116,19 @@ public:
 
 	void initializeRandom(double wIni = 1e-3)
 	{
-		weightsInitialized_ = true;
+		machineInitialized_ = true;
 		logger_ << "Set initial weights randomly from N(0.0, " << wIni << "^2)" << std::endl;
 		qs_.initializeRandom(re_, wIni);
+	}
+
+	bool threadsInitialized() const
+	{
+		return threadsInitialized_;
+	}
+
+	bool machineInitialized() const
+	{
+		return machineInitialized_;
 	}
 
 	void setOptimizer(const json& optParam)
@@ -159,20 +171,19 @@ public:
 		j["numThreads"] = Eigen::nbThreads();
 		j["machine"] = qs_.desc();
 
-		j.update(static_cast<const Derived&>(*this).getAdditionalParams());
+		j.update(this->getAdditionalParams());
+
 		return j;
 	}
 
-	json getAdditionalParams() const
+	
+	void initializeRunner() 
 	{
-		static_assert("This function should be implemented in a derived class using CRTP.");
+		if(!threadsInitialized_)
+			this->initializeThreads();
+		if(!this->machineInitialized_)
+			this->initializeRandom();
 	}
 
-	template<typename ...Ts>
-	void run(Ts&&... params)
-	{
-		Derived::run(std::forward<Ts>(params)...);
-	}
 };
 }// namespace yannq
-#endif//YANNQ_RUNNERS_ABSTRACTRUNNER_HPP

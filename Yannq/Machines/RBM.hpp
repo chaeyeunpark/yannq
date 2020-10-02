@@ -96,11 +96,9 @@ public:
 		: n_(n), m_(m), useBias_(useBias),
 		W_(m,n), a_(n), b_(m)
 	{
-		if(!useBias)
-		{
-			a_.setZero();
-			b_.setZero();
-		}
+		a_.setZero();
+		b_.setZero();
+		W_.setZero();
 	}
 
 	void setUseBias(bool newBias)
@@ -203,9 +201,6 @@ public:
 		return *this;
 	}
 
-
-
-
 	template<typename U>
 	RBM& operator=(RBM<U>&& rhs)
 	{
@@ -222,6 +217,14 @@ public:
 		a_ = std::move(rhs.a_);
 		b_ = std::move(rhs.b_);
 
+		return *this;
+	}
+
+	RBM& operator+=(const RBM& rhs)
+	{
+		a_ += rhs.a_;
+		b_ += rhs.b_;
+		W_ += rhs.W_;
 		return *this;
 	}
 

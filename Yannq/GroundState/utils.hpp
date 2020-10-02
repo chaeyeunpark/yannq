@@ -12,7 +12,6 @@ namespace yannq
 template<class Machine, class SamplingResult, class Matrix>
 void constructDelta(const Machine& qs, SamplingResult&& sr, Matrix& deltas)
 {
-	using Matrix = typename Machine::Matrix;
 	using MatrixRowMajor = Eigen::Matrix<typename Machine::Scalar, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 	using Range = tbb::blocked_range<std::size_t>;
 

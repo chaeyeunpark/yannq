@@ -30,8 +30,16 @@ public:
 		std::random_device rd;
 		re_.seed(rd());
 	}
+
+	nlohmann::json desc() const
+	{
+		nlohmann::json res;
+		res["name"] = "ExactSampler";
+		return res;
+	}
+
 	
-	auto sampling(uint32_t n_sweeps, uint32_t /*nSamplesDiscard*/)
+	auto sample(uint32_t n_sweeps, uint32_t /*nSamplesDiscard*/)
 	{
 		using DataT = typename std::result_of_t<decltype(&Machine::makeData)(Machine, Eigen::VectorXi)>;
 
@@ -51,8 +59,8 @@ public:
 			[&](uint32_t sweep_idx)
 		{
 			long double r  = urd.local()(re_);
-			auto iter = std::upper_bound(accum.begin(), accum.end(), r);
-			auto idx = std::distance(accum.begin(), iter)-1;
+			auto iter = std::lower_bound(accum.begin(), accum.end(), r);
+			auto idx = std::distance(accum.begin(), iter);
 			auto data = qs_.makeData(toSigma(n_, basis_[idx]));
 			res.emplace_back(data);
 		});

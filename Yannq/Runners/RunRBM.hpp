@@ -40,7 +40,7 @@ public:
 //! \ingroup Runners
 template<typename T, class RandomEngine = std::default_random_engine>
 class RunRBM
-	: public AbstractRunner<RBM<T>, RandomEngine, RunRBM<T, RandomEngine>>
+	: public AbstractRunner<RBM<T>, RandomEngine>
 {
 public:
 	using Machine = RBM<T>;
@@ -57,8 +57,7 @@ private:
 public:
 	RunRBM(const unsigned int N, const unsigned int alpha,
 			bool useBias, std::ostream& logger)
-		: AbstractRunner<RBM<T>, RandomEngine, RunRBM<T, RandomEngine>>
-		  	(logger, N, /* M = */alpha*N, useBias)
+		: AbstractRunner<Machine, RandomEngine>(logger, N, alpha*N, useBias)
 	{
 	}
 
@@ -79,7 +78,7 @@ public:
 		gradClip_ = gradClip;
 	}
 
-	nlohmann::json getAdditionalParams() const
+	nlohmann::json getAdditionalParams() const override
 	{
 		using json = nlohmann::json;
 		json j;
@@ -105,6 +104,7 @@ public:
 	{
 		return ExactSampler<Machine, std::default_random_engine>(this->qs_, std::forward<Iterable>(basis));
 	}
+
 	
 	/** \brief Run the calculation
 	 *
@@ -127,13 +127,9 @@ public:
 		using Matrix = typename Machine::Matrix;
 		using Vector = typename Machine::Vector;
 
-		if(!this->threadsInitiialized_)
-			this->initializeThreads();
-		if(!this->weightsInitialized_)
-			this->initializeRandom();
+		this->initializeRunner();
 
 		SRMat<Machine,Hamiltonian> srm(this->qs_, std::forward<Hamiltonian>(ham));
-		
 		sampler.initializeRandomEngine();
 
 		const int dim = this->getDim();

@@ -7,7 +7,7 @@ namespace yannq
 {
 template<typename T, class RandomEngine = std::default_random_engine>
 class RunRBMExact
-	: public AbstractRunner<RBM<T>, RandomEngine, RunRBMExact<T, RandomEngine> >
+	: public AbstractRunner<RBM<T>, RandomEngine>
 {
 public:
 	using Machine = RBM<T>;
@@ -16,12 +16,12 @@ public:
 
 public:
 	RunRBMExact(const uint32_t N, const int alpha, bool useBias, std::ostream& logger)
-		: AbstractRunner<Machine, RandomEngine, RunRBMExact<T, RandomEngine>>
+		: AbstractRunner<Machine, RandomEngine>
 		  	(logger, N, N*alpha, useBias)
 	{
 	}
 
-	nlohmann::json getAdditionalParams() const
+	nlohmann::json getAdditionalParams() const override
 	{
 		return R"({"name": "RunRBMExact"})"_json;
 	}
@@ -34,10 +34,7 @@ public:
 		using namespace yannq;
 		using Clock = std::chrono::high_resolution_clock;
 
-		if(!this->threadsInitiialized_)
-			this->initializeThreads();
-		if(!this->weightsInitialized_)
-			this->initializeRandom();
+		this->initializeRunner();
 
 		const int dim = this->getDim();
 
@@ -74,6 +71,7 @@ public:
 			Eigen::LLT<Eigen::MatrixXcd> llt(corrMat);
 
 			auto grad = srex.energyGrad();
+
 			auto v = llt.solve(grad);
 			auto optV = this->opt_->getUpdate(v);
 
