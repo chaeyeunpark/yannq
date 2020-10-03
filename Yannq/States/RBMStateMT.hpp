@@ -267,8 +267,8 @@ public:
 		theta_ = this->qs_.calcTheta(sigma_);
 	}
 
-	RBMStateValueMT(const RBMStateValueMT<Scalar>& rhs) = default;
-	RBMStateValueMT(RBMStateValueMT<Scalar>&& rhs) = default;
+	RBMStateValueMT(const RBMStateValueMT<Scalar>& rhs) noexcept = default;
+	RBMStateValueMT(RBMStateValueMT<Scalar>&& rhs) noexcept = default;
 
 	RBMStateValueMT& operator=(const RBMStateValueMT<Scalar>& rhs) noexcept
 	{

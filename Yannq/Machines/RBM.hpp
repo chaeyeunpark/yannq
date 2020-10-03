@@ -47,6 +47,46 @@ private:
 	Vector b_; //b is length m
 
 public:
+	RBM(uint32_t n, uint32_t m, bool useBias = true) noexcept
+		: n_(n), m_(m), useBias_(useBias), W_(m,n), a_(n), b_(m) 
+	{
+		a_.setZero();
+		b_.setZero();
+		W_.setZero();
+	}
+
+	template<typename U, std::enable_if_t<std::is_convertible_v<U, T> && !std::is_same_v<U, T>, int> = 0>
+	RBM(const RBM<U>& rhs) noexcept
+		: n_{rhs.getN()}, m_{rhs.getM()}, useBias_{rhs.useBias()},
+		W_{rhs.getW()}, a_{rhs.getA()}, b_{rhs.getB()}
+	{
+		static_assert(std::is_convertible<U,T>::value, "U should be convertible to T");
+	}
+
+	RBM(const RBM& rhs) noexcept = default;
+	
+	RBM(RBM&& rhs) noexcept = default;
+
+	template<typename U, std::enable_if_t<std::is_convertible_v<U, T> && !std::is_same_v<U, T>, int> = 0>
+	RBM& operator=(const RBM<U>& rhs) noexcept
+	{
+		if(this == &rhs)
+			return *this;
+
+		n_ = rhs.n_;
+		m_ = rhs.m_;
+		useBias_ = rhs.useBias_;
+
+		W_ = rhs.W_.template cast<T>();
+		a_ = rhs.a_.template cast<T>();
+		b_ = rhs.b_.template cast<T>();
+
+		return *this;
+	}
+
+	RBM& operator=(const RBM& rhs) noexcept = default;
+	RBM& operator=(RBM&& rhs) noexcept = default;
+
 
 	nlohmann::json desc() const
 	{
@@ -92,15 +132,6 @@ public:
 		return W_.transpose()*h + a_;
 	}
 	
-	RBM(uint32_t n, uint32_t m, bool useBias = true)
-		: n_(n), m_(m), useBias_(useBias),
-		W_(m,n), a_(n), b_(m)
-	{
-		a_.setZero();
-		b_.setZero();
-		W_.setZero();
-	}
-
 	void setUseBias(bool newBias)
 	{
 		useBias_ = newBias;
@@ -129,23 +160,6 @@ public:
 		W_ = std::move(newW);
 	}
 
-	template<typename U, std::enable_if_t<std::is_convertible_v<U, T> && !std::is_same_v<U, T>, int> = 0>
-	RBM(const RBM<U>& rhs)
-		: n_(rhs.getN()), m_(rhs.getM()), W_(rhs.getW()), a_(rhs.getA()), b_(rhs.getB())
-	{
-		static_assert(std::is_convertible<U,T>::value, "U should be convertible to T");
-	}
-
-	RBM(const RBM& rhs)
-		: n_(rhs.getN()), m_(rhs.getM()), W_(rhs.getW()), a_(rhs.getA()), b_(rhs.getB())
-	{
-	}
-	
-	RBM(RBM<T>&& rhs)
-		: n_(rhs.n_), m_(rhs.m_), W_(std::move(rhs.W_)), a_(std::move(rhs.a_)), b_(std::move(rhs.b_))
-	{
-	}
-
 	void setW(const Eigen::Ref<const Matrix>& m)
 	{
 		assert(m.rows() == W_.rows() && m.cols() == W_.cols());
@@ -168,58 +182,6 @@ public:
 		b_ = B;
 	}
 
-	template<typename U, std::enable_if_t<std::is_convertible_v<U, T> && !std::is_same_v<U, T>, int> = 0>
-	RBM& operator=(const RBM<U>& rhs)
-	{
-		if(this == &rhs)
-			return *this;
-
-		n_ = rhs.n_;
-		m_ = rhs.m_;
-		useBias_ = rhs.useBias_;
-
-		W_ = rhs.W_;
-		a_ = rhs.a_;
-		b_ = rhs.b_;
-
-		return *this;
-	}
-
-	RBM& operator=(const RBM& rhs)
-	{
-		if(this == &rhs)
-			return *this;
-
-		n_ = rhs.n_;
-		m_ = rhs.m_;
-		useBias_ = rhs.useBias_;
-
-		W_ = rhs.W_;
-		a_ = rhs.a_;
-		b_ = rhs.b_;
-
-		return *this;
-	}
-
-	template<typename U>
-	RBM& operator=(RBM<U>&& rhs)
-	{
-		static_assert(std::is_convertible<U,T>::value, "U should be convertible to T");
-
-		if(this == &rhs)
-			return *this;
-
-		n_ = rhs.n_;
-		m_ = rhs.m_;
-		useBias_ = rhs.useBias_;
-
-		W_ = std::move(rhs.W_);
-		a_ = std::move(rhs.a_);
-		b_ = std::move(rhs.b_);
-
-		return *this;
-	}
-
 	RBM& operator+=(const RBM& rhs)
 	{
 		a_ += rhs.a_;
@@ -227,8 +189,6 @@ public:
 		W_ += rhs.W_;
 		return *this;
 	}
-
-	~RBM() = default;
 
 	inline T W(uint32_t j, uint32_t i) const
 	{

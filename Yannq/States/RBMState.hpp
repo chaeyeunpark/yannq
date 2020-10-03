@@ -205,8 +205,8 @@ public:
 	{
 	}
 
-	RBMStateValue(const RBMStateValue<Scalar>& rhs) = default;
-	RBMStateValue(RBMStateValue<Scalar>&& rhs) = default;
+	RBMStateValue(const RBMStateValue<Scalar>& rhs) noexcept = default;
+	RBMStateValue(RBMStateValue<Scalar>&& rhs) noexcept = default;
 
 	RBMStateValue& operator=(const RBMStateValue<Scalar>& rhs) noexcept
 	{
