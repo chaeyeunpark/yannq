@@ -63,9 +63,9 @@ public:
 		static_assert(std::is_convertible<U,T>::value, "U should be convertible to T");
 	}
 
-	RBM(const RBM& rhs) noexcept = default;
+	RBM(const RBM& rhs) /* noexcept */ = default;
 	
-	RBM(RBM&& rhs) noexcept = default;
+	RBM(RBM&& rhs) /* noexcept */ = default;
 
 	template<typename U, std::enable_if_t<std::is_convertible_v<U, T> && !std::is_same_v<U, T>, int> = 0>
 	RBM& operator=(const RBM<U>& rhs) noexcept
@@ -84,8 +84,8 @@ public:
 		return *this;
 	}
 
-	RBM& operator=(const RBM& rhs) noexcept = default;
-	RBM& operator=(RBM&& rhs) noexcept = default;
+	RBM& operator=(const RBM& rhs) /* noexcept */ = default;
+	RBM& operator=(RBM&& rhs) /* noexcept */ = default;
 
 
 	nlohmann::json desc() const
