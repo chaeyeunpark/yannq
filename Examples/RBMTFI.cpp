@@ -10,6 +10,7 @@
 #include <Samplers/SamplerMT.hpp>
 #include <Runners/RunRBM.hpp>
 #include <Hamiltonians/TFIsing.hpp>
+#include <Utilities/Utility.hpp>
 
 using namespace yannq;
 using std::ios;
@@ -66,9 +67,9 @@ int main(int argc, char** argv)
 		fout << j << std::endl;
 	}
 
-	auto randomizer = [](auto& sampler)
+	auto randomizer = [N](auto& re)
 	{
-		sampler.randomizeSigma();
+		return randomSigma(N, re);
 	};
 
 	LocalSweeper sweeper{N};

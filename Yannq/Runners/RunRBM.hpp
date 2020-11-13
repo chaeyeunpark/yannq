@@ -164,7 +164,7 @@ public:
 					oa(qsToSave);
 				}
 			}
-			randomizer(sampler);
+			sampler.randomize(randomizer);
 
 			//Sampling
 			auto smp_start = Clock::now();

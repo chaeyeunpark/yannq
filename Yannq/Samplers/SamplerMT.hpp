@@ -95,6 +95,18 @@ public:
 			sv_.emplace_back(qs_, randomSigma(n_, nup, re_.local()));
 		}
 	}
+	
+	/**
+	 * @randomizer a function that output a random configuration. Must be thread safe.
+	 * */
+	void randomize(std::function<Eigen::VectorXi(RandomEngine&)> randomizer)
+	{
+		sv_.clear();
+		for(uint32_t idx = 0u; idx < nTmps_*nChainsPer_; ++idx)
+		{
+			sv_.emplace_back(qs_, randomizer(re_.local()));
+		}
+	}
 
 	inline double beta(uint32_t idx) const
 	{

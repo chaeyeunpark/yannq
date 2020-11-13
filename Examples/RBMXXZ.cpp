@@ -9,6 +9,7 @@
 
 #include <Runners/RunRBM.hpp>
 #include <Hamiltonians/XXZ.hpp>
+#include <Utilities/Utility.hpp>
 
 using namespace yannq;
 using std::ios;
@@ -37,7 +38,7 @@ int main(int argc, char** argv)
 
 	const int numChains = 16;
 
-	const int N = paramIn.at("N").get<int>();
+	const uint32_t N = paramIn.at("N").get<int>();
 	const int alpha = paramIn.at("alpha").get<int>();
 	const double delta = paramIn.at("delta").get<double>();
 	const bool useCG = paramIn.value("useCG", false);
@@ -65,13 +66,13 @@ int main(int argc, char** argv)
 		fout << j << std::endl;
 	}
 
-	auto randomizer = [N](auto& sampler)
+	auto randomizer = [N](auto& re)
 	{
-		sampler.randomizeSigma(N/2);
+		return randomSigma(N/2, re);
 	};
 
 	SwapSweeper sweeper{N};
-	auto sampler = runner.createSamplerPT(sweeper, numChains);
+	auto sampler = runner.createSampler(sweeper, numChains, 1);
 
 	runner.run(sampler, callback, randomizer, std::move(ham), 2000);
 	return 0;
