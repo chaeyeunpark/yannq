@@ -64,8 +64,8 @@ public:
 		b_ = rhs.getB().template cast<T>();
 	}
 
-	RBM(const RBM<T>& rhs) /*noexcept*/= default;
-	RBM(RBM<T>&& rhs)  /*noexcept*/= default;
+	RBM(const RBM& rhs) /* noexcept */ = default;
+	RBM(RBM&& rhs) /* noexcept */ = default;
 
 	template<typename U, std::enable_if_t<std::is_convertible_v<U, T> && !std::is_same_v<U, T>, int> = 0>
 	RBM& operator=(const RBM<U>& rhs) 
@@ -84,8 +84,8 @@ public:
 		return *this;
 	}
 
-	RBM& operator=(const RBM<T>& rhs) /*noexcept*/= default;
-	RBM& operator=(RBM<T>&& rhs) /*noexcept*/= default;
+	RBM& operator=(const RBM& rhs) /* noexcept */ = default;
+	RBM& operator=(RBM&& rhs) /* noexcept */ = default;
 
 
 	nlohmann::json desc() const
