@@ -1,5 +1,4 @@
-#ifndef NNQS_OPTIMIZERS_SGDMOMENTUM_HPP
-#define NNQS_OPTIMIZERS_SGDMOMENTUM_HPP
+#pragma once
 #include <Eigen/Dense>
 #include <nlohmann/json.hpp>
 #include "Optimizers/Optimizer.hpp"
@@ -14,7 +13,7 @@ public:
 	using typename Optimizer<T>::Vector;
 	using typename Optimizer<T>::RealVector;
 
-	static constexpr double DEFAULT_PARAMS[] = {0.05, 0.5, 0.9};
+	static constexpr double DEFAULT_PARAMS[] = {0.05, 0.0, 0.9};
 
 private:
 	double alpha_;
@@ -39,7 +38,7 @@ public:
 	{
 	}
 
-	nlohmann::json params() const override
+	nlohmann::json desc() const override
 	{
 		return nlohmann::json
 		{
@@ -68,4 +67,3 @@ public:
 }//namespace yannq
 template<typename T>
 constexpr double yannq::SGDMomentum<T>::DEFAULT_PARAMS[];
-#endif//NNQS_OPTIMIZERS_SGDMOMENTUM_HPP

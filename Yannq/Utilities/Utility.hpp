@@ -59,7 +59,7 @@ auto calcObs(const AuxData& ad, const Container& sr, Observable& obs)
 }
 */
 
-//! generate random vector in the computational basis
+//! generate a random vector in the computational basis
 template <typename RandomEngine>
 Eigen::VectorXi randomSigma(int n, RandomEngine& re)
 {
@@ -72,8 +72,8 @@ Eigen::VectorXi randomSigma(int n, RandomEngine& re)
 	}
 	return sigma;
 }
-//! generate random vector in the computational basis with the constraint that
-//! the number of spin ups is nup.
+//! generate a random vector in the computational basis with the constraint that
+//! the number |1>=|\sigma_z = -1> is nup.
 template <typename RandomEngine>
 Eigen::VectorXi randomSigma(int n, int nup, RandomEngine& re)
 {

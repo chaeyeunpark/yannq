@@ -7,6 +7,7 @@
 
 #include <tbb/tbb.h>
 #include "Utilities/Utility.hpp"
+#include "States/utils.hpp"
 
 namespace yannq
 {
@@ -119,6 +120,7 @@ public:
 	void mixChains()
 	{
 		using std::real;
+		using std::swap;
 		if(nTmps_ == 1)
 			return ;
 
@@ -133,7 +135,7 @@ public:
 			RealScalar u = urd.local()(re_.local());
 			if(u < p)
 			{
-				std::swap(sv_[idx+1],sv_[idx]);
+				swap(sv_[idx+1],sv_[idx]);
 			}
 		});
 		tbb::parallel_for(std::size_t(0u), mixOdds.size(), 
@@ -145,7 +147,7 @@ public:
 			RealScalar u = urd.local()(re_.local());
 			if(u < p)
 			{
-				std::swap(sv_[idx+1],sv_[idx]);
+				swap(sv_[idx+1],sv_[idx]);
 			}
 		});
 	}
