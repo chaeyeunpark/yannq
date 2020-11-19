@@ -56,19 +56,19 @@ public:
 	}
 
 	template<typename U, std::enable_if_t<std::is_convertible_v<U, T> && !std::is_same_v<U, T>, int> = 0>
-	RBM(const RBM<U>& rhs) noexcept
-		: n_{rhs.getN()}, m_{rhs.getM()}, useBias_{rhs.useBias()},
-		W_{rhs.getW()}, a_{rhs.getA()}, b_{rhs.getB()}
+	RBM(const RBM<U>& rhs) 
+		: n_{rhs.getN()}, m_{rhs.getM()}, useBias_{rhs.useBias()}
 	{
-		static_assert(std::is_convertible<U,T>::value, "U should be convertible to T");
+		W_ = rhs.getW().template cast<T>();
+		a_ = rhs.getA().template cast<T>();
+		b_ = rhs.getB().template cast<T>();
 	}
 
 	RBM(const RBM& rhs) /* noexcept */ = default;
-	
 	RBM(RBM&& rhs) /* noexcept */ = default;
 
 	template<typename U, std::enable_if_t<std::is_convertible_v<U, T> && !std::is_same_v<U, T>, int> = 0>
-	RBM& operator=(const RBM<U>& rhs) noexcept
+	RBM& operator=(const RBM<U>& rhs) 
 	{
 		if(this == &rhs)
 			return *this;
