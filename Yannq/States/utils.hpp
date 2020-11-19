@@ -1,20 +1,9 @@
 #pragma once
 #include <tuple>
+#include "./RBMState.hpp"
 
 namespace yannq
 {
-
-template<typename T>
-struct is_reference_state_type: public std::false_type {};
-
-template<typename T>
-class MachineStateTypes
-{
-};
-template<typename T>
-class MachineStateTypesMT
-{
-};
 
 namespace detail
 {
@@ -49,5 +38,7 @@ construct_state(AuxData&& ad, Tuple&& t)
 {
 	return detail::constructStateT<StateT>(ad, t, std::make_index_sequence<std::tuple_size<typename std::decay<Tuple>::type>::value>{});
 }
+
+
 
 } //namespace yannq

@@ -55,6 +55,11 @@ public:
 		W_.setZero();
 	}
 
+	RBM() noexcept
+		: useBias_{true}
+	{
+	}
+
 	template<typename U, std::enable_if_t<std::is_convertible_v<U, T> && !std::is_same_v<U, T>, int> = 0>
 	RBM(const RBM<U>& rhs) 
 		: n_{rhs.getN()}, m_{rhs.getM()}, useBias_{rhs.useBias()}

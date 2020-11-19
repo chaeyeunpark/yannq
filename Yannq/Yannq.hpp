@@ -8,7 +8,7 @@
 
 //Include states
 #include "States/RBMState.hpp"
-#include "States/RBMStateMT.hpp"
+//#include "States/RBMStateMT.hpp"
 #include "States/utils.hpp"
 
 //Include ED
@@ -16,6 +16,7 @@
 
 //Include Basis
 #include "Basis/Basis.hpp"
+#include "Basis/BasisJz.hpp"
 
 //include Sampler
 #include "Samplers/Sampler.hpp"
