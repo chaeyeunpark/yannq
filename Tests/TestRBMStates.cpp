@@ -5,7 +5,6 @@
 
 #include "Machines/RBM.hpp"
 #include "States/RBMState.hpp"
-#include "States/RBMStateMT.hpp"
 #include "Utilities/Utility.hpp"
 
 
@@ -241,8 +240,5 @@ TEMPLATE_TEST_CASE("Test coeffs for RBM", "[RBM]", double, cx_double)
 {
 	TestRBMState<TestType, yannq::RBMStateValue>(true);
 	TestRBMState<TestType, yannq::RBMStateValue>(false);
-
-	TestRBMState<TestType, yannq::RBMStateValueMT>(true);
-	TestRBMState<TestType, yannq::RBMStateValueMT>(false);
 }
 

@@ -38,9 +38,7 @@ public:
 
 		const int dim = this->getDim();
 
-		//In C++17, these should be changed into structured binding
-		double lambdaIni, lambdaDecay, lambdaMin;
-		std::tie(lambdaIni, lambdaDecay, lambdaMin) 
+		const auto [lambdaIni, lambdaDecay, lambdaMin]
 			= this->getLambdas();
 		int maxIter, saveWfPer;
 		std::tie(maxIter, saveWfPer) = this->getIterParams();

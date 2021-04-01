@@ -4,6 +4,7 @@
 
 #include "RBM.hpp"
 #include "FeedForward.hpp"
+
 namespace yannq
 {
 class AmplitudePhase
@@ -11,7 +12,7 @@ class AmplitudePhase
 public:
 	using Scalar = double;
 private:
-	const uint32_t N_;
+	uint32_t N_;
 
 	RBM<Scalar> amplitude_;
 	FeedForward<Scalar> phase_;
@@ -76,6 +77,11 @@ public:
 	const AmplitudeMachine& amplitudeMachine() const
 	{
 		return amplitude_;
+	}
+
+	const FeedForward<Scalar>& phaseMachine() const
+	{
+		return phase_;
 	}
 
 	template<typename RandomEngine>
@@ -148,6 +154,14 @@ public:
 		res["amplitude"] = amplitude_.desc();
 		res["phase"] = phase_.desc();
 		return res;
+	}
+
+	template<class Archive>
+	void serialize(Archive & archive)
+	{
+		archive(N_); 
+		archive(amplitude_); 
+		archive(phase_); 
 	}
 };
 
