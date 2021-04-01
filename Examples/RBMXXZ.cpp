@@ -11,6 +11,8 @@
 #include <Hamiltonians/XXZ.hpp>
 #include <Utilities/Utility.hpp>
 
+#include "tbb_threads.hpp"
+
 using namespace yannq;
 using std::ios;
 
@@ -23,6 +25,10 @@ int main(int argc, char** argv)
 	std::default_random_engine re(rd());
 
 	std::cout << std::setprecision(8);
+
+	int nThreads = numThreads();
+	tbb::global_control(tbb::global_control::max_allowed_parallelism, nThreads);
+	std::cerr << "Using TBB nThreads: " << nThreads << std::endl;
 
 	using ValT = std::complex<double>;
 

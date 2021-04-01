@@ -1,6 +1,7 @@
-#ifndef YANNQ_SAMPLER_EXACTSAMPLER_HPP
-#define YANNQ_SAMPLER_EXACTSAMPLER_HPP
+#pragma once
 #include <vector>
+
+#include <nlohmann/json.hpp>
 
 #include <Machines/Machines.hpp>
 #include <Utilities/Utility.hpp>
@@ -38,6 +39,12 @@ public:
 		return res;
 	}
 
+	template<class Randomizer>
+	void randomize(Randomizer&& /*randomizer*/) const
+	{
+		//do nothing
+	}
+
 	
 	auto sample(uint32_t n_sweeps, uint32_t /*nSamplesDiscard*/)
 	{
@@ -60,7 +67,7 @@ public:
 		{
 			long double r  = urd.local()(re_);
 			auto iter = std::lower_bound(accum.begin(), accum.end(), r);
-			auto idx = std::distance(accum.begin(), iter);
+			auto idx = std::distance(accum.begin(), iter) - 1;
 			auto data = qs_.makeData(toSigma(n_, basis_[idx]));
 			res.emplace_back(data);
 		});
@@ -69,4 +76,3 @@ public:
 
 };
 } //namespace yannq
-#endif//YANNQ_SAMPLER_EXACTSAMPLER_HPP

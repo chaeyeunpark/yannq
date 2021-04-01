@@ -127,7 +127,8 @@ public:
 		using Matrix = typename Machine::Matrix;
 		using Vector = typename Machine::Vector;
 
-		this->initializeRunner();
+		if(!this->machineInitialized())
+			this->initializeRandom();
 
 		SRMat<Machine,Hamiltonian> srm(this->qs_, std::forward<Hamiltonian>(ham));
 		sampler.initializeRandomEngine();

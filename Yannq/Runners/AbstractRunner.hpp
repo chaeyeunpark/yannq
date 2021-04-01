@@ -33,11 +33,9 @@ private:
 	double lambdaDecay_ = 1.0;
 	double lambdaMin_ = 1e-4;
 
-	int maxIter_ = 2000;
-	int saveWfPer_ = 100;
-	int numChains_ = 16;
-
-	tbb::task_scheduler_init init_;
+	uint32_t maxIter_ = 2000;
+	uint32_t saveWfPer_ = 100;
+	uint32_t numChains_ = 16;
 
 protected:
 	std::unique_ptr<yannq::Optimizer<typename Machine::Scalar> > opt_;
@@ -45,7 +43,7 @@ protected:
 	template<typename ...Ts>
 	AbstractRunner(std::ostream& logger, Ts... args)
 		: logger_{logger},
-		qs_(std::forward<Ts>(args)...), init_(tbb::task_scheduler_init::deferred)
+		qs_(std::forward<Ts>(args)...)
 	{
 		std::random_device rd;
 		re_.seed(rd());
@@ -68,25 +66,6 @@ public:
 	uint32_t getDim() const
 	{
 		return qs_.getDim();
-	}
-
-	void initializeThreads(int numThreads = tbb::task_scheduler_init::automatic)
-	{
-		char* var = std::getenv("TBB_NUM_THREADS");
-		int val;
-		if((var != nullptr) && (var[0] != '\0') && 
-				(sscanf(var, "%d", &val) == 1) && (val > 0) &&
-				(numThreads == tbb::task_scheduler_init::automatic))
-		{
-			logger_ << "Using TBB_NUM_THREADS" << std::endl;
-			numThreads = val;
-		}
-		if(numThreads > 0)
-			logger_ << "Initialize with " << numThreads << " threads" << std::endl;
-		else
-			logger_ << "Automatic initialize tbb threads" << std::endl;
-		threadsInitialized_ = true;
-		init_.initialize(numThreads);
 	}
 
 	void setLambda(double lambdaIni, double lambdaDecay = 1.0, double lambdaMin = 0.0)
@@ -176,15 +155,6 @@ public:
 			j.update(to_update);
 
 		return j;
-	}
-
-	
-	void initializeRunner() 
-	{
-		if(!threadsInitialized_)
-			this->initializeThreads();
-		if(!this->machineInitialized_)
-			this->initializeRandom();
 	}
 
 };

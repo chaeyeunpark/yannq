@@ -197,7 +197,7 @@ public:
 	NGDExact(const AmplitudePhase& qs, Iterable&& basis, ColFunc&& col)
 	  : n_{qs.getN()}, qs_(qs)
 	{
-		tbb::parallel_do(basis.begin(), basis.end(), 
+		tbb::parallel_for_each(basis.begin(), basis.end(), 
 				[&](uint32_t elt)
 		{
 			basis_.emplace_back(elt);
