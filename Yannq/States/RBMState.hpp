@@ -1,10 +1,9 @@
-#ifndef YANNQ_STATES_RBMSTATE_HPP
-#define YANNQ_STATES_RBMSTATE_HPP
+#pragma once
 
 #include "Machines/RBM.hpp"
 #include "Utilities/type_traits.hpp"
 #include "Utilities/Utility.hpp"
-#include "./utils.hpp"
+#include "./type_traits.hpp"
 
 namespace yannq
 {
@@ -205,23 +204,15 @@ public:
 	{
 	}
 
-	RBMStateValue(const RBMStateValue<Scalar>& rhs) noexcept = default;
-	RBMStateValue(RBMStateValue<Scalar>&& rhs) noexcept = default;
+	RBMStateValue(const RBMStateValue<Scalar>& rhs) /* noexcept */ = default;
+	RBMStateValue(RBMStateValue<Scalar>&& rhs) /* noexcept */ = default;
 
-	RBMStateValue& operator=(const RBMStateValue<Scalar>& rhs) noexcept
+	void swap(RBMStateValue<Scalar>& rhs) noexcept
 	{
+		using std::swap;
 		assert(rhs.qs_ == this->qs_);
-		sigma_ = rhs.sigma_;
-		theta_ = rhs.theta_;
-		return *this;
-	}
-
-	RBMStateValue& operator=(RBMStateValue<Scalar>&& rhs) noexcept
-	{
-		assert(rhs.qs_ == this->qs_);
-		sigma_ = std::move(rhs.sigma_);
-		theta_ = std::move(rhs.theta_);
-		return *this;
+		swap(sigma_, rhs.sigma_);
+		swap(theta_, rhs.theta_);
 	}
 
 	/**
@@ -304,6 +295,11 @@ public:
 		return std::make_tuple(sigma_, theta_);
 	}
 };
+template<typename T>
+void swap(RBMStateValue<T>& lhs, RBMStateValue<T>& rhs)
+{
+	lhs.swap(rhs);
+}
 
 
 template<typename T>
@@ -357,4 +353,3 @@ template<typename T>
 struct is_reference_state_type<RBMStateRef<T> >: public std::true_type {};
 
 } //namespace yannq
-#endif//YANNQ_STATES_RBMSTATE_HPP

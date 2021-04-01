@@ -193,7 +193,7 @@ public:
 		return grad_;
 	}
 
-	template<class ColFunc, class Iterable>
+	template<class Iterable, class ColFunc>
 	NGDExact(const AmplitudePhase& qs, Iterable&& basis, ColFunc&& col)
 	  : n_{qs.getN()}, qs_(qs)
 	{
@@ -204,8 +204,7 @@ public:
 		});
 		tbb::parallel_sort(basis_.begin(), basis_.end());
 
-		ham_ = edp::constructSubspaceMat<RealScalar>
-			(std::forward<ColFunc>(col), basis_);
+		ham_ = edp::constructSubspaceMat(std::forward<ColFunc>(col), basis_);
 	}
 };
 } //namespace yannq

@@ -6,6 +6,7 @@
 #include "Optimizers/Optimizer.hpp"
 
 #include "Optimizers/SGD.hpp"
+#include "Optimizers/SGDMomentum.hpp"
 #include "Optimizers/Adam.hpp"
 #include "Optimizers/AdaMax.hpp"
 //#include "Optimizers/AdaDelta.hpp"
@@ -46,6 +47,7 @@ private:
 	explicit OptimizerFactory()
 	{
 		resiterOptimizer<SGD<T> >("SGD");
+		resiterOptimizer<SGDMomentum<T> >("SGDMomentum");
 
 		//resiterOptimizer<AdaDelta<T> >("AdaDelta");
 		resiterOptimizer<RMSProp<T> >("RMSProp");

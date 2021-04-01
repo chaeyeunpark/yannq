@@ -38,7 +38,7 @@ public:
 
 		const int dim = this->getDim();
 
-		auto [lambdaIni, lambdaDecay, lambdaMin]  
+		const auto [lambdaIni, lambdaDecay, lambdaMin]
 			= this->getLambdas();
 		int maxIter, saveWfPer;
 		std::tie(maxIter, saveWfPer) = this->getIterParams();

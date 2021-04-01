@@ -91,7 +91,7 @@ void findObs(Observable<Derived>& obs, Observable<Derived2>&... args)
 }
 
 template<typename RealVector, typename Derived>
-void finObsWeights(const Eigen::Ref<RealVector>& weights, Observable<Derived>& obs)
+void finObsWeights( [[maybe_unused]]  const Eigen::Ref<RealVector>& weights, Observable<Derived>& obs)
 {
 	obs.finIter();
 }

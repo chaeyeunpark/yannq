@@ -154,11 +154,17 @@ add_test(
 	COMMAND TestSerializeFullyConnected
 )
 
+add_executable(TestSerializeFeedForward "Tests/TestSerializeFeedForward.cpp")
+add_test(
+	NAME TestSerializeFeedForward
+	COMMAND TestSerializeFeedForward
+)
+
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND}
 	DEPENDS TestRBMStates TestConvLayer TestActivations TestFullyConnected
 	TestFeedForward TestHamTFI TestHamJ1J2 TestUtility 
 	TestSerializeRBM TestSerializeConv1D TestSerializeActivations 
-	TestSerializeFullyConnected
+	TestSerializeFullyConnected TestSerializeFeedForward
 )
 
 add_executable(RBMTFI "Examples/RBMTFI.cpp")

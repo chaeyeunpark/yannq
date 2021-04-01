@@ -28,8 +28,8 @@ namespace edp
 	/**
 	 * @basis: Random access iterable container for the basis
 	 */
-	template<typename ColFunc, typename Iterable>
-	auto constructSubspaceMat(ColFunc&& t, Iterable&& basis)
+	template<typename ColFunc, typename RandomIterable>
+	auto constructSubspaceMat(ColFunc&& t, RandomIterable&& basis)
 	{
 		const uint32_t n = basis.size();
 		using T = typename std::result_of_t<ColFunc(uint32_t)>::mapped_type;

@@ -7,6 +7,7 @@
 
 #include <tbb/tbb.h>
 #include "Utilities/Utility.hpp"
+#include "States/utils.hpp"
 
 namespace yannq
 {
@@ -95,6 +96,18 @@ public:
 			sv_.emplace_back(qs_, randomSigma(n_, nup, re_.local()));
 		}
 	}
+	
+	/**
+	 * @randomizer a function that output a random configuration. Must be thread safe.
+	 * */
+	void randomize(std::function<Eigen::VectorXi(RandomEngine&)> randomizer)
+	{
+		sv_.clear();
+		for(uint32_t idx = 0u; idx < nTmps_*nChainsPer_; ++idx)
+		{
+			sv_.emplace_back(qs_, randomizer(re_.local()));
+		}
+	}
 
 	inline double beta(uint32_t idx) const
 	{
@@ -107,6 +120,7 @@ public:
 	void mixChains()
 	{
 		using std::real;
+		using std::swap;
 		if(nTmps_ == 1)
 			return ;
 
@@ -121,7 +135,7 @@ public:
 			RealScalar u = urd.local()(re_.local());
 			if(u < p)
 			{
-				std::swap(sv_[idx+1],sv_[idx]);
+				swap(sv_[idx+1],sv_[idx]);
 			}
 		});
 		tbb::parallel_for(std::size_t(0u), mixOdds.size(), 
@@ -133,7 +147,7 @@ public:
 			RealScalar u = urd.local()(re_.local());
 			if(u < p)
 			{
-				std::swap(sv_[idx+1],sv_[idx]);
+				swap(sv_[idx+1],sv_[idx]);
 			}
 		});
 	}

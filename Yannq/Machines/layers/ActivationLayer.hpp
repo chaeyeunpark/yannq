@@ -145,6 +145,9 @@ template<typename T>
 using Tanh = ActivationLayer<T, activation::Tanh<T> >;
 
 template<typename T>
+using WeakTanh = ActivationLayer<T, activation::WeakTanh<T> >;
+
+template<typename T>
 using Sigmoid = ActivationLayer<T, activation::Sigmoid<T> >;
 
 template<typename T>

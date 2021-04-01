@@ -1,6 +1,7 @@
 #pragma once
-#include "Machines/AmplitudePhase.hpp"
+#include <cereal/archives/binary.hpp>
 #include "AbstractRunner.hpp"
+#include "Machines/AmplitudePhase.hpp"
 #include "GroundState/NGDExact.hpp"
 
 namespace yannq
@@ -10,7 +11,7 @@ enum class Mode {AMP, PHASE, ALL};
 
 template<class RandomEngine = std::default_random_engine>
 class RunAmplitudePhaseExact
-	: public AbstractRunner<AmplitudePhase, RandomEngine, RunAmplitudePhaseExact<RandomEngine> >
+	: public AbstractRunner<AmplitudePhase, RandomEngine >
 {
 public:
 	using Scalar = typename AmplitudePhase::Scalar;
@@ -26,10 +27,10 @@ public:
 	using ComplexVector = typename MachineType::ComplexVector;
 
 public:
-	RunAmplitudePhaseExact(const uint32_t N, const int alpha, bool useBias, 
+	RunAmplitudePhaseExact(const uint32_t N, const uint32_t alpha, bool useBias, 
 			FeedForward<Scalar>&& phase,
 			std::ostream& logger)
-		: AbstractRunner<AmplitudePhase, RandomEngine, RunAmplitudePhaseExact<RandomEngine>>
+		: AbstractRunner<AmplitudePhase, RandomEngine>
 		  	(logger, N, N*alpha, useBias, std::move(phase))
 	{
 	}
@@ -44,6 +45,15 @@ public:
 		(this->qs_).initializeAmplitudeRandom(this->re_, sigma);
 	}
 
+	nlohmann::json getAdditionalParams() const override
+	{
+		using json = nlohmann::json;
+		json j;
+		return j;
+	}
+
+
+
 	template<class Callback, class Basis, class Hamiltonian>
 	void run(Callback&& callback, Basis&& basis, Hamiltonian&& ham, Mode mode = Mode::ALL)
 	{
@@ -52,40 +62,32 @@ public:
 		using namespace yannq;
 		using Clock = std::chrono::high_resolution_clock;
 
-		if(!this->threadsInitiialized_)
-			this->initializeThreads();
-		if(!this->weightsInitialized_)
-			this->initializeRandom();
+		this->initializeRunner();
 
 		const int dim = this->getDim();
 		const int dimAmp = (this->qs_).getDimAmp();
 		const int dimPhase = (this->qs_).getDimPhase();
 
 		//In C++17, these should be changed into structured binding
-		double lambdaIni, lambdaDecay, lambdaMin;
-		std::tie(lambdaIni, lambdaDecay, lambdaMin) 
-			= this->getLambdas();
+		auto [lambdaIni, lambdaDecay, lambdaMin] = this->getLambdas();
 		int maxIter, saveWfPer;
 		std::tie(maxIter, saveWfPer) = this->getIterParams();
 
-		NGDExact ngdex(this->qs_, std::forward<Basis>(basis), ham);
+		NGDExact ngdex(this->qs_, std::forward<Basis>(basis), std::forward<Hamiltonian>(ham));
 
 		for(int ll = 0; ll <= maxIter; ll++)
 		{
 			this->logger() << "Epochs: " << ll << std::endl;
-			/*
 			if((saveWfPer != 0) && (ll % saveWfPer == 0))
 			{
 				char fileName[30];
 				sprintf(fileName, "w%04d.dat",ll);
 				std::fstream out(fileName, std::ios::binary | std::ios::out);
 				{
-					auto qsToSave = std::make_unique<MachineType>(this->qs_);
 					cereal::BinaryOutputArchive oa(out);
-					oa(qsToSave);
+					oa(this->qs_);
 				}
 			}
-			*/
 
 			ngdex.constructExact();
 

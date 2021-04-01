@@ -45,7 +45,7 @@ protected:
 	template<typename ...Ts>
 	AbstractRunner(std::ostream& logger, Ts... args)
 		: logger_{logger},
-		qs_(args...), init_(tbb::task_scheduler_init::deferred)
+		qs_(std::forward<Ts>(args)...), init_(tbb::task_scheduler_init::deferred)
 	{
 		std::random_device rd;
 		re_.seed(rd());
@@ -171,7 +171,9 @@ public:
 		j["numThreads"] = Eigen::nbThreads();
 		j["machine"] = qs_.desc();
 
-		j.update(this->getAdditionalParams());
+		json to_update = this->getAdditionalParams();
+		if(!to_update.is_null())
+			j.update(to_update);
 
 		return j;
 	}

@@ -5,6 +5,7 @@
 
 #include "layers/AbstractLayer.hpp"
 #include "Utilities/Utility.hpp"
+
 namespace yannq
 {
 enum class InitializationMode

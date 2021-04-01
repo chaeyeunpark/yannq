@@ -111,13 +111,24 @@ class Tanh
 {
 public:	
 	using Scalar = T;
+	using RealScalar = remove_complex_t<Scalar>;
 	using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
 	using VectorRef = Eigen::Ref<Vector>;
 	using VectorConstRef = Eigen::Ref<const Vector>;
 
-	// A = Tanh(Z)
+private:
+	RealScalar constant_;
+
+public:
+
+	explicit Tanh(const RealScalar constant = 1.0) //constant*tanh(z/constant)
+		: constant_{constant}
+	{
+	}
+
+	// A = a*Tanh(Z/a)
 	inline void operator()(VectorConstRef Z, VectorRef A) const  {
-		A.array() = Z.array().tanh();
+		A.array() = constant_ * (Z.array() / constant_).tanh();
 	}
 
 	// Apply the (derivative of activation function) matrix J to a vector F
@@ -127,12 +138,64 @@ public:
 	inline void ApplyJacobian(VectorConstRef /*Z*/, VectorConstRef A,
 			VectorConstRef F,
 			VectorRef G) const  {
-		G.array() = F.array() * (1. - A.array() * A.array());
+		G.array() = F.array() * (1. - A.array() * A.array() / (constant_*constant_));
 	}
 
 	std::string name() const
 	{
 		return "Tanh";
+	}
+
+	template<class Archive>
+	void serialize(Archive& ar)
+	{
+		ar(constant_);
+	}
+};
+
+template<typename T>
+class WeakTanh
+{
+public:	
+	using Scalar = T;
+	using RealScalar = remove_complex_t<Scalar>;
+	using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+	using VectorRef = Eigen::Ref<Vector>;
+	using VectorConstRef = Eigen::Ref<const Vector>;
+
+private:
+
+public:
+
+	explicit WeakTanh() //x - tanh(x)/2
+	{
+	}
+
+	// A = a*Tanh(Z/a)
+	inline void operator()(VectorConstRef Z, VectorRef A) const  {
+		A.array() = Z.array();
+		A.array() -= Z.array().tanh()/2.0;
+	}
+
+	// Apply the (derivative of activation function) matrix J to a vector F
+	// A = Tanh(Z)
+	// J = dA / dZ
+	// G = J * F
+	inline void ApplyJacobian(VectorConstRef Z, VectorConstRef /*A*/,
+			VectorConstRef F,
+			VectorRef G) const  {
+		Eigen::Array<T, Eigen::Dynamic, 1> tanh = Z.array().tanh();
+		G.array() = F.array() * (1.0 +  tanh * tanh)/2.0;
+	}
+
+	std::string name() const
+	{
+		return "WeakTanh";
+	}
+
+	template<class Archive>
+	void serialize(Archive& ar)
+	{
 	}
 };
 

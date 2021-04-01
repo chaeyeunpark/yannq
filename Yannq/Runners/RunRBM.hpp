@@ -142,7 +142,7 @@ public:
 		ObsAvg<Vector> gradAvg(beta1_, Vector::Zero(dim));
 		ObsAvg<Matrix> fisherAvg(beta2_, Matrix::Zero(dim,dim));
 
-		auto [lambdaIni, lambdaDecay, lambdaMin]
+		const auto [lambdaIni, lambdaDecay, lambdaMin]
 			= this->getLambdas();
 		int maxIter, saveWfPer;
 		std::tie(maxIter, saveWfPer) = this->getIterParams();
@@ -162,7 +162,7 @@ public:
 					oa(qsToSave);
 				}
 			}
-			randomizer(sampler);
+			sampler.randomize(randomizer);
 
 			//Sampling
 			auto smp_start = Clock::now();
