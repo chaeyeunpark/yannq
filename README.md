@@ -6,12 +6,14 @@ This library is a simple header-only library for variational Monte-Carlo simulat
 
 If you are interested in a complete library that supports python binding and complicated models, check [NetKet](https://www.netket.org/).
 
-## Distinction to NetKet
+## Distinction to NetKet (version 2)
 Main features of this library are also available in NetKet. 
 Still, there are several differences in the implementation details.
 First, YANNQ is a header-only libary. Thus it might be easier to integrate your own existing codes.
 Static polymorphism, one of the powerful tools in C++, is also widely used to enhance computational speed.
-YANNQ employs shared memory parallel (SMP) programming model using Intel TBB so can be faster than NetKet (version 2) in a single node multi-processor set-up. 
+YANNQ employs shared memory parallel (SMP) programming model using Intel TBB so can be faster than NetKet in a single node multi-processor set-up. 
+
+> NetKet has fully moved to Python (using JAX) in their version 3.0. 
 
 ## Warnings
 This project started as a personal project and still has the only developer. So some features may not work. 
