@@ -194,7 +194,7 @@ public:
 	}
 
 	template<class Archive>
-	void serialize(Archive& ar)
+	void serialize(Archive& /*ar*/)
 	{
 	}
 };

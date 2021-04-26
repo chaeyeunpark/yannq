@@ -12,7 +12,7 @@ CEREAL_CLASS_VERSION(yannq::FullyConnected<long double>, 1);
 namespace cereal
 {
 template<class Archive, typename T>
-void save(Archive & ar, const yannq::FullyConnected<T>& m, const uint32_t /*version*/)
+void save(Archive& ar, const yannq::FullyConnected<T>& m, const uint32_t /*version*/)
 { 
 	nlohmann::json desc = m.desc();
 	ar(desc["use_bias"].get<bool>(),
@@ -23,7 +23,7 @@ void save(Archive & ar, const yannq::FullyConnected<T>& m, const uint32_t /*vers
 }
 
 template<class Archive, typename T>
-void load(Archive & ar, yannq::FullyConnected<T>& m, const uint32_t /*version*/)
+void load(Archive& /*ar*/, yannq::FullyConnected<T>& /*m*/, const uint32_t /*version*/)
 { 
 	assert(false); // No default constructor or suitable modifier
 }
