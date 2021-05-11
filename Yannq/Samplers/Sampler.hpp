@@ -38,6 +38,15 @@ public:
 		std::random_device rd;
 		re_.seed(rd());
 	}
+
+	/**
+	 * @randomizer a function that output a random configuration. Must be thread safe.
+	 * */
+	void randomize(std::function<Eigen::VectorXi(RandomEngine&)> randomizer)
+	{
+		sv_ = std::make_unique<StateValue>(qs_, randomizer(re_.local()));
+	}
+
 	
 	void randomizeSigma()
 	{

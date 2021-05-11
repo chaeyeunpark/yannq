@@ -25,7 +25,7 @@ void save(Archive & ar, const yannq::Conv1D<T>& m, const uint32_t /*version*/)
 }
 
 template<class Archive, typename T>
-void load(Archive & ar, yannq::Conv1D<T>& m, const uint32_t /*version*/)
+void load(Archive& /*ar*/, yannq::Conv1D<T>& /*m*/, const uint32_t /*version*/)
 { 
 	assert(false); // No default constructor or suitable modifier
 }

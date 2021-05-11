@@ -124,14 +124,14 @@ TEMPLATE_PRODUCT_TEST_CASE("Test ActivationLayer by activations", "[layer][activ
 
 		Vector diff = din - din_num;
 
-		if(diff.norm()/inSize > 1e-4)
+		if(diff.norm()/inSize/din.norm() > 1e-4)
 		{
 			std::cout << "input: " << input.transpose() << std::endl;
 			std::cout << "dout: " <<dout.transpose() << std::endl;
 			std::cout << "din: " << din.transpose() << std::endl;
 			std::cout << "din_num: " << din_num.transpose() << std::endl;
 		}
-		REQUIRE_THAT(diff.norm()/inSize,
+		REQUIRE_THAT(diff.norm()/inSize/din.norm(),
 				WithinAbsMatcher(0.,1e-4));
 	}
 }
