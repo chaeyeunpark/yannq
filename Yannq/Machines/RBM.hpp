@@ -48,7 +48,7 @@ private:
 
 public:
 	RBM(uint32_t n, uint32_t m, bool useBias = true) noexcept
-		: n_(n), m_(m), useBias_(useBias), W_(m,n), a_(n), b_(m) 
+		: n_(n), m_(m), useBias_(useBias), W_(m, n), a_(n), b_(m) 
 	{
 		a_.setZero();
 		b_.setZero();
@@ -59,6 +59,7 @@ public:
 		: useBias_{true}
 	{
 	}
+
 
 	template<typename U, std::enable_if_t<std::is_convertible_v<U, T> && !std::is_same_v<U, T>, int> = 0>
 	RBM(const RBM<U>& rhs) 
@@ -75,9 +76,6 @@ public:
 	template<typename U, std::enable_if_t<std::is_convertible_v<U, T> && !std::is_same_v<U, T>, int> = 0>
 	RBM& operator=(const RBM<U>& rhs) 
 	{
-		if(this == &rhs)
-			return *this;
-
 		n_ = rhs.n_;
 		m_ = rhs.m_;
 		useBias_ = rhs.useBias_;
@@ -92,6 +90,16 @@ public:
 	RBM& operator=(const RBM& rhs) /* noexcept */ = default;
 	RBM& operator=(RBM&& rhs) /* noexcept */ = default;
 
+
+	template<typename U, std::enable_if_t<std::is_convertible_v<T, U>, int> = 0>
+	RBM<U> cast() const
+	{
+		RBM<U> res(n_, m_, useBias_);
+		res.setA(a_.template cast<U>());
+		res.setB(b_.template cast<U>());
+		res.setW(W_.template cast<U>());
+		return res;
+	}
 
 	nlohmann::json desc() const
 	{
@@ -150,6 +158,12 @@ public:
 		a_.resize(n);
 		b_.resize(m);
 		W_.resize(m,n);
+
+		if(!useBias_)
+		{
+			a_.setZero();
+			b_.setZero();
+		}
 	}
 
 	void conservativeResize(uint32_t newM)
@@ -158,7 +172,7 @@ public:
 		newB.head(m_) = b_;
 
 		Matrix newW = Matrix::Zero(newM, n_);
-		newW.topLeftCorner(m_, n_) = W_;
+		newW.topRows(m_) = W_;
 
 		m_ = newM;
 		b_ = std::move(newB);
@@ -187,26 +201,33 @@ public:
 		b_ = B;
 	}
 
-	RBM& operator+=(const RBM& rhs)
-	{
-		a_ += rhs.a_;
-		b_ += rhs.b_;
-		W_ += rhs.W_;
-		return *this;
-	}
 
-	inline T W(uint32_t j, uint32_t i) const
+	inline const T& W(uint32_t j, uint32_t i) const
 	{
 		return W_.coeff(j,i);
 	}
-	inline T A(uint32_t i) const
+	inline const T& A(uint32_t i) const
 	{
 		return a_.coeff(i);
 	}
-	inline T B(uint32_t j) const
+	inline const T& B(uint32_t j) const
 	{
 		return b_.coeff(j);
 	}
+
+	inline T& W(uint32_t j, uint32_t i) 
+	{
+		return W_.coeffRef(j,i);
+	}
+	inline T& A(uint32_t i) 
+	{
+		return a_.coeffRef(i);
+	}
+	inline T& B(uint32_t j) 
+	{
+		return b_.coeffRef(j);
+	}
+
 	
 	const Matrix& getW() const & { return W_; } 
 	Matrix getW() && { return std::move(W_); } 
@@ -261,6 +282,7 @@ public:
 
 	void setParams(const VectorConstRef& r)
 	{
+		assert(r.size() == getDim());
 		Eigen::Map<Vector>(W_.data(), W_.size()) = r.head(n_*m_);
 		if(!useBias_)
 			return ;
@@ -330,7 +352,11 @@ public:
 	{
 		if(n_ != rhs.n_ || m_ != rhs.m_)
 			return false;
-		return (a_ == rhs.a_) && (b_ == rhs.b_) && (W_ == rhs.W_);
+		bool equalW = (W_ == rhs.W_);
+		if(useBias_)
+			return equalW && (a_ == rhs.a_) && (b_ == rhs.b_);
+		else
+			return equalW;
 	}
 
 	std::tuple<Eigen::VectorXi, Vector> makeData(const Eigen::VectorXi& sigma) const
