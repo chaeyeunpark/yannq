@@ -132,7 +132,7 @@ public:
 	}
 
 	// Apply the (derivative of activation function) matrix J to a vector F
-	// A = Tanh(Z)
+	// A = a*Tanh(Z/a)
 	// J = dA / dZ
 	// G = J * F
 	inline void ApplyJacobian(VectorConstRef /*Z*/, VectorConstRef A,
@@ -266,7 +266,7 @@ public:
 
 	// Apply the (derivative of activation function) matrix J to a vector F
 	// A = ReLU(Z)
-	// J = dA / dZ = I
+	// J = dA / dZ 
 	// G = J * F = F
 	inline void ApplyJacobian(VectorConstRef Z, VectorConstRef /*A*/,
 			VectorConstRef F,
@@ -306,7 +306,7 @@ public:
 
 	// Apply the (derivative of activation function) matrix J to a vector F
 	// A = ReLU(Z)
-	// J = dA / dZ = I
+	// J = dA / dZ 
 	// G = J * F = F
 	inline void ApplyJacobian(VectorConstRef Z, VectorConstRef /*A*/,
 			VectorConstRef F,
@@ -361,7 +361,7 @@ public:
 
 	// Apply the (derivative of activation function) matrix J to a vector F
 	// A = LeakyReLU(Z)
-	// J = dA / dZ = I
+	// J = dA / dZ 
 	// G = J * F = F
 	inline void ApplyJacobian(VectorConstRef Z, VectorConstRef /*A*/,
 			VectorConstRef F,
@@ -404,13 +404,13 @@ public:
 	// A = LeakyReLU(Z)
 	inline void operator()(VectorConstRef Z, VectorRef A) const  {
 		for (int i = 0; i < Z.size(); ++i) {
-			A(i) = std::max(Z(i), T{negativeSlope_*Z(i)});
+			A(i) = Z(i)>0?Z(i):T{negativeSlope_*Z(i)};
 		}
 	}
 
 	// Apply the (derivative of activation function) matrix J to a vector F
 	// A = LeakyReLU(Z)
-	// J = dA / dZ = I
+	// J = dA / dZ 
 	// G = J * F = F
 	inline void ApplyJacobian(VectorConstRef Z, VectorConstRef /*A*/,
 			VectorConstRef F,
@@ -432,6 +432,8 @@ public:
 	}
 };
 
+
+//For real T
 template<typename T>
 class HardTanh
 {
@@ -458,7 +460,7 @@ public:
 
 	// Apply the (derivative of activation function) matrix J to a vector F
 	// A = hardtanh(Z)
-	// J = dA / dZ = I
+	// J = dA / dZ 
 	// G = J * F = F
 	inline void ApplyJacobian(VectorConstRef Z, VectorConstRef /*A*/,
 			VectorConstRef F, VectorRef G) const  
@@ -506,7 +508,7 @@ public:
 
 	// Apply the (derivative of activation function) matrix J to a vector F
 	// A = softshrink(Z)
-	// J = dA / dZ = I
+	// J = dA / dZ 
 	// G = J * F = F
 	inline void ApplyJacobian(VectorConstRef Z, VectorConstRef /*A*/,
 			VectorConstRef F, VectorRef G) const  
@@ -533,7 +535,7 @@ template<typename T>
 class LeakyHardTanh
 {
 public:
-	static_assert(!is_complex_type<T>::value, "T must be a real type for SoftShrink");
+	static_assert(!is_complex_type<T>::value, "T must be a real type for LeakyHardTanh");
 	using Scalar = T;
 	using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
 	using VectorRef = Eigen::Ref<Vector>;
@@ -559,8 +561,8 @@ public:
 	}
 
 	// Apply the (derivative of activation function) matrix J to a vector F
-	// A = Z
-	// J = dA / dZ = I
+	// A = leakyhardtanh(Z)
+	// J = dA / dZ 
 	// G = J * F = F
 	inline void ApplyJacobian(VectorConstRef Z, VectorConstRef /*A*/,
 			VectorConstRef F, VectorRef G) const  
@@ -622,6 +624,52 @@ public:
 	template<class Archive>
 	void serialize(Archive& /*ar*/)
 	{
+	}
+};
+
+template<typename T>
+class Cos
+{
+private:
+	T a_;
+public:
+	static_assert(!is_complex_type<T>::value, "T must be a real type for Cos");
+	using Scalar = T;
+	using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+	using VectorRef = Eigen::Ref<Vector>;
+	using VectorConstRef = Eigen::Ref<const Vector>;
+
+	
+	Cos(T a = 1.0)
+		: a_{a}
+	{
+	}
+
+	// A = cos(Z)
+	inline void operator()(VectorConstRef Z, VectorRef A) const  
+	{
+		A.array() = a_*cos(Z.array()*M_PI/a_);
+	}
+
+	// Apply the (derivative of activation function) matrix J to a vector F
+	// A = a*cos(\pi Z/a)
+	// J = dA / dZ = \pi sin(\pi Z/ a)
+	// G = J * F = F
+	inline void ApplyJacobian(VectorConstRef Z, VectorConstRef /*A*/,
+			VectorConstRef F, VectorRef G) const  
+	{
+		G.array() = -M_PI*sin(M_PI*Z.array()/a_)*F.array();
+	}
+
+	std::string name() const
+	{
+		return "Cos";
+	}
+
+	template<class Archive>
+	void serialize(Archive& ar)
+	{
+		ar(a_);
 	}
 };
 }//namsepace activation

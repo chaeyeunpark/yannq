@@ -168,6 +168,9 @@ using LeakyHardTanh = ActivationLayer<T, activation::LeakyHardTanh<T> >;
 template<typename T>
 using SoftSign = ActivationLayer<T, activation::SoftSign<T> >;
 
+template<typename T>
+using Cos = ActivationLayer<T, activation::Cos<T> >;
+
 }  // namespace yannq
 
 #endif

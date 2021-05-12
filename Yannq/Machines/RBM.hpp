@@ -221,13 +221,13 @@ public:
 	//! update Bias A by adding v
 	void updateA(const VectorConstRef& v)
 	{
-		assert(!useBias_);
+		assert(useBias_);
 		a_ += v;
 	}
 	//! update Bias B by adding v
 	void updateB(const VectorConstRef& v)
 	{
-		assert(!useBias_);
+		assert(useBias_);
 		b_ += v;
 	}
 	//! update the weight W by adding m
@@ -330,7 +330,7 @@ public:
 	{
 		if(n_ != rhs.n_ || m_ != rhs.m_)
 			return false;
-		return (a_ == rhs.a_) || (b_ == rhs.b_) || (W_ == rhs.W_);
+		return (a_ == rhs.a_) && (b_ == rhs.b_) && (W_ == rhs.W_);
 	}
 
 	std::tuple<Eigen::VectorXi, Vector> makeData(const Eigen::VectorXi& sigma) const
@@ -378,12 +378,6 @@ public:
 		res.segment(n_*m_ + n_, m_) = tanhs; 
 		return res; 
 	} 
-
-	uint32_t widx(uint32_t i, uint32_t j) const
-	{
-		return i*m_ + j;
-	}
-
 };
 
 
