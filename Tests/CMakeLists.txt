@@ -96,6 +96,13 @@ add_test(
 )
 
 #Serialization
+add_executable(TestSerializeEigen "TestSerializeEigen.cpp")
+add_test(
+	NAME TestSerializeEigen
+	COMMAND TestSerializeEigen
+)
+
+
 add_executable(TestSerializeRBM "TestSerializeRBM.cpp")
 add_test(
 	NAME TestSerializeRBM
