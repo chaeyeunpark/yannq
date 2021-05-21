@@ -439,4 +439,15 @@ typename RBM<T>::Vector getPsi(const RBM<T>& qs, Iterable&& basis, bool normaliz
 		psi.normalize();
 	return psi;
 }
+template<typename T>
+typename RBM<T>::RealVector getProbs(const RBM<T>& qs, bool normalize)
+{
+	return getPsi(qs, normalize).cwiseAbs2();
+}
+
+template<typename T, typename Iterable> //Iterable must be random access iterable
+typename RBM<T>::RealVector getProbs(const RBM<T>& qs, Iterable&& basis, bool normalize)
+{
+	return getPsi(qs, std::forward<Iterable>(basis), normalize).cwiseAbs2();
+}
 }//namespace yannq

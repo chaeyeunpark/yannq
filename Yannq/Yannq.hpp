@@ -31,4 +31,14 @@
 #include  "GroundState/SRMatExact.hpp"
 //#include  "GroundState/NGDExact.hpp"
 
+#include "Serializers/SerializeEigen.hpp"
+#include "Serializers/SerializeActivationLayers.hpp"
+#include "Serializers/SerializeMean.hpp"
+#include "Serializers/SerializeAmplitudePhase.hpp"
+#include "Serializers/SerializeConv1D.hpp"
+//#include "Serializers/SerializeCorrelatedRBM.hpp"
+#include "Serializers/SerializeFeedForward.hpp"
+#include "Serializers/SerializeFullyConnected.hpp"
+#include "Serializers/SerializeRBM.hpp"
+
 #endif//YANNQ_YANNQ_HPP

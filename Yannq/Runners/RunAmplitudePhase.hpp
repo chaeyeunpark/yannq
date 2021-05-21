@@ -34,7 +34,7 @@ public:
 		  	(logger, N, N*alpha, useBias, std::move(phase))
 	{
 	}
-	
+
 	void initializePhase()
 	{
 		(this->qs_).initializePhase(this->re_, InitializationMode::Xavier);
@@ -62,7 +62,7 @@ public:
 		using namespace yannq;
 		using Clock = std::chrono::high_resolution_clock;
 
-		this->initializeRunner();
+		//this->initializeRunner();
 
 		const int dim = this->getDim();
 		const int dimAmp = (this->qs_).getDimAmp();

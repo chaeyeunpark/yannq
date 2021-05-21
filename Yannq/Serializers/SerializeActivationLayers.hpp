@@ -25,6 +25,10 @@ LAYER_ADD_SERIALIZER(yannq::Tanh, float);
 LAYER_ADD_SERIALIZER(yannq::Tanh, double);
 LAYER_ADD_SERIALIZER(yannq::Tanh, long double);
 
+LAYER_ADD_SERIALIZER(yannq::WeakTanh, float);
+LAYER_ADD_SERIALIZER(yannq::WeakTanh, double);
+LAYER_ADD_SERIALIZER(yannq::WeakTanh, long double);
+
 LAYER_ADD_SERIALIZER(yannq::Sigmoid, float);
 LAYER_ADD_SERIALIZER(yannq::Sigmoid, double);
 LAYER_ADD_SERIALIZER(yannq::Sigmoid, long double);
@@ -52,6 +56,10 @@ LAYER_ADD_SERIALIZER(yannq::LeakyHardTanh, long double);
 LAYER_ADD_SERIALIZER(yannq::SoftSign, float);
 LAYER_ADD_SERIALIZER(yannq::SoftSign, double);
 LAYER_ADD_SERIALIZER(yannq::SoftSign, long double);
+
+LAYER_ADD_SERIALIZER(yannq::Cos, float);
+LAYER_ADD_SERIALIZER(yannq::Cos, double);
+LAYER_ADD_SERIALIZER(yannq::Cos, long double);
 
 //CEREAL_FORCE_DYNAMIC_INIT(YANNQ);
 

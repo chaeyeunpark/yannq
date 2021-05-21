@@ -50,16 +50,18 @@ public:
 	{
 		using DataT = typename std::result_of_t<decltype(&Machine::makeData)(Machine, Eigen::VectorXi)>;
 
-		auto st = getPsi(qs_, basis_, false);
-		std::vector<long double> accum(basis_.size()+1, 0.0);
-		accum[0] = 0.0;
-		for(uint32_t n = 1; n <= basis_.size(); n++)
+		auto probs = getProbs(qs_, basis_, false);
+		std::vector<long double> accum;
+		accum.reserve(basis_.size());
+		long double s = 0.0;
+		for(uint32_t n = 0; n < basis_.size(); ++n)
 		{
-			accum[n] = accum[n-1] + std::norm(st(n-1));
+			s += probs[n];
+			accum.emplace_back(s);
 		}
 
-		tbb::enumerable_thread_specific<std::uniform_real_distribution<long double>> urd(0.0, accum[basis_.size()]);
-		accum[basis_.size()] += 1e-8;
+		tbb::enumerable_thread_specific<std::uniform_real_distribution<long double>> urd(0.0, accum.back());
+		accum.back() += 1e-8;
 		tbb::concurrent_vector<DataT> res;
 		res.reserve(n_sweeps);
 		tbb::parallel_for(0u, n_sweeps,
@@ -67,7 +69,7 @@ public:
 		{
 			long double r  = urd.local()(re_);
 			auto iter = std::lower_bound(accum.begin(), accum.end(), r);
-			auto idx = std::distance(accum.begin(), iter) - 1;
+			auto idx = std::distance(accum.begin(), iter);
 			auto data = qs_.makeData(toSigma(n_, basis_[idx]));
 			res.emplace_back(data);
 		});

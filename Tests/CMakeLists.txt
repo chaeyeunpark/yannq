@@ -24,6 +24,12 @@ add_test(
 )
 
 #FeedForward Machine
+add_executable(TestMeanLayer "TestMeanLayer.cpp")
+add_test(
+	NAME TestMeanLayer
+	COMMAND TestMeanLayer
+)
+
 add_executable(TestConvLayer "TestConvLayer.cpp")
 add_test(
 	NAME TestConvLayer

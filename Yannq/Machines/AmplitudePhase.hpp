@@ -1,5 +1,4 @@
-#ifndef YANNQ_MACHINES_AMPLITUDEPHASE_HPP
-#define YANNQ_MACHINES_AMPLITUDEPHASE_HPP
+#pragma once
 #include <tbb/tbb.h>
 
 #include "RBM.hpp"
@@ -136,6 +135,19 @@ public:
 		return std::sqrt(amplitude_.coeff(t))*std::exp(I*M_PI*phase_.forward(std::get<0>(t)));
 	}
 
+	ComplexScalar coeff(const std::pair<AmplitudeDataType, PhaseDataType>& t) const
+	{
+		constexpr std::complex<double> I(0.,1.);
+		return std::sqrt(amplitude_.coeff(std::get<0>(t)))*
+					std::exp(I*M_PI*phaseForward(std::get<1>(t)));
+	}
+
+	RealScalar amplitudeSquare(const AmplitudeDataType& t) const
+	{
+		return amplitude_.coeff(t);
+	}
+
+
 	uint32_t getN() const
 	{
 		return N_;
@@ -196,5 +208,37 @@ AmplitudePhase::ComplexVector getPsi(const AmplitudePhase& qs, Iterable&& basis,
 		psi.normalize();
 	return psi;
 }
+
+AmplitudePhase::RealVector getProbs(const AmplitudePhase& qs, bool normalize)
+{
+	const uint32_t n = qs.getN();
+	AmplitudePhase::RealVector probs(1<<n);
+	tbb::parallel_for(uint32_t(0u), (1u << n), 
+		[n, &qs, &probs](uint32_t idx)
+	{
+		auto s = toSigma(n, idx);
+		probs(idx) = qs.amplitudeSquare(qs.makeAmpData(s));
+	});
+	if(normalize)
+		probs /= probs.sum();
+	return probs;
+}
+
+template<typename Iterable> //Iterable must be random access iterable
+AmplitudePhase::RealVector getProbs(const AmplitudePhase& qs, Iterable&& basis, bool normalize)
+{
+	const uint32_t n = qs.getN();
+	AmplitudePhase::RealVector probs(basis.size());
+
+	tbb::parallel_for(std::size_t(0u), basis.size(),
+		[n, &qs, &probs, &basis](std::size_t idx)
+	{
+		auto s = toSigma(n, basis[idx]);
+		probs(idx) = qs.amplitudeSquare(qs.makeAmpData(s));
+	});
+	if(normalize)
+		probs /= probs.sum();
+	return probs;
+}
+
 }//namespace yannq
-#endif//YANNQ_MACHINES_AMPLITUDEPHASE_HPP

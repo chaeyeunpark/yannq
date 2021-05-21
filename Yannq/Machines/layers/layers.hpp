@@ -3,4 +3,5 @@
 #include "ActivationLayer.hpp"
 #include "Conv1D.hpp"
 #include "FullyConnected.hpp"
+#include "Mean.hpp"
 #endif//YANNQ_LAYERS_LAYERS_HPP
