@@ -2,9 +2,6 @@ cmake_minimum_required(VERSION 3.13)
 
 project(Yannq)
 
-include_directories(${PROJECT_SOURCE_DIR}/Yannq)
-include_directories(${PROJECT_SOURCE_DIR}/externals "${PROJECT_SOURCE_DIR}/externals/cereal/include/")
-
 if(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release)
 endif()
@@ -16,8 +13,6 @@ set(BUILD_RPATH_USE_ORIGIN TRUE)
 
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -DEIGEN_USE_MKL_ALL")
-
 set(JSON_URL "https://github.com/nlohmann/json/releases/download/v3.7.3/json.hpp")
 set(JSON_DOWNLOAD_DIR "${PROJECT_SOURCE_DIR}/externals/nlohmann")
 set(JSON_DOWNLOAD_PATH "${JSON_DOWNLOAD_DIR}/json.hpp")
@@ -26,6 +21,9 @@ if (NOT EXISTS "${JSON_DOWNLOAD_PATH}")
 	file(MAKE_DIRECTORY "${JSON_DOWNLOAD_DIR}")
 	file(DOWNLOAD "${JSON_URL}" "${JSON_DOWNLOAD_PATH}")
 endif()
+
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -DEIGEN_USE_MKL_ALL")
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 	include_directories("$ENV{MKLROOT}/include")
@@ -40,9 +38,9 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
 	link_libraries(tbb stdc++ pthread m dl)
 endif()
 
+
 add_library(yannq INTERFACE)
-target_sources(yannq INTERFACE Yannq/Yannq.hpp)
-target_include_directories(yannq INTERFACE "${PROJECT_SOURCE_DIR}/externals")
+target_include_directories(yannq INTERFACE "${PROJECT_SOURCE_DIR}/externals" "${PROJECT_SOURCE_DIR}/cereal/include/" "${PROJECT_SOURCE_DIR}/Yannq")
 target_link_libraries(yannq INTERFACE Eigen3::Eigen)
 
 if (BUILD_TESTS)

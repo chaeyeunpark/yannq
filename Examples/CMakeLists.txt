@@ -1,4 +1,3 @@
-
 add_executable(RBMTFI "RBMTFI.cpp")
 target_link_libraries(RBMTFI stdc++fs yannq)
 

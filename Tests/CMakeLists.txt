@@ -1,4 +1,3 @@
-
 set(CATCH_URL "https://github.com/catchorg/Catch2/releases/download/v2.11.1/catch.hpp")
 set(CATCH_DOWNLOAD_PATH "${PROJECT_SOURCE_DIR}/externals/catch.hpp")
 
@@ -8,7 +7,7 @@ endif()
 
 enable_testing()
 
-include_directories("${PROJECT_SOURCE_DIR}/Yannq")
+include_directories("${PROJECT_SOURCE_DIR}/Yannq" "${PROJECT_SOURCE_DIR}/externals" "${PROJECT_SOURCE_DIR}/cereal/include")
 
 #RBM Machine
 add_executable(TestRBM "TestRBM.cpp")
@@ -68,33 +67,6 @@ add_test(
 	COMMAND TestHamJ1J2
 )
 
-
-#[[
-add_executable(TestHamKitaev "TestHamKitaev.cpp")
-add_test(
-	NAME TestHamKitaev
-	COMMAND TestHamKitaev
-)
-
-add_executable(TestHamKitaevC24 "TestHamKitaevC24.cpp")
-add_test(
-	NAME TestHamKitaevC24
-	COMMAND TestHamKitaevC24
-)
-
-add_executable(TestHamXYZSto "TestHamXYZSto.cpp")
-add_test(
-	NAME TestHamXYZSto
-	COMMAND TestHamXYZSto
-)
-
-add_executable(TestHamXYZSto2 "TestHamXYZSto2.cpp")
-add_test(
-	NAME TestHamXYZSto2
-	COMMAND TestHamXYZSto2
-)
-#]]
-
 add_executable(TestUtility "TestUtility.cpp")
 add_test(
 	NAME TestUtility
@@ -141,8 +113,8 @@ add_test(
 
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND}
 	DEPENDS TestRBM TestRBMStates TestConvLayer TestActivations TestFullyConnected
-	TestFeedForward TestHamTFI TestHamJ1J2 TestUtility 
-	TestSerializeRBM TestSerializeConv1D TestSerializeActivations 
+	TestMeanLayer TestFeedForward TestHamTFI TestHamJ1J2 TestUtility 
+	TestSerializeEigen TestSerializeRBM TestSerializeConv1D TestSerializeActivations 
 	TestSerializeFullyConnected TestSerializeFeedForward
 )
 
