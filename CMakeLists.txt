@@ -23,25 +23,33 @@ if (NOT EXISTS "${JSON_DOWNLOAD_PATH}")
 endif()
 
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -DEIGEN_USE_MKL_ALL")
-
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-	include_directories("$ENV{MKLROOT}/include")
-	link_libraries(mkl_intel_lp64 mkl_tbb_thread mkl_core tbb pthread m dl)
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	include_directories("$ENV{MKLROOT}/include")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedefs")
-	link_libraries(mkl_intel_lp64 mkl_tbb_thread mkl_core tbb pthread m dl)
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mkl=parallel -tbb")
-	include_directories("$ENV{MKLROOT}/include")
-	link_libraries(tbb stdc++ pthread m dl)
+if (DEFINED ENV{MKLROOT})
+	message(STATUS "MKL is found at $ENV{MKLROOT}.")
+else()
+	message(FATAL_ERROR "MKL is not found; CMake will exit.")
 endif()
 
 
 add_library(yannq INTERFACE)
-target_include_directories(yannq INTERFACE "${PROJECT_SOURCE_DIR}/externals" "${PROJECT_SOURCE_DIR}/cereal/include/" "${PROJECT_SOURCE_DIR}/Yannq")
+
+if ((CMAKE_CXX_COMPILER_ID STREQUAL "Clang") OR (CMAKE_CXX_COMPILER_ID STREQUAL "IntelLLVM"))
+	message(STATUS "Clang (or Intel one API) compiler detected.")
+	target_link_libraries(yannq INTERFACE mkl_intel_lp64 mkl_tbb_thread mkl_core tbb pthread m dl)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	message(STATUS "GNU compiler detected.")
+	target_link_libraries(yannq INTERFACE mkl_intel_lp64 mkl_tbb_thread mkl_core tbb pthread m dl)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+	message(STATUS "Intel compiler detected.")
+	target_compile_options(yannq INTERFACE "-mkl=parallel;-tbb;")
+	target_link_libraries(yannq INTERFACE tbb stdc++ pthread m dl)
+else()
+	message(WARNING "Unknown compiler. Set your own compile scripts.")
+endif()
+
+
+target_include_directories(yannq INTERFACE "${PROJECT_SOURCE_DIR}/externals" "${PROJECT_SOURCE_DIR}/cereal/include/" "${PROJECT_SOURCE_DIR}/Yannq" "$ENV{MKLROOT}/include")
 target_link_libraries(yannq INTERFACE Eigen3::Eigen)
+target_compile_options(yannq INTERFACE "-DEIGEN_USE_MKL_ALL")
 
 if (BUILD_TESTS)
 	add_subdirectory(Tests)

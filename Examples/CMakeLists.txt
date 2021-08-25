@@ -9,4 +9,3 @@ target_link_libraries(RBMTFIExact stdc++fs yannq)
 
 add_executable(AmplitudePhase "AmplitudePhase.cpp")
 target_link_libraries(AmplitudePhase yannq)
-

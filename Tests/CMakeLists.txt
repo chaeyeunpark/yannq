@@ -7,7 +7,7 @@ endif()
 
 enable_testing()
 
-include_directories("${PROJECT_SOURCE_DIR}/Yannq" "${PROJECT_SOURCE_DIR}/externals" "${PROJECT_SOURCE_DIR}/cereal/include")
+link_libraries(yannq)
 
 #RBM Machine
 add_executable(TestRBM "TestRBM.cpp")
